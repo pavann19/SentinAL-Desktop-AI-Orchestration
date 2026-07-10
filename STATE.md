@@ -14,7 +14,12 @@
 - **Current phase:** Phase 1 — Close the loop — **✅ ALL 5 TASKS DONE (P1-1, P1-2, P1-3, P1-4, P1-5)**
 - **Gate-2 flag on P1-1: RESOLVED.** Codex's second-party review found 3 real bugs across P1-1/P1-4; all 3 fixed by Claude, all xfail tests converted to genuine passing regression tests. See Session 7 below for the full account.
 - **Known environmental issue (not a code defect):** `tests/test_pipeline_integration.py::test_web_navigation_full_pipeline` fails due to invalid `GROQ_API_KEY` (401, first noted in Session 2) + no local Ollama server running on this machine. Confirmed via `git stash` that it fails identically with P1-4's changes fully removed — pre-existing, unrelated to any Phase 1 work. Deselected from the "313 passed" count above; will resolve itself once the API key is rotated and/or Ollama is running.
-- **Active task:** none — Phase 1 complete. Next candidate: Phase 2 (Cognitive layer — LangGraph planner, tiered memory, MCP tool contracts) per AGENTIC_OS_ROADMAP_AND_THESIS_PLAN.md, or begin building the labeled intent dataset / task-success evaluation data for the thesis Evaluation chapter.
+- **Active tasks (parallel, decided by Pavan — thesis evaluation data prioritized over Phase 2 for now):**
+  1. Thesis report first draft — context pack WRITTEN (`_context_packs/thesis_report_draft.md`), dispatched to ANTIGRAVITY, awaiting `thesis/THESIS_DRAFT_v1.md` on branch `docs/thesis-draft-v1`
+  2. Task suite expansion (`eval/tasks.yaml` 12→~40-50 tasks) — CLAUDE, own task, starting now
+  3. Latency-harvesting script (aggregate `logs/traces/*.json` from P1-3) — CLAUDE, queued after task suite expansion
+  4. Ablation runs (fast-path on/off, privacy-router on/off, cloud-vs-local) — CLAUDE, queued last, depends on 2 being done first
+- **Note on the thesis draft task:** it's a WRITING task, not code — no 5-gate code verification applies. Its "evidence" is the placeholder-marker discipline (every unverified number must be `[PLACEHOLDER: ...]`, never fabricated) — Claude will spot-check this on return rather than run tests.
 - **Blocked:** none
 - **Known issue (not a harness bug, a repo finding):** GROQ_API_KEY in `.env` returns 401 Invalid API Key during live runs; privacy router correctly falls back to local LLM. Rotate the key per MERGE_LOG.md's standing recommendation; until then, cloud-routed tasks silently run local (slower, still correct).
 
@@ -47,6 +52,16 @@ Claude = prompt-author + verifier (the two ends). Pavan = transport layer (the m
 ---
 
 ## Session Log (newest first — append every session)
+
+### 2026-07-10 — Session 8 (Claude: dispatch thesis draft to Antigravity, begin thesis evaluation data work)
+- Pavan chose: build thesis evaluation data before starting Phase 2, and split the work — Claude handles the mechanical/code side (task suite expansion, latency harvesting, ablations), Antigravity drafts the actual thesis report text.
+- Wrote `_context_packs/thesis_report_draft.md` for Antigravity. Key design decisions in the pack:
+  - Explicit, repeated instruction to NEVER fabricate a number — every quantitative claim must either cite its exact source file or be written as a bold `[PLACEHOLDER: ...]` marker. Gave Antigravity the current real numbers (313 tests, 15 intents, 33 capabilities, Phase 1 complete) AND the current real gaps (no labeled intent dataset, no latency CDFs, no ablations, only 12 tasks in the harness) so it can't accidentally claim finished work that isn't.
+  - Scoped reading to a specific small file list (the roadmap/thesis-plan doc, STATE.md, a handful of core modules) rather than the whole repo — same token discipline as every code context pack.
+  - Deliverable is a single new file (`thesis/THESIS_DRAFT_v1.md`), zero existing files touched.
+  - Verification approach differs from code tasks: this is a writing task, so the "evidence" Claude will check on return is the placeholder-marker discipline, not a test suite — spot-checking that placeholders are honest and no fabricated figures snuck in, not running pytest.
+- Dispatched (Pavan approved and relayed). Starting on the parallel Claude-owned work next: expanding `eval/tasks.yaml`.
+- **Next action for next session:** when Antigravity's `docs/thesis-draft-v1` branch returns, Claude reads the draft and spot-checks: (a) no fabricated numbers, (b) every real number cited matches its source file, (c) placeholder count is a reasonable, honest reflection of what's actually missing. Meanwhile, continue the task-suite/latency/ablation work below.
 
 ### 2026-07-10 — Session 7, continued (Codex's review returns with 3 real bugs, Claude fixes all, P1-4 completes — Phase 1 done)
 - While implementing P1-4, discovered Codex had already returned on branch `review/p1-1-gate2-secondparty` (no separate handback doc — its committed test file's docstrings/xfail reasons WERE the handback, which worked fine).
