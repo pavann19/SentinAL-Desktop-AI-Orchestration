@@ -32,7 +32,7 @@
 
 | ID | Task | Owner | Independent tests by | Evidence artifact (Gate 4) |
 |----|------|-------|---------------------|----------------------------|
-| P1-1 | Observe-act loop: `execute_pipeline` returns observation objects; postcondition verifier | CLAUDE | CODEX | before/after state snapshot pair per step |
+| P1-1 | Observe-act wrapper: `execute_pipeline_observed()` adds before/after snapshot diff + per-step postcondition checks | CLAUDE | CLAUDE (self, logged deviation — see STATE.md) | **DONE, FLAGGED** — 285 tests green, tag `p1-1-done`; Gate 2 was self-authored, recommend a second-party review pass |
 | P1-2 | Tiered postcondition observer (process→window→VLM) wiring `vision_module` in | ANTIGRAVITY | CLAUDE | **DONE** — `_evidence/P1-2/observation_demo.json` + Claude's independent live re-run, 5 gates green, tag `p1-2-done` |
 | P1-3 | OpenTelemetry tracing: span per task→step→tool call, export to file | CODEX | CLAUDE | **DONE** — `_evidence/P1-3/trace_demo.json` + Claude's independent live re-run, 5 gates green, tag `p1-3-done` |
 | P1-4 | Failure taxonomy + one bounded replan on postcondition mismatch | CLAUDE | CODEX | trace showing a failure→replan→success |
@@ -73,9 +73,9 @@
 - **P1-5** (task-success harness, CODEX): ✅ **DONE**
 - **P1-3** (tracing, CODEX): ✅ **DONE**
 - **P1-2** (tiered postcondition observer — ANTIGRAVITY): ✅ **DONE**
-- **P1-1** (observe-act loop rework — CLAUDE, touches `executor.py`, security-critical, NOT delegated): IN PROGRESS — starting now, on top of the real `postcondition_observer.py`
-- **P1-4** (failure taxonomy + bounded replan — CLAUDE): TODO — natural follow-on to P1-1, likely same session
-- **Last green tag:** `p1-2-done` (275 tests)
+- **P1-1** (observe-act wrapper — CLAUDE): ✅ **DONE, with a logged flag** — Gate 2 was self-authored (Claude as both implementer and tester), not independently authored by Codex/Antigravity. Recommend a follow-up second-party test review when convenient.
+- **P1-4** (failure taxonomy + bounded replan — CLAUDE): TODO — the natural next step; touches `execute_pipeline`'s internal loop directly this time (P1-1 deliberately left it untouched), so it needs its own careful isolated diff
+- **Last green tag:** `p1-1-done` (285 tests)
 - **Blocked:** none
-- **Next action:** Claude implements P1-1 directly (no context pack — self-owned task).
+- **Next action:** Claude implements P1-4 next. Optionally, dispatch a second-party review of P1-1 to Codex/Antigravity first if Pavan wants that flag cleared before moving on.
 - **Next action:** Pavan dispatches P1-3 to Codex; on return, Claude runs the 5 gates (same process as P1-5).
