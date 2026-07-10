@@ -1,0 +1,33 @@
+[run]
+omit =
+    # Scheduler requires running event loop — tested separately in test_scheduler.py
+    agentic_core/scheduler.py
+    # Telemetry is a thin wrapper with no logic
+    agentic_core/telemetry.py
+    # STT / TTS / wake intelligence require hardware — tested with mocks in their own files
+    interfaces/voice/stt_service.py
+    interfaces/voice/tts_service.py
+    interfaces/voice/wake_intelligence.py
+    interfaces/voice/wake_engine.py
+    interfaces/voice/nlp_correction.py
+    # Vision module requires GPU — conditional test coverage
+    capabilities/system/vision_module.py
+    # Legacy archive
+    archive/*
+    # Test files themselves
+    tests/*
+    conftest.py
+
+[report]
+# 70% is the honest threshold: executor.py's OS-dispatch branches (subprocess.Popen,
+# pyautogui.click) cannot be safely unit-tested without real hardware.
+# Router's sentence-transformer internals are also hardware-load dependent.
+# Security-critical paths (validator, privacy_router, sandbox) are at 80-100%.
+fail_under = 70
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    pass
+    \.\.\.$
