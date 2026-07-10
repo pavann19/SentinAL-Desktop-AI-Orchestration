@@ -92,4 +92,17 @@
 
 ## Verification record
 
-*(appended as verification proceeds)*
+**2026-07-10 — Post-merge verification (all on the reunified copy):**
+
+1. **Symbol-level fit check (pre-merge):** every import in WS-C's `main.py`/`conftest.py` resolves against the OneDrive modules with matching signatures (`start_listening(on_transcript, on_wake, on_interrupt)`, `speak(text, speed, cancel_event, …)`, `SystemState._instance` singleton, `class PrivacyRouter`/`privacy_guard`, `wake_engine`, `conversation_manager`). ✅
+2. **Test suite (CI subset, per ci.yml exclusions):** 204 passed, 0 failed. ✅
+3. **Excluded suites (router/stress/wake/stt):** initially 42 passed / 1 failed / 6 skipped. The failure (`test_router.py::test_all_intents_have_25_phrases`) exposed seven intents with 7-phrase banks → fixed in Edits 2–3.
+4. **Full suite after fix:** **247 passed, 0 failed, 6 skipped** (skips are hardware/model-gated voice tests). Exceeds the April 22 QA report baseline (234/244 with 4 failures). ✅
+5. **Server boot:** `venv\Scripts\python.exe main.py` → "SentinAL Core v9.0 online", TaskManager queue started, Capability Registry seeded 33 capabilities, Deepgram STT + AdaptiveVAD listening started, `GET /api/health` → `{"status":"online","version":"2.4.2"}`. ✅
+6. **End-to-end command:** `POST /api/command {"prompt":"hello"}` → `ConversationalIntent`, validation "Approved", execution "Success", coherent response + speech_response. ✅
+
+**Known items / next steps:**
+- `sentinal-ui/` needs `npm install` (node_modules deliberately not copied) before `npm run dev` / Electron.
+- `PICOVOICE_ACCESS_KEY` is empty in `.env` → wake word falls back to WIL (logged at boot). Optional.
+- ⚠ Live API keys (Groq, Tavily, Deepgram, AgentOps) exist in `.env` here and in multiple old backups — **rotate them**; `.env` is git-ignored but the old copies remain on disk/OneDrive.
+- Source workspaces (`D:\Major project_BACKUP_v2`, `D:\college\Major Project\Major project_backup_20260414`, `D:\college\Major Project\Major project`, OneDrive `Major project`) were left completely untouched.
