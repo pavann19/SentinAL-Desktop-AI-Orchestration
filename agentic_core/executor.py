@@ -703,6 +703,70 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
     return f"Pipeline successfully completed ({num_steps} steps)."
 
 
+def execute_pipeline_observed(validated_steps: list, cancel_event=None) -> dict:
+    """
+    P1-1 (Agentic OS roadmap, Phase 1 — close the loop): observe-act wrapper
+    around execute_pipeline().
+
+    Design note: execute_pipeline() is deliberately left UNTOUCHED. It is
+    600+ lines of security-critical logic (shell sanitization, 3-attempt
+    retry loop, LLM self-healing, sandbox validation) with an established
+    `str` return contract that capabilities/system/api_wrapper.py and the
+    existing test suite (tests/test_pipeline_integration.py,
+    tests/test_api_wrapper.py) depend on byte-for-byte. Rewriting it in
+    place would be exactly the kind of invasive, hard-to-verify change this
+    project's verification protocol (VERIFICATION_PROTOCOL.md) exists to
+    prevent — so this is a pure wrapper, not a modification.
+
+    What this DOES give the system: a whole-pipeline before/after process
+    snapshot diff (via capabilities.system.postcondition_observer, landed
+    in P1-2) and, for any step that opts in via an "expected_state" key,
+    an explicit postcondition check. Steps do not currently carry
+    "expected_state" (that is future processor/validator work — Phase 2
+    of the roadmap) so today this mostly exercises the snapshot-diff path;
+    the per-step Observation path is ready for when that key exists.
+
+    KNOWN LIMITATION (logged honestly, not hidden): because
+    execute_pipeline() runs its own internal loop and returns only a
+    final string, this wrapper cannot observe *individual* step outcomes
+    mid-pipeline or trigger a bounded replan on mismatch — only whole-run
+    before/after state. True per-step observation with replan is P1-4's
+    job and requires carefully instrumenting the existing loop (the
+    inject_vars/retry/blackboard logic) rather than wrapping around it.
+    Deferred deliberately rather than rushed into this same change.
+
+    Returns:
+        {
+            "result": str,                 # exactly what execute_pipeline() returned
+            "snapshot_diff": dict,          # from postcondition_observer.diff_snapshots
+            "step_observations": list[dict],# [{"step_index": int, "observation": Observation}]
+                                             # for any step carrying "expected_state"
+        }
+    """
+    from capabilities.system.postcondition_observer import (
+        capture_state_snapshot,
+        diff_snapshots,
+        observe_postcondition,
+    )
+
+    before = capture_state_snapshot()
+    result = execute_pipeline(validated_steps, cancel_event=cancel_event)
+    after = capture_state_snapshot()
+
+    step_observations = []
+    for index, step in enumerate(validated_steps):
+        expected_state = step.get("expected_state") if isinstance(step, dict) else None
+        if expected_state:
+            observation = observe_postcondition(expected_state)
+            step_observations.append({"step_index": index, "observation": observation})
+
+    return {
+        "result": result,
+        "snapshot_diff": diff_snapshots(before, after),
+        "step_observations": step_observations,
+    }
+
+
 def execute_gui_command(intent: dict) -> str:
     """Handles physical screen interaction via PyAutoGUI (mouse/keyboard/scroll)."""
     action     = intent.get("action", "").lower()
