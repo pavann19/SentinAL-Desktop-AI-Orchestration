@@ -13,7 +13,8 @@
 - **Last green tag:** `p1-3-done` (commit `b6ff7ce`) — 258 tests passing (253 + 5 new)
 - **Current phase:** Phase 1 — Close the loop (IN PROGRESS: 2/5 tasks done)
 - **Completed:** P1-5 (task-success harness), P1-3 (OpenTelemetry tracing) — ALL 5 GATES GREEN each, both merged to main
-- **Active task:** none dispatched — next up: P1-1 (observe-act loop) or P1-2 (wire vision_module verifier), both owned by CLAUDE/ANTIGRAVITY per the task board, not yet spec'd
+- **Active task:** P1-2 (tiered postcondition observer) — context pack WRITTEN (`_context_packs/P1-2_vision_verifier_wiring.md`), awaiting dispatch to ANTIGRAVITY
+- **Sequencing decision (Pavan's call):** P1-2 (Antigravity) goes FIRST, then Claude's P1-1 — not true parallel. Reason: P1-1's observe-act loop needs `observe_postcondition()` as a real dependency to call; building P1-1 first would mean stubbing that interface and rewiring later. Sequential-but-fast beats parallel-then-reconcile here.
 - **Blocked:** none
 - **Known issue (not a harness bug, a repo finding):** GROQ_API_KEY in `.env` returns 401 Invalid API Key during live runs; privacy router correctly falls back to local LLM. Rotate the key per MERGE_LOG.md's standing recommendation; until then, cloud-routed tasks silently run local (slower, still correct).
 
@@ -46,6 +47,12 @@ Claude = prompt-author + verifier (the two ends). Pavan = transport layer (the m
 ---
 
 ## Session Log (newest first — append every session)
+
+### 2026-07-10 — Session 5 (Claude, spec'd P1-2 — sequenced before P1-1 per Pavan's decision)
+- Pavan chose: P1-2 (Antigravity) first, then Claude's P1-1 — sequential, not parallel, so P1-1 is built against a real interface instead of a stub.
+- Verified before writing: `vision_module.verify_screen_state(query) -> bool` exists, already fail-safe (timeout/model-not-found → False, never raises). `gui_resolver.find_window_center(title) -> tuple|None` is a cheap Tier-2 check with no screenshot/VLM cost. `process_manager.list_processes(name_filter) -> list[dict]` is the cheapest possible check. None of the three were wired together — this task chains them into one tiered `observe_postcondition()` interface.
+- Wrote `_context_packs/P1-2_vision_verifier_wiring.md`. Hard constraint stated explicitly: the interface contract in §6 (`Observation` dataclass, `observe_postcondition(expected: dict)`, `capture_state_snapshot()`, `diff_snapshots()`) is not a suggestion — Claude's P1-1 will import it directly next, so Antigravity must not deviate from the field names/types. Also told Antigravity to use module-qualified calls (`process_manager.list_processes(...)` not `from ... import list_processes`) so Claude's Gate-2 monkeypatching works cleanly — a lesson pulled directly from the P1-3 verification session where a similar mockability issue cost a wasted first test run.
+- **Next action for next session:** Pavan dispatches P1-2 to Antigravity. On return, Claude runs the same 5-gate process as P1-5/P1-3 (read diff → independent tests → coverage → live re-run → full regression, baseline to beat: 258 passed). After P1-2 merges, Claude starts P1-1 directly (no context pack needed — Claude owns this task per the original role split), building the observe-act loop on top of the real `postcondition_observer.py`.
 
 ### 2026-07-10 — Session 4 (Claude, verification of Codex's P1-3)
 - Codex returned branch `feat/p1-3-tracing` with exactly the 4 files/edits spec'd (new `agentic_core/tracing.py`, minimal wrap-only diff to `api_wrapper.py`, `requirements.txt` addition, its own `_evidence/P1-3/trace_demo.json`) — no scope creep.
