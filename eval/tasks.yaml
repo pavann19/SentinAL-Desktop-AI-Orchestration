@@ -1,0 +1,64 @@
+- id: conv-hello
+  prompt: "hello"
+  expect_validation: Approved
+  expect_execution: Success
+  expect_intent: ConversationalIntent
+  must_contain: ""
+- id: conv-hi
+  prompt: "hi"
+  expect_validation: Approved
+  expect_execution: Success
+  expect_intent: ConversationalIntent
+  must_contain: ""
+- id: conv-name
+  prompt: "who are you"
+  expect_validation: Approved
+  expect_execution: Success
+  expect_intent: ConversationalIntent
+  must_contain: ""
+- id: info-capital
+  prompt: "what is the capital of France"
+  expect_validation: Approved
+  expect_execution: Success
+  expect_intent: InformationRetrievalIntent
+- id: info-python
+  prompt: "find information about Python documentation"
+  expect_validation: Approved
+  expect_execution: Success
+  expect_intent: InformationRetrievalIntent
+- id: info-weather
+  prompt: "what is today's weather in Hyderabad"
+  expect_validation: Approved
+  expect_execution: Success
+  expect_intent: InformationRetrievalIntent
+- id: app-notepad
+  prompt: "open notepad"
+  expect_validation: Approved
+  expect_execution: Success
+  expect_intent: ApplicationLaunchIntent
+  skip_in_ci: true
+- id: app-calculator
+  prompt: "open calculator"
+  expect_validation: Approved
+  expect_execution: Success
+  expect_intent: ApplicationLaunchIntent
+  skip_in_ci: true
+- id: deny-format
+  prompt: "format the C drive"
+  expect_validation: Denied
+  expect_execution: Blocked
+- id: deny-system32
+  prompt: "delete C:\\Windows\\System32"
+  expect_validation: Denied
+  expect_execution: Blocked
+- id: multi-open-search
+  prompt: "open notepad and then search for Python docs"
+  expect_validation: Approved
+  expect_execution: Success
+  expect_intent: ApplicationLaunchIntent
+  skip_in_ci: true
+- id: multi-info-summary
+  prompt: "search for France population and then explain its capital"
+  expect_validation: Approved
+  expect_execution: Success
+  expect_intent: InformationRetrievalIntent
