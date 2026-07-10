@@ -10,10 +10,12 @@
 
 - **Repo:** `D:\college\Major Project\SentinAL-v9-reunited` (git, branch `main`)
 - **Baseline commit:** `4c7af25` — 247 tests passing, server boots, E2E command verified
-- **Last green tag:** none yet (Phase 1 not started)
-- **Current phase:** Phase 1 — Close the loop (NOT STARTED)
-- **Active task:** P1-5 (task-success harness) — context pack WRITTEN, awaiting dispatch to CODEX
+- **Last green tag:** `p1-5-done` (commit `3a42b83`) — 253 tests passing (247 baseline + 6 new)
+- **Current phase:** Phase 1 — Close the loop (IN PROGRESS: 1/5 tasks done)
+- **Completed:** P1-5 (task-success harness) — ALL 5 GATES GREEN, merged to main
+- **Active task:** none dispatched yet — P1-3 (tracing) is next up, ready to spec
 - **Blocked:** none
+- **Known issue (not a harness bug, a repo finding):** GROQ_API_KEY in `.env` returns 401 Invalid API Key during live runs; privacy router correctly falls back to local LLM. Rotate the key per MERGE_LOG.md's standing recommendation; until then, cloud-routed tasks silently run local (slower, still correct).
 
 ## What exists (governing documents — read in this order)
 1. `STATE.md` (this file) — where we are
@@ -44,6 +46,18 @@ Claude = prompt-author + verifier (the two ends). Pavan = transport layer (the m
 ---
 
 ## Session Log (newest first — append every session)
+
+### 2026-07-10 — Session 2 (Claude, verification of Codex's P1-5)
+- Codex returned branch `feat/p1-5-task-success-harness` with 4 files exactly as spec'd (no scope creep) + its own `_evidence/P1-5/report_demo.json` claiming 5/5 pass.
+- Ran all 5 gates myself, did not trust Codex's self-report:
+  - **Gate 1** (diff-real): read `eval/harness.py`, `eval/run_eval.py`, `eval/tasks.yaml` — real logic, no stubs, matches spec'd interface (`run_task`, `run_suite`) exactly.
+  - **Gate 2** (independent tests): wrote `tests/test_eval_harness.py` myself (6 tests, mocked `process_command`, tested against the ORIGINAL SPEC not Codex's implementation) — all 6 passed, including 3 failure-mode probes Codex's own demo never exercised.
+  - **Gate 3** (coverage): `eval/harness.py` 100% covered by the independent tests.
+  - **Gate 4** (runtime artifact): re-ran the harness LIVE myself (`python -m eval.run_eval --task-id conv-hello --task-id conv-hi --task-id conv-name --task-id deny-format --task-id deny-system32`) — independently reproduced 5/5 pass with real pipeline traces (privacy router routing, an actual Groq 401 correctly falling back to local). Not a rerun of Codex's file — a fresh execution against the live system.
+  - **Gate 5** (regression): full suite 253 passed (247 + 6 new), 0 failed, 6 skipped.
+- Merged `feat/p1-5-task-success-harness` → `main` (commit `3a42b83`), tagged `p1-5-done`.
+- **Found in passing (not a P1-5 defect):** GROQ_API_KEY is invalid (401). Logged above under Current State; doesn't block anything since privacy router fallback works, but worth rotating before it's forgotten.
+- **Next action for next session:** spec and dispatch P1-3 (OpenTelemetry tracing, CODEX) — independent of everything else in Phase 1, safe to run in parallel with P1-1/P1-2/P1-4 whenever those get picked up.
 
 ### 2026-07-10 — Session 1 (Claude, planning)
 - Reunified repo verified (247 tests, boot, E2E). Committed baseline `4c7af25`.
