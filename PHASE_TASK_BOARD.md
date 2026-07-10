@@ -32,10 +32,10 @@
 
 | ID | Task | Owner | Independent tests by | Evidence artifact (Gate 4) |
 |----|------|-------|---------------------|----------------------------|
-| P1-1 | Observe-act wrapper: `execute_pipeline_observed()` adds before/after snapshot diff + per-step postcondition checks | CLAUDE | CLAUDE (self, logged deviation — see STATE.md) | **DONE, FLAGGED** — 285 tests green, tag `p1-1-done`; Gate 2 was self-authored, recommend a second-party review pass |
+| P1-1 | Observe-act wrapper: `execute_pipeline_observed()` adds before/after snapshot diff + per-step postcondition checks | CLAUDE | CLAUDE (self, logged deviation) → **CODEX review dispatched** | **DONE, UNDER REVIEW** — 285 tests green, tag `p1-1-done`; Gate 2 review pack sent to Codex (`_context_packs/P1-1_review_gate2_secondparty.md`) |
 | P1-2 | Tiered postcondition observer (process→window→VLM) wiring `vision_module` in | ANTIGRAVITY | CLAUDE | **DONE** — `_evidence/P1-2/observation_demo.json` + Claude's independent live re-run, 5 gates green, tag `p1-2-done` |
 | P1-3 | OpenTelemetry tracing: span per task→step→tool call, export to file | CODEX | CLAUDE | **DONE** — `_evidence/P1-3/trace_demo.json` + Claude's independent live re-run, 5 gates green, tag `p1-3-done` |
-| P1-4 | Failure taxonomy + one bounded replan on postcondition mismatch | CLAUDE | CODEX | trace showing a failure→replan→success |
+| P1-4 | Failure taxonomy + one bounded replan on postcondition mismatch | CLAUDE | CLAUDE (self — same deviation as P1-1 expected, will flag) | IN PROGRESS |
 | P1-5 | Task-success harness: scripted N-task suite with pass/fail criteria | CODEX | CLAUDE | **DONE** — `_evidence/P1-5/report_demo.json` + `report_claude-verify.json`, 5 gates green, tag `p1-5-done` |
 
 **Phase 1 exit demo:** run a task that fails on first attempt (e.g. target window not focused), watch the loop detect it via vision, replan, succeed — with the full trace and screenshots saved to `_evidence/phase-1/`.
@@ -73,9 +73,9 @@
 - **P1-5** (task-success harness, CODEX): ✅ **DONE**
 - **P1-3** (tracing, CODEX): ✅ **DONE**
 - **P1-2** (tiered postcondition observer — ANTIGRAVITY): ✅ **DONE**
-- **P1-1** (observe-act wrapper — CLAUDE): ✅ **DONE, with a logged flag** — Gate 2 was self-authored (Claude as both implementer and tester), not independently authored by Codex/Antigravity. Recommend a follow-up second-party test review when convenient.
-- **P1-4** (failure taxonomy + bounded replan — CLAUDE): TODO — the natural next step; touches `execute_pipeline`'s internal loop directly this time (P1-1 deliberately left it untouched), so it needs its own careful isolated diff
+- **P1-1** (observe-act wrapper — CLAUDE): ✅ **DONE** — review dispatched to Codex to close the Gate-2 flag (in progress, running in parallel with P1-4)
+- **P1-4** (failure taxonomy + bounded replan — CLAUDE): IN PROGRESS — touches `execute_pipeline`'s internal loop directly (P1-1 deliberately left it untouched)
 - **Last green tag:** `p1-1-done` (285 tests)
 - **Blocked:** none
-- **Next action:** Claude implements P1-4 next. Optionally, dispatch a second-party review of P1-1 to Codex/Antigravity first if Pavan wants that flag cleared before moving on.
+- **Next action:** Claude continues P1-4. When Codex's P1-1 review branch returns, Claude verifies its findings (same 5-gate-style process, adapted for a review task per the context pack's §5).
 - **Next action:** Pavan dispatches P1-3 to Codex; on return, Claude runs the 5 gates (same process as P1-5).

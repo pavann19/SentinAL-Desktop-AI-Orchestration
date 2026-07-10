@@ -13,8 +13,10 @@
 - **Last green tag:** `p1-1-done` (commit `44bfea1`) — 285 tests passing (275 + 10 new)
 - **Current phase:** Phase 1 — Close the loop (IN PROGRESS: 4/5 tasks done)
 - **Completed:** P1-5, P1-3, P1-2, P1-1 — all merged to main. P1-1 has a LOGGED PROCESS DEVIATION (see below) — flag for optional second-party review before Phase 1 is declared fully closed.
-- **Active task:** none — next up is P1-4 (failure taxonomy + bounded replan), CLAUDE's own task, natural follow-on to P1-1
-- **Outstanding flag:** P1-1's Gate 2 (independent tests) was self-authored by Claude, not by a second party (Codex/Antigravity), because the task was never delegated and Claude cannot synchronously dispatch another agent mid-session. Tests were written adversarially against the design spec and the full 275-test independent-party suite passed as a regression backstop, but this does not fully satisfy the letter of VERIFICATION_PROTOCOL.md Gate 2. Recommend: at a natural pause, have Codex or Antigravity read `agentic_core/executor.py`'s `execute_pipeline_observed` function + its docstring spec and write a fresh adversarial test pass against it, independent of `tests/test_executor_observed.py`.
+- **Active tasks (parallel):**
+  1. P1-1 second-party review — context pack WRITTEN (`_context_packs/P1-1_review_gate2_secondparty.md`), dispatched to CODEX, awaiting return
+  2. P1-4 (failure taxonomy + bounded replan) — CLAUDE's own task, IN PROGRESS, starting now
+- **Outstanding flag (being addressed):** P1-1's Gate 2 was self-authored by Claude (logged deviation — see Session 6 entry below). A review context pack has now been dispatched to Codex to independently adversarial-test `execute_pipeline_observed`. When Codex returns, Claude verifies its findings the same way as any other returned work (read the diff, confirm any reported bugs are real, decide on fixes if needed).
 - **Blocked:** none
 - **Known issue (not a harness bug, a repo finding):** GROQ_API_KEY in `.env` returns 401 Invalid API Key during live runs; privacy router correctly falls back to local LLM. Rotate the key per MERGE_LOG.md's standing recommendation; until then, cloud-routed tasks silently run local (slower, still correct).
 
@@ -47,6 +49,12 @@ Claude = prompt-author + verifier (the two ends). Pavan = transport layer (the m
 ---
 
 ## Session Log (newest first — append every session)
+
+### 2026-07-10 — Session 7 (Claude: dispatch P1-1 review to Codex, start P1-4)
+- Wrote `_context_packs/P1-1_review_gate2_secondparty.md` — a REVIEW task (not new feature work), explicitly framed as closing the Gate-2 gap logged in Session 6. Told Codex to read the `execute_pipeline_observed` docstring/spec FIRST and form its own opinion before reading Claude's existing tests (`tests/test_executor_observed.py`) — reading Claude's tests first would anchor Codex to the same blind spots.
+- Gave Codex a concrete adversarial checklist grounded in real risk, not generic fuzzing: malformed `expected_state` (non-dict), non-dict entries in `validated_steps`, `cancel_event` edge cases, and — flagged as the highest-value check — whether an exception from `observe_postcondition()` (called AFTER `execute_pipeline()` already ran and possibly mutated real system state) would propagate up and silently lose the underlying pipeline's real result. Told Codex explicitly: if it finds a genuine bug, flag it, do not fix it — Claude decides fixes for security-critical code.
+- Dispatched (Pavan approved and relayed). Now starting P1-4 in parallel while that's out.
+- **Next action for next session:** when Codex's review branch returns, Claude verifies its claims (re-run any new tests, confirm any reported bug is real, decide whether/how to fix). Meanwhile P1-4 work below.
 
 ### 2026-07-10 — Session 6, continued (Claude implements P1-1: observe-act wrapper)
 - Read the full `execute_pipeline()` function first (706 lines) before touching anything — 15+ intent branches, 3-attempt retry loop with LLM self-healing for failed shell commands, shell injection guard (`_sanitize_shell_cmd`), sandbox validation (`validate_sandbox`), an established `str` return contract consumed by `api_wrapper.py` and dozens of existing tests.
