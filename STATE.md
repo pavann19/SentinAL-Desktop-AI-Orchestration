@@ -10,11 +10,10 @@
 
 - **Repo:** `D:\college\Major Project\SentinAL-v9-reunited` (git, branch `main`)
 - **Baseline commit:** `4c7af25` — 247 tests passing, server boots, E2E command verified
-- **Last green tag:** `p1-3-done` (commit `b6ff7ce`) — 258 tests passing (253 + 5 new)
-- **Current phase:** Phase 1 — Close the loop (IN PROGRESS: 2/5 tasks done)
-- **Completed:** P1-5 (task-success harness), P1-3 (OpenTelemetry tracing) — ALL 5 GATES GREEN each, both merged to main
-- **Active task:** P1-2 (tiered postcondition observer) — context pack WRITTEN (`_context_packs/P1-2_vision_verifier_wiring.md`), awaiting dispatch to ANTIGRAVITY
-- **Sequencing decision (Pavan's call):** P1-2 (Antigravity) goes FIRST, then Claude's P1-1 — not true parallel. Reason: P1-1's observe-act loop needs `observe_postcondition()` as a real dependency to call; building P1-1 first would mean stubbing that interface and rewiring later. Sequential-but-fast beats parallel-then-reconcile here.
+- **Last green tag:** `p1-2-done` (commit `635d87a`) — 275 tests passing (258 + 17 new)
+- **Current phase:** Phase 1 — Close the loop (IN PROGRESS: 3/5 tasks done)
+- **Completed:** P1-5 (task-success harness), P1-3 (OpenTelemetry tracing), P1-2 (tiered postcondition observer) — ALL 5 GATES GREEN each, all merged to main
+- **Active task:** P1-1 (observe-act loop rework) — CLAUDE's own task, starting now, building directly on `capabilities/system/postcondition_observer.py`
 - **Blocked:** none
 - **Known issue (not a harness bug, a repo finding):** GROQ_API_KEY in `.env` returns 401 Invalid API Key during live runs; privacy router correctly falls back to local LLM. Rotate the key per MERGE_LOG.md's standing recommendation; until then, cloud-routed tasks silently run local (slower, still correct).
 
@@ -47,6 +46,18 @@ Claude = prompt-author + verifier (the two ends). Pavan = transport layer (the m
 ---
 
 ## Session Log (newest first — append every session)
+
+### 2026-07-10 — Session 6 (Claude, verification of Antigravity's P1-2, then starting P1-1)
+- Antigravity returned branch `feat/p1-2-postcondition-observer` with exactly the 2 files spec'd (`capabilities/system/postcondition_observer.py` + its own evidence file) — no existing-file edits, matching the isolation requirement.
+- **Found:** an untracked `tests/scratch_demo.py` — Antigravity's own script used to generate its evidence JSON, left in the repo but never committed. Harmless (not part of the deliverable, wasn't merged), but wrong location (implies a real test). Deleted before merge; noted in the merge commit rather than silently dropped.
+- Ran all 5 gates:
+  - **Gate 1** (diff-real): read `postcondition_observer.py` in full — real tiered logic (process → window → vlm, stopping at first present key, exactly as spec'd), module-qualified imports (`import capabilities.system.process_manager as process_manager`, etc.) exactly as instructed for mockability, every tier wrapped in its own try/except returning a fail-safe `Observation` rather than raising.
+  - **Gate 2** (independent tests): wrote `tests/test_postcondition_observer.py` (17 tests) mocking all three underlying modules — verified/not-verified paths per tier, exception-safety per tier, the priority-order guarantee (process beats window beats vlm when multiple keys given — confirmed via a call-tracking dict showing window/vlm were never even invoked), empty/None/unrecognized-key edge cases, snapshot+diff logic. All 17 passed on first run (no rework needed this time, unlike P1-3's monkeypatch lesson — which is exactly why I'd told Antigravity to use module-qualified calls).
+  - **Gate 3** (coverage): 97% on the new module — only the outer defensive catch-all (lines 79-80) uncovered, which is unreachable in practice since inner try/excepts already catch everything specific.
+  - **Gate 4** (runtime artifact): re-ran `observe_postcondition` LIVE myself via a fresh Python one-liner (not Antigravity's committed JSON) — got a REAL process hit (`explorer.exe` found at actual PID 13444 on this machine), a real negative window-check, a real empty-input case, and a real snapshot diff. Independently reproduced the shape of Antigravity's evidence with fresh, unfabricated data.
+  - **Gate 5** (regression): full suite **275 passed** (258 + 17), 0 failed, 6 skipped.
+- Merged `feat/p1-2-postcondition-observer` → `main` (`635d87a`), tagged `p1-2-done`.
+- **Now starting P1-1** (observe-act loop rework) directly — this is Claude's own task per the original role split (touches `agentic_core/executor.py`, security-critical, not delegated). Building on top of the real `postcondition_observer.py` interface that just landed, as planned in Session 5.
 
 ### 2026-07-10 — Session 5 (Claude, spec'd P1-2 — sequenced before P1-1 per Pavan's decision)
 - Pavan chose: P1-2 (Antigravity) first, then Claude's P1-1 — sequential, not parallel, so P1-1 is built against a real interface instead of a stub.

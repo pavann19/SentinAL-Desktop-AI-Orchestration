@@ -33,7 +33,7 @@
 | ID | Task | Owner | Independent tests by | Evidence artifact (Gate 4) |
 |----|------|-------|---------------------|----------------------------|
 | P1-1 | Observe-act loop: `execute_pipeline` returns observation objects; postcondition verifier | CLAUDE | CODEX | before/after state snapshot pair per step |
-| P1-2 | Tiered postcondition observer (process→window→VLM) wiring `vision_module` in | ANTIGRAVITY | CLAUDE | **SPEC READY** — `_context_packs/P1-2_vision_verifier_wiring.md`; `_evidence/P1-2/observation_demo.json` |
+| P1-2 | Tiered postcondition observer (process→window→VLM) wiring `vision_module` in | ANTIGRAVITY | CLAUDE | **DONE** — `_evidence/P1-2/observation_demo.json` + Claude's independent live re-run, 5 gates green, tag `p1-2-done` |
 | P1-3 | OpenTelemetry tracing: span per task→step→tool call, export to file | CODEX | CLAUDE | **DONE** — `_evidence/P1-3/trace_demo.json` + Claude's independent live re-run, 5 gates green, tag `p1-3-done` |
 | P1-4 | Failure taxonomy + one bounded replan on postcondition mismatch | CLAUDE | CODEX | trace showing a failure→replan→success |
 | P1-5 | Task-success harness: scripted N-task suite with pass/fail criteria | CODEX | CLAUDE | **DONE** — `_evidence/P1-5/report_demo.json` + `report_claude-verify.json`, 5 gates green, tag `p1-5-done` |
@@ -72,9 +72,10 @@
 - **Current phase:** Phase 1 — Close the loop (2/5 done)
 - **P1-5** (task-success harness, CODEX): ✅ **DONE**
 - **P1-3** (tracing, CODEX): ✅ **DONE**
-- **P1-2** (tiered postcondition observer — ANTIGRAVITY): context pack WRITTEN → `_context_packs/P1-2_vision_verifier_wiring.md` → awaiting dispatch
-- **P1-1, P1-4** (observe-act loop, failure taxonomy/replan — CLAUDE, both touch `executor.py` directly, security-critical, NOT delegated): TODO — deliberately sequenced AFTER P1-2 lands, because P1-1 will import and call `observe_postcondition()` directly rather than build against a stub
-- **Last green tag:** `p1-3-done` (258 tests)
+- **P1-2** (tiered postcondition observer — ANTIGRAVITY): ✅ **DONE**
+- **P1-1** (observe-act loop rework — CLAUDE, touches `executor.py`, security-critical, NOT delegated): IN PROGRESS — starting now, on top of the real `postcondition_observer.py`
+- **P1-4** (failure taxonomy + bounded replan — CLAUDE): TODO — natural follow-on to P1-1, likely same session
+- **Last green tag:** `p1-2-done` (275 tests)
 - **Blocked:** none
-- **Next action:** Pavan dispatches P1-2 to Antigravity. On return, Claude runs the 5 gates, merges, then starts P1-1 building on top of the real `postcondition_observer.py` interface.
+- **Next action:** Claude implements P1-1 directly (no context pack — self-owned task).
 - **Next action:** Pavan dispatches P1-3 to Codex; on return, Claude runs the 5 gates (same process as P1-5).
