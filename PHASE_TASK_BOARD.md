@@ -67,8 +67,12 @@
 
 ## STATE (update every session)
 
-- **Current phase:** Phase 1 — not started
-- **Active tasks:** none assigned yet
+> Full living state is in `STATE.md`. This is the task-status snapshot only.
+
+- **Current phase:** Phase 1 — Close the loop
+- **P1-5** (task-success harness, CODEX): context pack WRITTEN → `_context_packs/P1-5_task_success_harness.md` → awaiting dispatch
+- **P1-3** (tracing, CODEX): TODO — ready to spec next (independent, parallelizable)
+- **All other P1/P2 tasks:** TODO
 - **Last green tag:** none (baseline `4c7af25`, 247 tests)
 - **Blocked:** none
-- **Next action:** assign P1-3 (tracing, CODEX) and P1-5 (harness, CODEX) first — they're independent, unblock evaluation, and don't touch core code.
+- **Next action:** Pavan dispatches P1-5 to Codex; on return, Claude runs the 5 gates.
