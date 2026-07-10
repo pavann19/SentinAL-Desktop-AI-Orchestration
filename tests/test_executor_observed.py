@@ -38,7 +38,11 @@ class _FakeCancelEvent:
 def test_wrapper_returns_dict_with_required_keys(monkeypatch):
     monkeypatch.setattr(executor, "execute_pipeline", lambda steps, cancel_event=None: "Pipeline successfully completed (1 steps).")
     result = executor.execute_pipeline_observed([{"intent": "ConversationalIntent"}])
-    assert set(result.keys()) == {"result", "snapshot_diff", "step_observations"}
+    # P1-4 added failure_category/attempts/replanned to the contract (additive).
+    assert set(result.keys()) == {
+        "result", "snapshot_diff", "step_observations",
+        "failure_category", "attempts", "replanned",
+    }
 
 
 def test_wrapper_result_matches_underlying_execute_pipeline_exactly(monkeypatch):

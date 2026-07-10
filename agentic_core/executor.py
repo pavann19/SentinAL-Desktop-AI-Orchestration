@@ -703,46 +703,51 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
     return f"Pipeline successfully completed ({num_steps} steps)."
 
 
-def execute_pipeline_observed(validated_steps: list, cancel_event=None) -> dict:
+# ── P1-4: Failure taxonomy + bounded replan on postcondition mismatch ────────
+# Fix P1-4.1: whole-pipeline replan cap, configurable like STEP_DELAY/GUI_FOCUS_WAIT.
+MAX_REPLANS = int(os.getenv("EXECUTOR_MAX_REPLANS", "1"))
+
+FAILURE_CATEGORY_SUCCESS = "success"
+FAILURE_CATEGORY_PIPELINE_ERROR = "pipeline_error"
+FAILURE_CATEGORY_CANCELLED = "cancelled"
+FAILURE_CATEGORY_POSTCONDITION_MISMATCH = "postcondition_mismatch"
+
+_CANCELLATION_MESSAGE = "Mission interrupted by system."  # exact string execute_pipeline() returns on cancel
+
+
+def _classify_result(result: str, step_observations: list) -> str:
     """
-    P1-1 (Agentic OS roadmap, Phase 1 — close the loop): observe-act wrapper
-    around execute_pipeline().
+    Failure taxonomy for a completed execute_pipeline() run.
+    Order matters: an ERROR/cancellation result always wins over a postcondition
+    mismatch, since those are execute_pipeline()'s own authoritative signals —
+    a postcondition check on a run that already failed outright is meaningless.
 
-    Design note: execute_pipeline() is deliberately left UNTOUCHED. It is
-    600+ lines of security-critical logic (shell sanitization, 3-attempt
-    retry loop, LLM self-healing, sandbox validation) with an established
-    `str` return contract that capabilities/system/api_wrapper.py and the
-    existing test suite (tests/test_pipeline_integration.py,
-    tests/test_api_wrapper.py) depend on byte-for-byte. Rewriting it in
-    place would be exactly the kind of invasive, hard-to-verify change this
-    project's verification protocol (VERIFICATION_PROTOCOL.md) exists to
-    prevent — so this is a pure wrapper, not a modification.
-
-    What this DOES give the system: a whole-pipeline before/after process
-    snapshot diff (via capabilities.system.postcondition_observer, landed
-    in P1-2) and, for any step that opts in via an "expected_state" key,
-    an explicit postcondition check. Steps do not currently carry
-    "expected_state" (that is future processor/validator work — Phase 2
-    of the roadmap) so today this mostly exercises the snapshot-diff path;
-    the per-step Observation path is ready for when that key exists.
-
-    KNOWN LIMITATION (logged honestly, not hidden): because
-    execute_pipeline() runs its own internal loop and returns only a
-    final string, this wrapper cannot observe *individual* step outcomes
-    mid-pipeline or trigger a bounded replan on mismatch — only whole-run
-    before/after state. True per-step observation with replan is P1-4's
-    job and requires carefully instrumenting the existing loop (the
-    inject_vars/retry/blackboard logic) rather than wrapping around it.
-    Deferred deliberately rather than rushed into this same change.
-
-    Returns:
-        {
-            "result": str,                 # exactly what execute_pipeline() returned
-            "snapshot_diff": dict,          # from postcondition_observer.diff_snapshots
-            "step_observations": list[dict],# [{"step_index": int, "observation": Observation}]
-                                             # for any step carrying "expected_state"
-        }
+    Fix P1-4.4 (from Codex's continued Gate-2 review — same review task as
+    P1-4.2/P1-4.3): a malformed "expected_state" (e.g. a bare string or bool
+    instead of a dict) makes observe_postcondition() fall through to
+    tier_used="none", verified=False — correctly not a crash, but naively
+    counting THAT as a postcondition mismatch would waste a full bounded
+    replan on garbage input that was never actually checkable in the first
+    place. Only an observation where something concrete WAS checked
+    (tier_used in {"process", "window", "vlm"}) and came back unverified
+    counts as a genuine mismatch worth replanning over.
     """
+    if result == _CANCELLATION_MESSAGE:
+        return FAILURE_CATEGORY_CANCELLED
+    if isinstance(result, str) and result.startswith("ERROR"):
+        return FAILURE_CATEGORY_PIPELINE_ERROR
+    if any(
+        (not entry["observation"].verified and entry["observation"].tier_used != "none")
+        for entry in step_observations
+    ):
+        return FAILURE_CATEGORY_POSTCONDITION_MISMATCH
+    return FAILURE_CATEGORY_SUCCESS
+
+
+def _run_and_observe(validated_steps: list, cancel_event) -> tuple:
+    """One full execute_pipeline() call + its before/after snapshot diff and
+    per-step postcondition observations. Extracted so both the initial run
+    and any bounded replan attempt share identical logic."""
     from capabilities.system.postcondition_observer import (
         capture_state_snapshot,
         diff_snapshots,
@@ -751,19 +756,119 @@ def execute_pipeline_observed(validated_steps: list, cancel_event=None) -> dict:
 
     before = capture_state_snapshot()
     result = execute_pipeline(validated_steps, cancel_event=cancel_event)
-    after = capture_state_snapshot()
+
+    # Fix P1-4.3 (from Codex's independent Gate-2 review of P1-1 —
+    # _context_packs/P1-1_review_gate2_secondparty.md /
+    # tests/test_executor_observed_review.py): capture_state_snapshot()'s
+    # "after" call and diff_snapshots() both run AFTER execute_pipeline()
+    # has already completed (and possibly mutated real system state, e.g.
+    # deleted a file or launched an app). If either raised, the previous
+    # implementation propagated the exception straight out of this function
+    # and lost that already-completed result entirely — a real, confirmed
+    # gap, not a hypothetical one. Same principle as the observe_postcondition
+    # guard above: never let a downstream observability failure erase real
+    # work that already happened.
+    try:
+        after = capture_state_snapshot()
+        snapshot_diff = diff_snapshots(before, after)
+    except Exception as exc:
+        _logger.warning(f"[P1-4] snapshot/diff computation raised unexpectedly: {exc}")
+        snapshot_diff = {"error": str(exc)}
 
     step_observations = []
     for index, step in enumerate(validated_steps):
         expected_state = step.get("expected_state") if isinstance(step, dict) else None
         if expected_state:
-            observation = observe_postcondition(expected_state)
+            # Fix P1-4.2 (pre-emptive hardening): postcondition_observer.py's own
+            # spec guarantees observe_postcondition() never raises, but this is a
+            # cheap belt-and-suspenders guard anyway — if that guarantee is ever
+            # violated, we must not lose the execute_pipeline() result that
+            # already ran and may have mutated real system state.
+            try:
+                observation = observe_postcondition(expected_state)
+            except Exception as exc:
+                from capabilities.system.postcondition_observer import Observation
+                observation = Observation(
+                    verified=False, tier_used="none", confidence=0.0,
+                    latency_ms=0.0, detail=f"observe_postcondition raised unexpectedly: {exc}",
+                )
+                _logger.warning(f"[P1-4] observe_postcondition raised for step {index}: {exc}")
             step_observations.append({"step_index": index, "observation": observation})
+
+    return result, snapshot_diff, step_observations
+
+
+def execute_pipeline_observed(validated_steps: list, cancel_event=None) -> dict:
+    """
+    P1-1 (Agentic OS roadmap, Phase 1 — close the loop): observe-act wrapper
+    around execute_pipeline(), extended in P1-4 with a failure taxonomy and
+    one bounded whole-pipeline replan on postcondition mismatch.
+
+    Design note: execute_pipeline() is deliberately left UNTOUCHED, in both
+    P1-1 and this P1-4 extension. It is 600+ lines of security-critical logic
+    (shell sanitization, its OWN 3-attempt per-step retry loop, LLM
+    self-healing, sandbox validation) with an established `str` return
+    contract that capabilities/system/api_wrapper.py and the existing test
+    suite depend on byte-for-byte. Rewriting it in place would be exactly the
+    kind of invasive, hard-to-verify change this project's verification
+    protocol (VERIFICATION_PROTOCOL.md) exists to prevent.
+
+    Why a WHOLE-PIPELINE replan, not per-step: execute_pipeline() already
+    retries individual steps up to 3 times on EXCEPTION internally. What it
+    cannot detect is a step that runs without raising, reports success, but
+    did not actually achieve the intended effect (e.g. "launch notepad"
+    returns "I have launched notepad." but no notepad.exe process exists).
+    That is a fundamentally different failure mode — a silent one — and can
+    only be caught by checking real system state AFTER the run, which is
+    exactly what postcondition_observer.py (P1-2) does. Re-running the whole
+    pipeline once is the safe, bounded response: single retry, capped by
+    MAX_REPLANS (env: EXECUTOR_MAX_REPLANS, default 1), never retried on
+    "cancelled" or "pipeline_error" categories (those are execute_pipeline's
+    own authoritative failure signals, already exhausted its own internal
+    retries, and blindly re-running a whole pipeline that errored partway
+    through risks duplicate side effects like a second file deletion).
+
+    IMPORTANT — currently a dormant, forward-compatible mechanism: no step
+    anywhere in the codebase sets "expected_state" today (that is Phase 2
+    processor/validator work), so step_observations is always [] and this
+    replan path never actually triggers in production yet. It activates the
+    moment Phase 2 wires expected_state onto steps. This mirrors P1-1's own
+    forward-compatible design — shipping the mechanism now, safely inert,
+    rather than coupling this change to unrelated Phase 2 work.
+
+    Returns:
+        {
+            "result": str,                    # execute_pipeline()'s FINAL return value
+                                                # (post-replan, if a replan happened)
+            "snapshot_diff": dict,             # from the run that produced "result"
+            "step_observations": list[dict],   # from the run that produced "result"
+            "failure_category": str,           # one of the FAILURE_CATEGORY_* constants
+            "attempts": int,                   # 1 = no replan happened, 2 = one replan happened
+            "replanned": bool,
+        }
+    """
+    result, snapshot_diff, step_observations = _run_and_observe(validated_steps, cancel_event)
+    category = _classify_result(result, step_observations)
+    attempts = 1
+    replanned = False
+
+    while category == FAILURE_CATEGORY_POSTCONDITION_MISMATCH and attempts <= MAX_REPLANS:
+        _logger.info(
+            f"[P1-4] Postcondition mismatch detected — bounded replan "
+            f"attempt {attempts}/{MAX_REPLANS}."
+        )
+        result, snapshot_diff, step_observations = _run_and_observe(validated_steps, cancel_event)
+        category = _classify_result(result, step_observations)
+        attempts += 1
+        replanned = True
 
     return {
         "result": result,
-        "snapshot_diff": diff_snapshots(before, after),
+        "snapshot_diff": snapshot_diff,
         "step_observations": step_observations,
+        "failure_category": category,
+        "attempts": attempts,
+        "replanned": replanned,
     }
 
 
