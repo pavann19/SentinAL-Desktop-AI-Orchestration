@@ -7,6 +7,8 @@ import asyncio
 import json
 from typing import Dict, Any
 
+from agentic_core.tracing import traced_step
+
 
 async def process_command(prompt: str) -> Dict[str, Any]:
     """
@@ -27,36 +29,40 @@ async def process_command(prompt: str) -> Dict[str, Any]:
     }
 
     try:
-        # ── STAGE 1: INTENT EXTRACTION ──
-        steps = extract_intent(prompt)
-        output["steps"] = steps
+        with traced_step("pipeline.process_command", prompt_len=len(prompt)):
+            # ── STAGE 1: INTENT EXTRACTION ──
+            with traced_step("extract_intent", prompt_len=len(prompt)):
+                steps = extract_intent(prompt)
+            output["steps"] = steps
 
-        if any(s.get("intent") == "UnknownIntent" for s in steps):
-            output["validation"] = "Error"
-            output["execution"] = "Error"
-            output["response"] = steps[0].get("target", "Extraction failed.")
-            return output
+            if any(s.get("intent") == "UnknownIntent" for s in steps):
+                output["validation"] = "Error"
+                output["execution"] = "Error"
+                output["response"] = steps[0].get("target", "Extraction failed.")
+                return output
 
-        # ── STAGE 2: VALIDATION ──
-        is_valid, validation_msg, _requires_confirm = validate_steps(steps)
+            # ── STAGE 2: VALIDATION ──
+            with traced_step("validate_steps", step_count=len(steps)):
+                is_valid, validation_msg, _requires_confirm = validate_steps(steps)
 
-        if not is_valid:
-            output["validation"] = "Denied"
-            output["execution"] = "Blocked"
-            output["response"] = validation_msg
-            return output
+            if not is_valid:
+                output["validation"] = "Denied"
+                output["execution"] = "Blocked"
+                output["response"] = validation_msg
+                return output
 
-        output["validation"] = "Approved"
+            output["validation"] = "Approved"
 
-        # ── STAGE 3: EXECUTION ── (run in thread pool — Fix 3.12)
-        execution_result = await asyncio.to_thread(execute_pipeline, steps)
+            # ── STAGE 3: EXECUTION ── (run in thread pool — Fix 3.12)
+            with traced_step("execute_pipeline", step_count=len(steps)):
+                execution_result = await asyncio.to_thread(execute_pipeline, steps)
 
-        if isinstance(execution_result, str) and execution_result.startswith("ERROR"):
-            output["execution"] = "Failed"
-            output["response"] = execution_result
-        else:
-            output["execution"] = "Success"
-            output["response"] = execution_result
+            if isinstance(execution_result, str) and execution_result.startswith("ERROR"):
+                output["execution"] = "Failed"
+                output["response"] = execution_result
+            else:
+                output["execution"] = "Success"
+                output["response"] = execution_result
 
     except Exception as e:
         output["validation"] = "Error"
