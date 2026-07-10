@@ -97,13 +97,10 @@ def test_observed_wrapper_handles_empty_step_list(monkeypatch):
     assert observed["step_observations"] == []
 
 
-@pytest.mark.xfail(
-    reason=(
-        "BUG FOUND, NOT FIXED: if observe_postcondition raises after "
-        "execute_pipeline returns, execute_pipeline_observed propagates and "
-        "loses the completed executor result."
-    ),
-)
+# FIXED by Claude in the P1-4 commit that followed this review (see
+# agentic_core/executor.py "Fix P1-4.2" comment) — observe_postcondition()
+# is now wrapped so a raised exception can no longer lose the already-
+# completed execute_pipeline() result. Codex's find; Claude's fix.
 def test_observed_wrapper_preserves_result_if_observer_raises(monkeypatch):
     monkeypatch.setattr(executor, "execute_pipeline", lambda steps, cancel_event=None: "done")
 
@@ -122,13 +119,11 @@ def test_observed_wrapper_preserves_result_if_observer_raises(monkeypatch):
     assert observed["step_observations"][0]["observation"].verified is False
 
 
-@pytest.mark.xfail(
-    reason=(
-        "BUG FOUND, NOT FIXED: if diff_snapshots raises after execute_pipeline "
-        "returns, execute_pipeline_observed propagates and loses the completed "
-        "executor result."
-    ),
-)
+# FIXED by Claude in the P1-4 commit that followed this review (see
+# agentic_core/executor.py "Fix P1-4.3" comment) — capture_state_snapshot()'s
+# "after" call and diff_snapshots() are now wrapped so a raised exception
+# can no longer lose the already-completed execute_pipeline() result.
+# Codex's find; Claude's fix.
 def test_observed_wrapper_preserves_result_if_snapshot_diff_raises(monkeypatch):
     monkeypatch.setattr(executor, "execute_pipeline", lambda steps, cancel_event=None: "done")
 
@@ -143,3 +138,22 @@ def test_observed_wrapper_preserves_result_if_snapshot_diff_raises(monkeypatch):
 
     assert observed["result"] == "done"
     assert observed["snapshot_diff"]["error"] == "diff regression"
+
+
+# FIXED by Claude immediately after this finding (see agentic_core/executor.py
+# "Fix P1-4.4" comment) — _classify_result() now only treats an observation as
+# a genuine postcondition mismatch when something concrete was actually
+# checkable (tier_used != "none"). A malformed expected_state correctly falls
+# through to tier_used="none" and no longer wastes a replan. Codex's find
+# (3rd in this review, found after the first two were already merged);
+# Claude's fix.
+@pytest.mark.parametrize("expected_state", ["bad-shape", True])
+def test_observed_wrapper_does_not_waste_replan_on_malformed_expected_state(monkeypatch, expected_state):
+    monkeypatch.setattr(executor, "execute_pipeline", lambda steps, cancel_event=None: "ok")
+
+    observed = executor.execute_pipeline_observed(
+        [{"intent": "ReviewIntent", "expected_state": expected_state}]
+    )
+
+    assert observed["replanned"] is False
+    assert observed["attempts"] == 1
