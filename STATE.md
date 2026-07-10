@@ -13,7 +13,7 @@
 - **Last green tag:** `p1-5-done` (commit `3a42b83`) — 253 tests passing (247 baseline + 6 new)
 - **Current phase:** Phase 1 — Close the loop (IN PROGRESS: 1/5 tasks done)
 - **Completed:** P1-5 (task-success harness) — ALL 5 GATES GREEN, merged to main
-- **Active task:** none dispatched yet — P1-3 (tracing) is next up, ready to spec
+- **Active task:** P1-3 (OpenTelemetry tracing) — context pack WRITTEN (`_context_packs/P1-3_tracing.md`), awaiting dispatch to CODEX
 - **Blocked:** none
 - **Known issue (not a harness bug, a repo finding):** GROQ_API_KEY in `.env` returns 401 Invalid API Key during live runs; privacy router correctly falls back to local LLM. Rotate the key per MERGE_LOG.md's standing recommendation; until then, cloud-routed tasks silently run local (slower, still correct).
 
@@ -46,6 +46,11 @@ Claude = prompt-author + verifier (the two ends). Pavan = transport layer (the m
 ---
 
 ## Session Log (newest first — append every session)
+
+### 2026-07-10 — Session 3 (Claude, spec'd P1-3)
+- Verified (before writing the spec, not assumed): `opentelemetry` is NOT installed yet in venv/requirements; confirmed the 3 exact call sites in `api_wrapper.py::process_command` (extract_intent → validate_steps → execute_pipeline); confirmed `agentic_core/telemetry.py` is misleadingly named — it's actually a flat JSON logger (`log_event`), not a tracer, and must not be touched/confused with the new tracing module.
+- Wrote `_context_packs/P1-3_tracing.md`. Key constraints: new file `agentic_core/tracing.py` is pure-additive; the only existing-file edit allowed is wrapping (not changing) the 3 call sites in `api_wrapper.py`, plus a `requirements.txt` addition. Codex is explicitly told to run `tests/test_api_wrapper.py` + `tests/test_pipeline_integration.py` itself before handback, and explicitly told Claude will re-verify live, not trust its committed file (same as P1-5).
+- **Next action for next session:** Pavan dispatches P1-3 to Codex. On return, Claude runs the 5 gates exactly as done for P1-5 — read diff, write independent tests, check coverage, re-run pipeline live for a fresh trace, run full regression (baseline to beat: 253 passed).
 
 ### 2026-07-10 — Session 2 (Claude, verification of Codex's P1-5)
 - Codex returned branch `feat/p1-5-task-success-harness` with 4 files exactly as spec'd (no scope creep) + its own `_evidence/P1-5/report_demo.json` claiming 5/5 pass.

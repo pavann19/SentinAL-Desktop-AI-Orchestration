@@ -34,7 +34,7 @@
 |----|------|-------|---------------------|----------------------------|
 | P1-1 | Observe-act loop: `execute_pipeline` returns observation objects; postcondition verifier | CLAUDE | CODEX | before/after state snapshot pair per step |
 | P1-2 | Wire `vision_module.verify_screen_state` into the loop as a verifier | ANTIGRAVITY | CODEX | screenshot diff proving detection of a failed action |
-| P1-3 | OpenTelemetry tracing: span per task→step→tool call, export to file | CODEX | CLAUDE | exported span tree JSON for a 3-step task |
+| P1-3 | OpenTelemetry tracing: span per task→step→tool call, export to file | CODEX | CLAUDE | **SPEC READY** — `_context_packs/P1-3_tracing.md`; exported span tree JSON for a 3-step task |
 | P1-4 | Failure taxonomy + one bounded replan on postcondition mismatch | CLAUDE | CODEX | trace showing a failure→replan→success |
 | P1-5 | Task-success harness: scripted N-task suite with pass/fail criteria | CODEX | CLAUDE | **DONE** — `_evidence/P1-5/report_demo.json` + `report_claude-verify.json`, 5 gates green, tag `p1-5-done` |
 
@@ -71,8 +71,8 @@
 
 - **Current phase:** Phase 1 — Close the loop (1/5 done)
 - **P1-5** (task-success harness, CODEX): ✅ **DONE** — all 5 gates green, merged to main
-- **P1-3** (tracing, CODEX): TODO — ready to spec next (independent, parallelizable)
+- **P1-3** (tracing, CODEX): context pack WRITTEN → `_context_packs/P1-3_tracing.md` → awaiting dispatch
 - **All other P1/P2 tasks:** TODO
 - **Last green tag:** `p1-5-done` (253 tests)
 - **Blocked:** none
-- **Next action:** Claude to write context pack for P1-3.
+- **Next action:** Pavan dispatches P1-3 to Codex; on return, Claude runs the 5 gates (same process as P1-5).
