@@ -75,6 +75,19 @@
 - **Change:** Appended 11 ignore rules under a dated comment: `node_modules/`, `data/models/` (345MB TTS models), `data/capabilities.db`, `memory/*.db`, `.coverage`, `htmlcov/`, `sentinal-ui/{dist,build,release}/`, `_backups/`.
 - **Reason:** Keep large binaries, runtime DBs, and build output out of git. No original line was modified or removed — pure append.
 
+### Edit 2 — `agentic_core/router.py`
+- **Backup:** `_backups/agentic_core/router.py.orig` (pristine WS-C original, Apr 22 2026)
+- **Change:** `DictationIntent` phrase bank expanded from 7 → 25 anchor phrases (lines 174–182 in original). 18 phrases appended after the original 7; none of the original phrases were changed or removed. Dated comment added at the insertion point.
+- **Reason:** `tests/test_router.py::TestRouterPhraseBank::test_all_intents_have_25_phrases` enforces a minimum of 20 phrases per intent ("Fix 3.5" standard). `DictationIntent` was added to router.py on Apr 22 — one day after the test was written — with only 7 phrases, making it the single failing test (246 passed / 1 failed) after reunification. Data-only change; no logic touched.
+
+### Edit 3 — `agentic_core/router.py` (same backup as Edit 2)
+- **Backup:** `_backups/agentic_core/router.py.orig` (single pristine original covers Edits 2+3)
+- **Change:** Expanded the remaining six under-populated phrase banks from 7 → 20+ phrases each, all append-only with a dated comment at each insertion point: `AcademicResearchIntent`, `DataModelingIntent`, `SysUtilityIntent`, `SchedulerIntent`, `MediaControlIntent`, `WindowManagementIntent`.
+- **Reason:** Same failing test as Edit 2 — all six intents were added Apr 22, 2026 alongside their capability modules with only 7 seed phrases each, below the 20-phrase minimum the test suite enforces. Original phrases untouched.
+
+### Venv note (not a source edit)
+- Installed `pytest`, `pytest-asyncio`, `pytest-cov`, `anyio` into the **copied** venv (`venv/`) via pip — the runtime venv did not include test tooling. The OneDrive original venv was not modified.
+
 ---
 
 ## Verification record
