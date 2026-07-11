@@ -32,7 +32,26 @@ def validate_sandbox(target_path: str) -> bool:
         full_path_lower = full_path.lower()
         expanded_lower  = expanded_path.lower()
 
-        # 2. Block Windows system directories via path check
+        # 2a. Fix [bare-drive-root]: block any path that resolves to an entire
+        # drive root (e.g. "C:\", "D:\", "C:/"). Discovered 2026-07-11 via the
+        # expanded eval task suite: "format the C drive" was only failing to
+        # cause damage because the LLM extracted the literal string "c drive"
+        # (a benign nonexistent relative path), NOT because this function
+        # would have blocked a real drive-root path. Neither SENSITIVE_TARGETS
+        # nor SOFT_SENSITIVE_TARGETS contains a bare-drive pattern, so if the
+        # LLM ever extracts an actual root path verbatim, FileDeletionIntent's
+        # shutil.rmtree(full_path) would have nothing standing in its way.
+        # os.path.splitdrive returns ('C:', '') or ('C:', '\\') for a bare
+        # root — no third path component — which is the deterministic signal
+        # we check for, independent of what drive letter or slash style was used.
+        drive, remainder = os.path.splitdrive(full_path)
+        if drive and remainder in ("", "\\", "/"):
+            security_logger.warning(
+                f"SANDBOX BLOCK (DRIVE-ROOT): Denied operation on bare drive root: {full_path}"
+            )
+            return False
+
+        # 2b. Block Windows system directories via path check
         for system_dir in ["windows\\", "system32"]:
             if system_dir in full_path_lower:
                 security_logger.warning(

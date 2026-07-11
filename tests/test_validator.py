@@ -102,3 +102,42 @@ class TestValidateSandbox:
         # %TEMP% usually resolves to C:\Users\...\AppData\Local\Temp — not system32
         result = validate_sandbox("%TEMP%")
         assert result is True
+
+    # ── Bare drive-root protection (added 2026-07-11, see validator.py comment) ──
+
+    def test_bare_drive_root_backslash_blocked(self):
+        assert validate_sandbox("C:\\") is False
+
+    def test_bare_drive_root_forward_slash_blocked(self):
+        assert validate_sandbox("C:/") is False
+
+    def test_bare_drive_letter_without_separator_is_drive_relative_not_root(self):
+        """'D:' (no trailing slash/backslash) is a Windows drive-RELATIVE path —
+        it resolves against that drive's current working directory, not the
+        drive root itself (verified: os.path.realpath(os.path.normpath('D:'))
+        resolves to the process's own cwd on that drive). This is correct,
+        expected Windows path semantics, not a security gap — only an
+        explicit separator ('C:\\', 'C:/') unambiguously means "the root"."""
+        result = validate_sandbox("D:")
+        resolved = os.path.realpath(os.path.normpath(os.path.expandvars("D:")))
+        drive, remainder = os.path.splitdrive(resolved)
+        expected = not (drive and remainder in ("", "\\", "/"))
+        assert result is expected
+
+    def test_bare_drive_root_blocked_for_any_letter(self):
+        for letter in ("C", "D", "E", "Z"):
+            assert validate_sandbox(f"{letter}:\\") is False, f"{letter}:\\ should be blocked"
+
+    def test_nested_path_on_drive_still_allowed(self):
+        """A real file deep on a drive must NOT be caught by the drive-root
+        check — only the bare root itself is blocked."""
+        assert validate_sandbox("C:\\Users\\test\\Downloads\\myfile.txt") is True
+
+    def test_literal_nonpath_string_not_treated_as_drive_root(self):
+        """Regression guard for the original finding: a non-path string like
+        'c drive' (no colon) must not be misidentified as a drive root — it
+        has no drive component at all, so splitdrive returns ('', ...) and
+        this check does not apply to it (it is allowed through on this check,
+        same as before; it was never destructive because it does not resolve
+        to a real existing path)."""
+        assert validate_sandbox("c drive") is True
