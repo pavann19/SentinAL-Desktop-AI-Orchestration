@@ -339,11 +339,15 @@ def extract_intent(prompt: str) -> list:
             if confidence < 0.35 and matched_intent == "UnknownIntent":
                 print(f"[AUDIT] Confidence too low for '{step_query}'. Engaging strict LLM fallback.")
                 llm_fb = _get_routing_llm("Confidence Fallback")
-                fb_prompt = f"Categorize this short command: '{step_query}'. Which exact intent from this allowed list does it match? {ALLOWLIST_INTENTS}. If it is a generic OS action, select GeneralizedOSIntent. Output EXACTLY the intent name, nothing else."
+                fb_prompt = f"Categorize this short command: '{step_query}'. Which exact intent from this allowed list does it match? {ALLOWLIST_INTENTS}. If it is a generic OS action, select GeneralizedOSIntent. Output EXACTLY a JSON array with one object containing the 'intent' key. Example: [{{\"intent\": \"InformationRetrievalIntent\"}}]"
                 try:
                     resp = llm_fb.invoke([("system", fb_prompt)])
                     fb_plan = safe_json_loads(resp.content, context="Intent Fallback")
                     if isinstance(fb_plan, list) and fb_plan:
+                        # Append the prompt and confidence so the pipeline has it
+                        for p in fb_plan:
+                            if "prompt" not in p: p["prompt"] = step_query
+                            if "confidence" not in p: p["confidence"] = 1.0 # Handled by fallback
                         final_pipeline.extend(fb_plan)
                         continue
                     fb_intent = resp.content.strip().replace('"', '').replace("'", "")

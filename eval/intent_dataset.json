@@ -1,0 +1,2818 @@
+[
+  {
+    "prompt": "open chrome please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you open chrome",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "launch notepad please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you launch notepad",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "start calculator please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you start calculator",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "open word please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you open word",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "launch excel please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you launch excel",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "start powerpoint please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you start powerpoint",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "open spotify please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you open spotify",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "launch discord please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you launch discord",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "start visual studio code please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you start visual studio code",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "open settings please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you open settings",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "start command prompt please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you start command prompt",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "launch powershell please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you launch powershell",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "open edge please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you open edge",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "start firefox please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you start firefox",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "open chrome please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you open chrome",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "launch notepad please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you launch notepad",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "start calculator please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you start calculator",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "open word please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you open word",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "launch excel please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you launch excel",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "start powerpoint please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you start powerpoint",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "open spotify please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you open spotify",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "launch discord please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you launch discord",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "start visual studio code please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you start visual studio code",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "open settings please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you open settings",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "start command prompt please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you start command prompt",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "launch powershell please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you launch powershell",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "open edge please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you open edge",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "start firefox please",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "can you start firefox",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "go to google.com please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you go to google.com",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "navigate to youtube please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you navigate to youtube",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "open wikipedia.org please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you open wikipedia.org",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "go to reddit please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you go to reddit",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "visit facebook please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you visit facebook",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "open twitter.com please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you open twitter.com",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "navigate to github please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you navigate to github",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "go to stackoverflow please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you go to stackoverflow",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "open amazon please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you open amazon",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "visit netflix please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you visit netflix",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "go to gmail please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you go to gmail",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "navigate to maps please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you navigate to maps",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "open calendar please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you open calendar",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "go to google.com please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you go to google.com",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "navigate to youtube please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you navigate to youtube",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "open wikipedia.org please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you open wikipedia.org",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "go to reddit please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you go to reddit",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "visit facebook please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you visit facebook",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "open twitter.com please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you open twitter.com",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "navigate to github please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you navigate to github",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "go to stackoverflow please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you go to stackoverflow",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "open amazon please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you open amazon",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "visit netflix please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you visit netflix",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "go to gmail please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you go to gmail",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "navigate to maps please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you navigate to maps",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "open calendar please",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "can you open calendar",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "search for python tutorials please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you search for python tutorials",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "what is the capital of france please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you what is the capital of france",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "who is the president of usa please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you who is the president of usa",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "how tall is mount everest please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you how tall is mount everest",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "tell me about quantum physics please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you tell me about quantum physics",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "find recipe for pasta please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you find recipe for pasta",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "what is the weather like today please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you what is the weather like today",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "search news about AI please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you search news about AI",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "what is the price of gold please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you what is the price of gold",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "how many ounces in a cup please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you how many ounces in a cup",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "what time is it in tokyo please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you what time is it in tokyo",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "search images of cats please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you search images of cats",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "search for python tutorials please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you search for python tutorials",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "what is the capital of france please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you what is the capital of france",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "who is the president of usa please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you who is the president of usa",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "how tall is mount everest please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you how tall is mount everest",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "tell me about quantum physics please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you tell me about quantum physics",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "find recipe for pasta please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you find recipe for pasta",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "what is the weather like today please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you what is the weather like today",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "search news about AI please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you search news about AI",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "what is the price of gold please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you what is the price of gold",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "how many ounces in a cup please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you how many ounces in a cup",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "what time is it in tokyo please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you what time is it in tokyo",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "search images of cats please",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can you search images of cats",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "play some jazz music please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you play some jazz music",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "start playing the beatles please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you start playing the beatles",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "play the latest action movie please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you play the latest action movie",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "listen to a podcast please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you listen to a podcast",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "play soothing sounds please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you play soothing sounds",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "stream the basketball game please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you stream the basketball game",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "play my workout playlist please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you play my workout playlist",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "start playing classical music please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you start playing classical music",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "play a documentary please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you play a documentary",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "listen to the news please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you listen to the news",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "play ambient noise please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you play ambient noise",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "stream music on spotify please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you stream music on spotify",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "play some jazz music please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you play some jazz music",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "start playing the beatles please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you start playing the beatles",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "play the latest action movie please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you play the latest action movie",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "listen to a podcast please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you listen to a podcast",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "play soothing sounds please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you play soothing sounds",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "stream the basketball game please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you stream the basketball game",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "play my workout playlist please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you play my workout playlist",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "start playing classical music please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you start playing classical music",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "play a documentary please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you play a documentary",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "listen to the news please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you listen to the news",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "play ambient noise please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you play ambient noise",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "stream music on spotify please",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "can you stream music on spotify",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "delete the file on desktop please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you delete the file on desktop",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "remove the temp folder please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you remove the temp folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "erase the old logs please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you erase the old logs",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete document.pdf please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you delete document.pdf",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "trash this picture please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you trash this picture",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "remove my downloads please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you remove my downloads",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete the backup directory please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you delete the backup directory",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "erase all pictures in folder please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you erase all pictures in folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "remove old cache please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you remove old cache",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete useless files please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you delete useless files",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "empty the trash bin please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you empty the trash bin",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete this project please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you delete this project",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete the file on desktop please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you delete the file on desktop",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "remove the temp folder please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you remove the temp folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "erase the old logs please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you erase the old logs",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete document.pdf please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you delete document.pdf",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "trash this picture please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you trash this picture",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "remove my downloads please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you remove my downloads",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete the backup directory please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you delete the backup directory",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "erase all pictures in folder please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you erase all pictures in folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "remove old cache please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you remove old cache",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete useless files please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you delete useless files",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "empty the trash bin please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you empty the trash bin",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete this project please",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you delete this project",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "hello please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you hello",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "hi there please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you hi there",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "how are you today please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you how are you today",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "good morning please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you good morning",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "good night please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you good night",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "tell me a joke please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you tell me a joke",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "you are doing great please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you you are doing great",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "what is your name please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you what is your name",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "thank you please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you thank you",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "bye please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you bye",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "see you later please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you see you later",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "who made you please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you who made you",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "how do you work please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you how do you work",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "hello please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you hello",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "hi there please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you hi there",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "how are you today please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you how are you today",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "good morning please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you good morning",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "good night please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you good night",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "tell me a joke please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you tell me a joke",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "you are doing great please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you you are doing great",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "what is your name please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you what is your name",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "thank you please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you thank you",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "bye please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you bye",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "see you later please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you see you later",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "who made you please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you who made you",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "how do you work please",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "can you how do you work",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "kill the chrome process please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you kill the chrome process",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "stop notepad please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you stop notepad",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "terminate calculator please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you terminate calculator",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "end the frozen app please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you end the frozen app",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "kill discord please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you kill discord",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "stop playing music process please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you stop playing music process",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "terminate python script please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you terminate python script",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "kill java process please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you kill java process",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "stop the server please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you stop the server",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "end task manager please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you end task manager",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "kill the background worker please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you kill the background worker",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "stop the updater please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you stop the updater",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "kill the chrome process please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you kill the chrome process",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "stop notepad please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you stop notepad",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "terminate calculator please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you terminate calculator",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "end the frozen app please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you end the frozen app",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "kill discord please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you kill discord",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "stop playing music process please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you stop playing music process",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "terminate python script please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you terminate python script",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "kill java process please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you kill java process",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "stop the server please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you stop the server",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "end task manager please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you end task manager",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "kill the background worker please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you kill the background worker",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "stop the updater please",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "can you stop the updater",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "create a new react app please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you create a new react app",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "scaffold a python project please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you scaffold a python project",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "setup a fast api app please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you setup a fast api app",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "initialize an express server please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you initialize an express server",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "create a new node project please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you create a new node project",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "scaffold a django site please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you scaffold a django site",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "setup a next js app please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you setup a next js app",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "initialize an angular project please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you initialize an angular project",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "create a new unity game please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you create a new unity game",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "scaffold a flask app please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you scaffold a flask app",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "setup a spring boot project please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you setup a spring boot project",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "initialize a go module please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you initialize a go module",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "create a new react app please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you create a new react app",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "scaffold a python project please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you scaffold a python project",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "setup a fast api app please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you setup a fast api app",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "initialize an express server please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you initialize an express server",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "create a new node project please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you create a new node project",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "scaffold a django site please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you scaffold a django site",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "setup a next js app please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you setup a next js app",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "initialize an angular project please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you initialize an angular project",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "create a new unity game please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you create a new unity game",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "scaffold a flask app please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you scaffold a flask app",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "setup a spring boot project please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you setup a spring boot project",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "initialize a go module please",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "can you initialize a go module",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "npm install react please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you npm install react",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "pip install requests please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you pip install requests",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "yarn add lodash please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you yarn add lodash",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "install pandas please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you install pandas",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "add express to project please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you add express to project",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "npm i typescript please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you npm i typescript",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "pip install numpy please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you pip install numpy",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "yarn install please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you yarn install",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "install beautifulsoup please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you install beautifulsoup",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "add tailwindcss please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you add tailwindcss",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "npm install axios please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you npm install axios",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "pip install fastapi please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you pip install fastapi",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "npm install react please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you npm install react",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "pip install requests please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you pip install requests",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "yarn add lodash please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you yarn add lodash",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "install pandas please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you install pandas",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "add express to project please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you add express to project",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "npm i typescript please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you npm i typescript",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "pip install numpy please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you pip install numpy",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "yarn install please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you yarn install",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "install beautifulsoup please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you install beautifulsoup",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "add tailwindcss please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you add tailwindcss",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "npm install axios please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you npm install axios",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "pip install fastapi please",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "can you pip install fastapi",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "write a python script to sort files please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you write a python script to sort files",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "create a batch script to backup please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you create a batch script to backup",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "write a powershell script to find large files please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you write a powershell script to find large files",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "create a bash script please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you create a bash script",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "write code to scrape a website please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you write code to scrape a website",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "generate a python script for api call please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you generate a python script for api call",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "write a script to resize images please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you write a script to resize images",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "create code for data analysis please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you create code for data analysis",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "write a script to automate tests please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you write a script to automate tests",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "generate code to connect to db please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you generate code to connect to db",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "write a python script to sort files please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you write a python script to sort files",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "create a batch script to backup please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you create a batch script to backup",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "write a powershell script to find large files please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you write a powershell script to find large files",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "create a bash script please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you create a bash script",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "write code to scrape a website please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you write code to scrape a website",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "generate a python script for api call please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you generate a python script for api call",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "write a script to resize images please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you write a script to resize images",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "create code for data analysis please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you create code for data analysis",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "write a script to automate tests please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you write a script to automate tests",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "generate code to connect to db please",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you generate code to connect to db",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "summarize this research paper please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you summarize this research paper",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "analyze the methodology of this study please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you analyze the methodology of this study",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "what are the conclusions of the paper please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you what are the conclusions of the paper",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "review the literature on ai please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you review the literature on ai",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "extract the main findings from the pdf please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you extract the main findings from the pdf",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "summarize the abstract please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you summarize the abstract",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "what are the key contributions of this research please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you what are the key contributions of this research",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "analyze the results section please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you analyze the results section",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "review the related work section please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you review the related work section",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "extract the data sources used please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you extract the data sources used",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "summarize this research paper please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you summarize this research paper",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "analyze the methodology of this study please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you analyze the methodology of this study",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "what are the conclusions of the paper please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you what are the conclusions of the paper",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "review the literature on ai please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you review the literature on ai",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "extract the main findings from the pdf please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you extract the main findings from the pdf",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "summarize the abstract please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you summarize the abstract",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "what are the key contributions of this research please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you what are the key contributions of this research",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "analyze the results section please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you analyze the results section",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "review the related work section please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you review the related work section",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "extract the data sources used please",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "can you extract the data sources used",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "train a random forest model please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you train a random forest model",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "perform linear regression on the dataset please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you perform linear regression on the dataset",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "cluster the data using kmeans please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you cluster the data using kmeans",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "build a neural network for classification please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you build a neural network for classification",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "evaluate the model accuracy please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you evaluate the model accuracy",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "run a decision tree algorithm please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you run a decision tree algorithm",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "train a support vector machine please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you train a support vector machine",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "perform principal component analysis please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you perform principal component analysis",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "build a predictive model please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you build a predictive model",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "evaluate the model f1 score please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you evaluate the model f1 score",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "train a random forest model please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you train a random forest model",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "perform linear regression on the dataset please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you perform linear regression on the dataset",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "cluster the data using kmeans please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you cluster the data using kmeans",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "build a neural network for classification please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you build a neural network for classification",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "evaluate the model accuracy please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you evaluate the model accuracy",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "run a decision tree algorithm please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you run a decision tree algorithm",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "train a support vector machine please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you train a support vector machine",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "perform principal component analysis please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you perform principal component analysis",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "build a predictive model please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you build a predictive model",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "evaluate the model f1 score please",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "can you evaluate the model f1 score",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "turn on dark mode please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you turn on dark mode",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "empty the recycle bin please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you empty the recycle bin",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "check my battery percentage please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you check my battery percentage",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "adjust the display brightness please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you adjust the display brightness",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "mute my microphone please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you mute my microphone",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "turn off wifi please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you turn off wifi",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "enable bluetooth please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you enable bluetooth",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "check system storage please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you check system storage",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "show network status please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you show network status",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "open task manager please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you open task manager",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "check cpu usage please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you check cpu usage",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "show available memory please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you show available memory",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "turn on dark mode please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you turn on dark mode",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "empty the recycle bin please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you empty the recycle bin",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "check my battery percentage please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you check my battery percentage",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "adjust the display brightness please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you adjust the display brightness",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "mute my microphone please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you mute my microphone",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "turn off wifi please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you turn off wifi",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "enable bluetooth please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you enable bluetooth",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "check system storage please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you check system storage",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "show network status please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you show network status",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "open task manager please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you open task manager",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "check cpu usage please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you check cpu usage",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "show available memory please",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "can you show available memory",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "remind me to call mom at 5pm please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you remind me to call mom at 5pm",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "schedule a meeting for tomorrow please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you schedule a meeting for tomorrow",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "set an alarm for 7am please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you set an alarm for 7am",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "add dentist appointment to calendar please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you add dentist appointment to calendar",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "remind me to drink water please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you remind me to drink water",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "schedule a focus block please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you schedule a focus block",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "set a timer for 10 minutes please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you set a timer for 10 minutes",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "add a reminder for the deadline please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you add a reminder for the deadline",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "schedule a backup at midnight please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you schedule a backup at midnight",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "set an alarm for the oven please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you set an alarm for the oven",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "remind me to call mom at 5pm please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you remind me to call mom at 5pm",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "schedule a meeting for tomorrow please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you schedule a meeting for tomorrow",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "set an alarm for 7am please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you set an alarm for 7am",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "add dentist appointment to calendar please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you add dentist appointment to calendar",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "remind me to drink water please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you remind me to drink water",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "schedule a focus block please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you schedule a focus block",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "set a timer for 10 minutes please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you set a timer for 10 minutes",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "add a reminder for the deadline please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you add a reminder for the deadline",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "schedule a backup at midnight please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you schedule a backup at midnight",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "set an alarm for the oven please",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "can you set an alarm for the oven",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "snap this window to the left please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you snap this window to the left",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "minimize all windows please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you minimize all windows",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "maximize the current window please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you maximize the current window",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "switch to the next desktop please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you switch to the next desktop",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "take a screenshot of the screen please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you take a screenshot of the screen",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "close this window please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you close this window",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "move window to the right monitor please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you move window to the right monitor",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "snap window to the top right please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you snap window to the top right",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "switch to previous desktop please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you switch to previous desktop",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "take a screenshot of the active window please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you take a screenshot of the active window",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "close the browser window please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you close the browser window",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "minimize everything please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you minimize everything",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "snap this window to the left please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you snap this window to the left",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "minimize all windows please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you minimize all windows",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "maximize the current window please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you maximize the current window",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "switch to the next desktop please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you switch to the next desktop",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "take a screenshot of the screen please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you take a screenshot of the screen",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "close this window please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you close this window",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "move window to the right monitor please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you move window to the right monitor",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "snap window to the top right please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you snap window to the top right",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "switch to previous desktop please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you switch to previous desktop",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "take a screenshot of the active window please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you take a screenshot of the active window",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "close the browser window please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you close the browser window",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "minimize everything please",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "can you minimize everything",
+    "expected_intent": "WindowManagementIntent"
+  }
+]
