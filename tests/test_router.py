@@ -115,6 +115,13 @@ class TestRouterIntentCoverage:
         ("GeneralizedOSIntent",       "press the spacebar key"),
         ("ConversationalIntent",      "tell me a joke please"),
         ("ContinuationIntent",        "go on please elaborate on that"),
+        # Added 2026-07-14 alongside the new phrase banks for these 3 intents
+        # (previously unreachable via the router at all). Phrases below are
+        # deliberate PARAPHRASES, not verbatim bank entries, to test real
+        # generalization rather than exact-match memorization.
+        ("ProcessManagementIntent",   "kill this stuck program"),
+        ("ProjectScaffoldIntent",     "scaffold a brand new app for me"),
+        ("DependencyInstallIntent",   "please install these dependencies for me"),
     ])
     def test_intent_class_is_reachable(self, router, intent_class, phrase):
         result = router.route(phrase)
