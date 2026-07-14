@@ -6,9 +6,16 @@
 
 ---
 
-## Current State (as of 2026-07-10)
+## Current State (as of 2026-07-14, Session 9 — thesis submission-ready push)
 
 - **Repo:** `D:\college\Major Project\SentinAL-v9-reunited` (git, branch `main`)
+- **Full suite: 337 passed, 0 failed, 6 skipped (commit `8046e64`).** Confirmed final, not interim.
+- **Branch reconciliation done:** `main` was stale by 4 commits (all of Antigravity's thesis-expansion-v2 work). Reset the accidental commit off Antigravity's branch (same pattern as the earlier `docs/thesis-draft-v1` incident — my own commits keep landing on whatever branch was checked out because I don't check first), merged Antigravity's 4 commits + my own 2 fix commits into `main` cleanly. Nothing lost on either side, verified before every reset.
+- **Major fix 1 — confidence dead zone (commit `43a9a53`/`53aa5f2`):** `processor.py`'s LLM-fallback trigger required `confidence < 0.35 AND matched_intent == "UnknownIntent"`, but `router.py` only ever sets `matched_intent == "UnknownIntent"` when confidence is already `< 0.40` — so the 0.35–0.40 band got UnknownIntent with NO fallback attempt, ever. Measured impact: 54/704 (7.7%) of the real dataset silently failed. Fixed by dropping the redundant sub-condition. Live-verified: "search for python tutorials please" now resolves correctly (previously permanent failure).
+- **Major fix 2 — router phrase-bank expansion (commit `d0e9a95`):** `ProcessManagementIntent`/`ProjectScaffoldIntent`/`DependencyInstallIntent` had real processor.py handling but zero router coverage — LLM-guess-only. Added 72 real phrases (24 each), iteratively fixed 3 live embedding collisions (diagnosed via direct similarity queries, not guessed). **Measured: router-only accuracy on the unchanged 704-item dataset went 56.82% → 69.60% (+12.78pp).** Real capability improvement, not metric-gaming.
+- **Dataset credibility issue found, NOT yet fixed — dispatched to Antigravity (parallel track):** `eval/intent_dataset.json` is 50% exact verbatim duplicates (352/704 — confirmed index 0 and index 28 are byte-identical). Context pack ready: `_context_packs/dataset_diversification.md`. Awaiting dispatch + Antigravity's return.
+- **Next after dataset returns:** re-measure router-only + full-pipeline accuracy against the diversified dataset (real numbers, not assumed), re-run ablations, then one final Antigravity pass to update thesis §7.1/§7.3 with all the new real numbers (69.60% router accuracy, dead-zone fix, diversified dataset methodology).
+- **Old context below this line is from Session 1-8 — still accurate as history, superseded by the above for "current state."**
 - **Baseline commit:** `4c7af25` — 247 tests passing, server boots, E2E command verified
 - **Last green tag:** `p1-4-done` (Phase 1 tag); latest untagged commit `489e24d` — **320 tests passing, 0 deselected** (the environmental flake is GENUINELY FIXED — Pavan rotated the Groq/Deepgram/Tavily API keys; `test_web_navigation_full_pipeline` now passes cleanly, confirmed by direct re-run)
 - **Current phase:** Phase 1 — Close the loop — **✅ ALL 5 TASKS DONE.** Currently doing thesis-evaluation-data work (Pavan's priority) before starting Phase 2.
