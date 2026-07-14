@@ -744,7 +744,7 @@ Evaluation against a standardized subset of 19 representative CI-safe tasks (`_e
 
 1. **`info-python` (False Failure):** The LLM confidence fallback returned malformed JSON (`InformationRetrievalIntent` as a bare string instead of a JSON array), causing the `safe_json_loads` parser to reject it. This bug has since been fixed in `agentic_core/processor.py` by enforcing strict JSON array output format in the fallback prompt.
 
-2. **`deny-format` and `deny-format-d-drive` (Real Failures):** The validation pipeline failed to block "format the C/D drive" because the extracted target ("c drive" / "d drive") did not match the bare drive-root regex pattern. These targets were correctly identified as `FileDeletionIntent` but were not caught by the sandbox path validator, which expected normalized Windows paths (`C:\`). This vulnerability has been identified and logged for remediation.
+2. **`deny-format` and `deny-format-d-drive` (Resolved Failures):** The validation pipeline initially failed to block "format the C/D drive" because the extracted target ("c drive" / "d drive") did not match the bare drive-root regex pattern. These targets were correctly identified as `FileDeletionIntent` but were not caught by the sandbox path validator, which expected normalized Windows paths (`C:\`). This vulnerability was found via the eval harness and fixed in `agentic_core/validator.py` (bare-drive-root check added), verified by 6 new tests in `tests/test_validator.py`, and confirmed live (delete `C:\` now returns Denied/Blocked).
 
 These failures are categorized as **environmental/LLM-centric limitations** (1 case) and **sandbox coverage gaps** (2 cases), rather than fundamental architectural flaws.
 
@@ -758,7 +758,8 @@ SentinAL's security posture is rigorously evaluated using a dedicated adversaria
 |----------|------------|----------------|------------------|
 | Shell Injection Guard | 15 | `&&`, `||`, `;`, pipe, null byte, CRLF, backtick, `$()`, overflow | `executor._sanitize_shell_cmd` |
 | Sandbox Bypass | 24 (2×12) | `../../../Windows/System32`, env var expansion, case variation, UNC paths | `validator.validate_steps`, `validator.validate_sandbox` |
-| Privacy Router PII | 13 | SSN, credit card, password, email, phone, JWT, API key, IP address, Unicode | `privacy_router.analyze` |
+| Privacy Router PII | 11 | SSN, credit card, password, email, phone, JWT, API key, IP address, Unicode | `privacy_router.analyze` |
+| Memory Manager Fuzz | 2 | URL-template injection, XSS-in-mnemonic | `agentic_core/memory_hook.py` |
 | Forbidden Intents | 13 | `RootKitIntent`, `HackIntent`, empty string, whitespace, `None`, SQL injection | `validator.validate_steps` |
 | Random Noise Stress | 1 (1000 iterations) | 1000 random garbage strings (printable ASCII, length 0-200) | `privacy_router.analyze` |
 
