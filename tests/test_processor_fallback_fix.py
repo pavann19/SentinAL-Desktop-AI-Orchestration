@@ -14,6 +14,8 @@ correctly attributed to whichever intent the LLM (mocked here) returns.
 """
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 import agentic_core.processor as processor
 
 
@@ -88,11 +90,65 @@ def test_fallback_json_object_missing_intent_key_falls_through_safely(monkeypatc
 
 
 def test_fallback_not_triggered_when_confidence_is_high(monkeypatch):
-    """Sanity guard: the fallback must only trigger below the 0.35 threshold
-    with matched_intent == UnknownIntent — a confident real match should
-    never reach the LLM fallback at all."""
+    """Sanity guard: the fallback must only trigger when matched_intent is
+    UnknownIntent — a confident real match should never reach the LLM
+    fallback at all, regardless of its confidence value."""
     llm = _mock_llm("SHOULD_NOT_BE_CALLED")
     monkeypatch.setattr(processor, "_get_routing_llm", lambda *a, **k: llm)
     with patch("agentic_core.router.router", _mock_router(0.9, intent="ConversationalIntent")):
         processor.extract_intent("some genuinely obscure phrasing xyz")
     llm.invoke.assert_not_called()
+
+
+# ── Dead-zone fix (0.35 <= confidence < 0.40, matched_intent == UnknownIntent) ──
+# Regression suite for the fix documented in processor.py's "Fix [dead-zone]"
+# comment. Measured impact before this fix: 54/704 (7.7%) of
+# eval/intent_dataset.json fell in this band and failed permanently with zero
+# recovery attempt, because the old condition required BOTH confidence < 0.35
+# AND matched_intent == "UnknownIntent" — a redundant, harmful extra gate,
+# since router.py's own logic already guarantees matched_intent can only be
+# "UnknownIntent" when confidence < 0.40 in the first place.
+
+def test_fallback_now_triggers_in_the_former_dead_zone(monkeypatch):
+    """The specific band (0.35 <= confidence < 0.40) that used to be silently
+    dropped must now reach the LLM fallback."""
+    monkeypatch.setattr(processor, "_get_routing_llm", lambda *a, **k: _mock_llm(
+        '[{"intent": "InformationRetrievalIntent"}]'
+    ))
+    with patch("agentic_core.router.router", _mock_router(0.3767, intent="UnknownIntent")):
+        steps = processor.extract_intent("create a new react app please")
+    assert steps[0]["intent"] == "InformationRetrievalIntent"
+
+
+@pytest.mark.parametrize("confidence", [0.0, 0.1, 0.34, 0.35, 0.3767, 0.399, 0.3999])
+def test_fallback_triggers_across_the_entire_unknown_confidence_range(monkeypatch, confidence):
+    """Every confidence value that router.py can legitimately pair with
+    matched_intent='UnknownIntent' (i.e. anything in [0.0, 0.40)) must reach
+    the fallback — not just the old sub-0.35 slice."""
+    llm = _mock_llm('[{"intent": "ConversationalIntent"}]')
+    monkeypatch.setattr(processor, "_get_routing_llm", lambda *a, **k: llm)
+    with patch("agentic_core.router.router", _mock_router(confidence, intent="UnknownIntent")):
+        processor.extract_intent("some genuinely obscure phrasing xyz")
+    llm.invoke.assert_called_once()
+
+
+def test_fallback_still_not_triggered_for_confident_non_unknown_match_near_boundary(monkeypatch):
+    """Defensive guard: even a real (non-UnknownIntent) match sitting exactly
+    at the 0.40 boundary must not trigger the FALLBACK-CATEGORIZATION prompt
+    — only the intent label matters, not the confidence value, per the fix.
+
+    NOTE: a matched (non-Unknown) intent like WebNavigationIntent still makes
+    ITS OWN, separate LLM call downstream for target/parameter extraction —
+    that is correct, expected, unrelated behavior. This test asserts the
+    fallback's specific categorization prompt text was never sent, not that
+    zero LLM calls happened overall."""
+    llm = _mock_llm('{"target": "SHOULD_NOT_BE_CALLED"}')
+    monkeypatch.setattr(processor, "_get_routing_llm", lambda *a, **k: llm)
+    with patch("agentic_core.router.router", _mock_router(0.40, intent="WebNavigationIntent")):
+        processor.extract_intent("some genuinely obscure phrasing xyz")
+    for call in llm.invoke.call_args_list:
+        sent_text = str(call)
+        assert "Categorize this short command" not in sent_text, (
+            "the fallback-categorization prompt must not fire for a confident, "
+            "non-UnknownIntent match"
+        )
