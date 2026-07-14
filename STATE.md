@@ -6,7 +6,17 @@
 
 ---
 
-## Current State (as of 2026-07-14, Session 9 — thesis submission-ready push, COMPLETE)
+## Current State (as of 2026-07-14, Session 10 — dataset scale-up + real-world architectural improvement)
+
+- **Full suite: 353 passed, 0 failed, 6 skipped (commit `0d39120`).**
+- **Thesis final-numbers pass verified and merged (commit `b21708a`, merged as part of this session's start).** Every number traced to real measurements, 0 placeholders, 0 fabrication.
+- **Reproducible measurement tool built (`eval/measure_intent_accuracy.py`, commit `0b264a2`):** replaces every throwaway `_verify_*.py` script from Session 9 with a real, committed, seeded, hash-versioned instrument. Verified against the known baseline: reproduces 438/704 = 62.22% exactly. Seeded full-pipeline sampling confirmed deterministic (two independent runs, same seed, byte-identical per-intent breakdown).
+- **Major architectural fix — the observe-act-replan mechanism was NEVER wired into the live system (commit `0d39120`):** `execute_pipeline_observed()` (built in P1-1/P1-2/P1-4, unit-tested, merged) was dead code from the live pipeline's perspective — `api_wrapper.py::process_command()` called raw `execute_pipeline()` directly, bypassing it entirely. Fixed: STAGE 3 now calls `execute_pipeline_observed()`; `ApplicationLaunchIntent` steps get a real `expected_state` (`{"process_name": <basename>}`) so the postcondition observer has something concrete to check. **Live-verified end-to-end** (not mocked): `process_command("open calculator")` actually launched calculator and the postcondition check confirmed the real process, returning `failure_category: "success"`. This is the single most "real-world usage" fix of the whole project — it's the difference between "execute and hope" and "execute, verify, self-correct."
+- **Dataset scale-up dispatched (`_context_packs/dataset_scaleup_3000.md`):** targets ~2800-3200 unique prompts (up from 704), same intent balance, stronger anti-templating requirements at scale. Awaiting Antigravity.
+- **Next after the scale-up dataset returns:** re-measure with `eval/measure_intent_accuracy.py` (both router-only exhaustive and full-pipeline seeded sample), compare against the 704-item baseline, then a final thesis pass reflecting: the larger dataset, the reproducible-tooling methodology, and the observe-act-replan wiring as a documented contribution (new RQ3-adjacent evidence: self-correction/postcondition-verification is now real and demonstrable, not just built-and-unused).
+- **Old context below (Session 9 summary onward) is still accurate as history.**
+
+## Session 9 summary (2026-07-14, thesis submission-ready push, COMPLETE at the time)
 
 - **Repo:** `D:\college\Major Project\SentinAL-v9-reunited` (git, branch `main`)
 - **Full suite: 337 passed, 0 failed, 6 skipped (commit `5d673a8`).** Confirmed final after every change this session, including the dataset merge.
