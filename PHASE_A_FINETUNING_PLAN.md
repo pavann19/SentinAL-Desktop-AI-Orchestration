@@ -5,6 +5,35 @@ fresh session to execute directly. Read `STATE.md` first for full context on
 why this exists (the WebNav/InfoRetrieval experiment proved the zero-shot
 router has hit its ceiling — see Session 11/12 entries).
 
+**If this is dispatched to Antigravity (or any agent other than the Claude
+session that verifies it):** this document IS the prompt — paste it in as-is.
+One non-negotiable addition to the handback, on top of everything already
+specified in Step 6: **commit every artifact needed for independent
+reproduction, not just printed accuracy numbers in a commit message.**
+Specifically:
+- `_evidence/finetuning/split_indices.json` (Step 0a's exact train/val/test
+  split — the actual indices used, not just "a 70/15/15 split was done").
+- `eval/intent_dataset_ood_test.json` (Step 0b's held-out set, in full).
+- `_evidence/finetuning/classifier_v1.joblib` (the trained model itself).
+- `eval/finetune_classifier.py` (the exact, runnable script — not a summary
+  of what it did).
+- A results JSON with train/val/test/OOD accuracy numbers AND per-intent
+  breakdowns (same shape as the existing `eval/measure_intent_accuracy.py`
+  reports, for direct comparability).
+
+**Why this matters, stated plainly:** every real bug found this whole
+engagement (a malformed-JSON parsing bug, a security gap in bare-drive-root
+handling, a dataset labeling error, three separate live embedding
+collisions) was caught because a second party independently re-ran the work
+rather than trusting a self-report. An ML accuracy number is exactly the
+kind of result that's easy to get wrong silently (the single most common
+failure mode is accidental train/test leakage producing an inflated,
+unreproducible number) — Claude will re-run the committed script against
+the committed split before this is considered verified, the same as every
+other task this session. A report with no reproducible artifacts behind it
+does not get treated as final, regardless of how good the printed number
+looks.
+
 **Goal:** replace the zero-shot cosine-similarity match in
 `agentic_core/router.py` with a real, trained classifier — the one lever this
 session's evidence says can move accuracy meaningfully past the demonstrated
