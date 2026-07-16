@@ -332,10 +332,53 @@ def extract_intent(prompt: str) -> list:
             intent_data = router.route(step_query)
             matched_intent = intent_data["intent"]
             confidence = intent_data["confidence"]
-            
-            print(f"[AUDIT] Router Matched: {matched_intent} (Confidence: {confidence})")
-            
+            is_ambiguous = intent_data.get("is_ambiguous", False)
+
+            print(f"[AUDIT] Router Matched: {matched_intent} (Confidence: {confidence}"
+                  f"{', AMBIGUOUS margin=' + str(intent_data.get('margin')) if is_ambiguous else ''})")
+
             # --- CONFIDENCE REDUNDANCY LOOP (LLM FALLBACK) ---
+            # Fix [tie-break]: also engage fallback when the router itself flags
+            # the top-2 candidates as too close to trust (agentic_core/router.py
+            # "Fix [tie-break]"), even when confidence is >= 0.40 and
+            # matched_intent is NOT UnknownIntent. This is the case the
+            # dead-zone fix (below) does not cover: a confident-looking answer
+            # that is actually a coin-flip between two semantically adjacent
+            # intents (e.g. "browse to wikipedia" between WebNavigationIntent
+            # and InformationRetrievalIntent). Original matched_intent is kept
+            # as a fallback-of-last-resort if the LLM call itself fails.
+            if is_ambiguous and matched_intent != "UnknownIntent":
+                print(f"[AUDIT] Ambiguous match for '{step_query}' (top candidate "
+                      f"'{matched_intent}' margin={intent_data.get('margin')} < 0.05). "
+                      f"Engaging tie-break LLM fallback.")
+                llm_fb = _get_routing_llm("Tie-Break Fallback")
+                fb_prompt = (
+                    f"Categorize this short command: '{step_query}'. Which exact intent "
+                    f"from this allowed list does it match? {ALLOWLIST_INTENTS}. The "
+                    f"embedding router found this ambiguous between multiple close "
+                    f"candidates (top guess: '{matched_intent}') — use your judgment to "
+                    f"pick the single best match. If it is a generic OS action, select "
+                    f"GeneralizedOSIntent. Output EXACTLY a JSON array with one object "
+                    f"containing the 'intent' key. Example: "
+                    f"[{{\"intent\": \"InformationRetrievalIntent\"}}]"
+                )
+                try:
+                    resp = llm_fb.invoke([("system", fb_prompt)])
+                    fb_plan = safe_json_loads(resp.content, context="Tie-Break Fallback")
+                    if isinstance(fb_plan, list) and fb_plan:
+                        for p in fb_plan:
+                            if "prompt" not in p: p["prompt"] = step_query
+                            if "confidence" not in p: p["confidence"] = 1.0
+                        final_pipeline.extend(fb_plan)
+                        continue
+                    fb_intent = resp.content.strip().replace('"', '').replace("'", "")
+                    if fb_intent in ALLOWLIST_INTENTS:
+                        matched_intent = fb_intent
+                        print(f"[AUDIT] Tie-break LLM fallback succeeded: {matched_intent}")
+                except Exception as e:
+                    print(f"[SRE] Tie-break LLM fallback failed: {e}. Keeping router's top "
+                          f"candidate '{matched_intent}' as last resort.")
+
             # Fix [dead-zone]: router.route() (agentic_core/router.py) demotes
             # ANY match below its 0.40 threshold to matched_intent="UnknownIntent",
             # while still returning the raw pre-demotion score as "confidence" —

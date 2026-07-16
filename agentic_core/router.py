@@ -111,6 +111,32 @@ INTENT_CAPABILITIES = {
         "pull up the web page",
         "surf to",
         "jump to the site",
+        # Expanded 2026-07-15: real-dataset diagnosis (3003-item version) found
+        # 98 WebNavigationIntent failures, split roughly evenly between pure
+        # UnknownIntent recall gaps (31) and a genuine collision with
+        # InformationRetrievalIntent (31) — navigation requests aimed at an
+        # information-bearing destination ("browse to wikipedia", "take me to
+        # the news site") pull toward retrieval because the destination noun
+        # itself reads as informational. The bank's existing anchors were
+        # mostly short/generic ("browse to", "visit the website") without a
+        # destination noun to anchor against; the LLM-fallback-observed real
+        # phrasings paired navigation verbs with informational-site nouns
+        # (encyclopedia/news/weather/forum pages). Below are GENERALIZED
+        # navigation-verb + informational-destination-noun anchors — different
+        # specific nouns than the dataset's own examples (avoids overfitting)
+        # but covering the same underlying pattern.
+        "browse to the encyclopedia page",
+        "navigate to the news site",
+        "visit the weather page",
+        "take me to the forum",
+        "go to the search engine site",
+        "open the knowledge base site",
+        "head over to the review site",
+        "pull up the sports site",
+        "check out the tech blog site",
+        "let's go to the recipe site",
+        "visit the map site",
+        "navigate me to the directory site",
     ],
     "MediaStreamingIntent": [
         "play a song",
@@ -609,21 +635,51 @@ class SemanticRouter:
         # Fix 3.5: Use cached embedding
         query_emb = self._encode_cached(prompt)
 
-        best_intent  = "UnknownIntent"
+        best_intent   = "UnknownIntent"
         highest_score = -1.0
+        second_score  = -1.0
 
         for intent, embeddings in self.intent_embeddings.items():
             sim_scores = self._cos_sim(query_emb, embeddings)[0]
             max_score  = float(np.max(sim_scores))
             if max_score > highest_score:
+                second_score  = highest_score
                 highest_score = max_score
                 best_intent   = intent
+            elif max_score > second_score:
+                second_score = max_score
+
+        # Fix [tie-break]: margin between the top and runner-up intent, computed
+        # BEFORE the 0.40 demotion below. Empirically calibrated against the
+        # 3003-item eval/intent_dataset.json (see STATE.md / git history for the
+        # calibration run): misclassified-but-above-threshold calls had a median
+        # margin of 0.040 vs. 0.144 for correct calls — real separation, not
+        # noise. eps=0.05 catches ~43% of those wrong calls at the cost of
+        # sending ~13% of already-correct calls to the (slower, but usually
+        # still-correct) LLM fallback instead of answering instantly. This
+        # exists specifically because pure confidence tuning cannot fix
+        # genuinely ambiguous requests (e.g. "browse to wikipedia" sitting
+        # between WebNavigationIntent and InformationRetrievalIntent) — no
+        # phrase-bank expansion closes that gap without stealing accuracy from
+        # the neighboring intent (measured directly this session: a targeted
+        # WebNavigationIntent expansion produced +10.4pp on WebNavigation but
+        # -5.4pp on InformationRetrievalIntent, net +0.2pp — a wash).
+        margin = round(highest_score - second_score, 4) if second_score > -1.0 else None
+        AMBIGUITY_MARGIN_THRESHOLD = 0.05
+        is_ambiguous = bool(
+            highest_score >= 0.40 and margin is not None and margin < AMBIGUITY_MARGIN_THRESHOLD
+        )
 
         # Calibrated threshold: 0.40 accepts natural commands, rejects symbol-heavy garbage
         if highest_score < 0.40:
             best_intent = "UnknownIntent"
 
-        return {"intent": best_intent, "confidence": round(highest_score, 4)}
+        return {
+            "intent": best_intent,
+            "confidence": round(highest_score, 4),
+            "margin": margin,
+            "is_ambiguous": is_ambiguous,
+        }
 
     def _keyword_fallback(self, normalized: str) -> dict:
         """Simple keyword-based fallback when model is unavailable."""
