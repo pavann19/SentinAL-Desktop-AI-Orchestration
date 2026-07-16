@@ -6,7 +6,16 @@
 
 ---
 
-## Current State (as of 2026-07-14, Session 10 — dataset scale-up + real-world architectural improvement, COMPLETE)
+## Current State (as of 2026-07-15, Session 11 — router accuracy improvement push, COMPLETE)
+
+- **Full suite: 353 passed, 0 failed, 6 skipped (commit `559d8fe`).**
+- **No new Antigravity commits this session** (checked at session start — tip was still `a0cdccc` from Session 10; the only new commit this session is Claude's own, below).
+- **Router-only accuracy: 54.25% → 58.67% (+4.42pp) via targeted phrase-bank expansion (commit `559d8fe`).** Diagnosed the weakest intents by FAILURE MODE first (recall gap vs. collision) before touching anything — `DependencyInstallIntent`/`InformationRetrievalIntent`/`DataModelingIntent` were 75-84% pure `UnknownIntent` recall gaps, not wrong-intent collisions, so the fix (broader generalized anchor phrases, not copied verbatim from the dataset) was legitimate, not overfitting.
+- **Found and deliberately did NOT "fix":** a genuine dataset labeling issue — some `SysUtilityIntent`-labeled entries are volume-toggle phrasings that `MediaControlIntent` explicitly owns per its own definition. The router already routes these correctly; forcing a match would teach an incorrect distinction. Documented, not patched around.
+- **Reported honestly, not hidden:** real collateral drops from the expansion — `WebNavigationIntent` -4.0pp, `ConversationalIntent` -2.3pp, `ApplicationLaunchIntent` -1.3pp, `MediaStreamingIntent` -1.0pp, `ProcessManagementIntent` -0.5pp. `InformationRetrievalIntent` barely moved (+1.0pp) despite dedicated additions — confirms it's bounded by the semantic-boundary issue found in Session 9/10 (WebNav/InfoRetrieval ambiguity), not a coverage gap.
+- **This confirms the estimate given before this work started:** phrase-bank tuning alone has real but bounded headroom (roughly the 54→59% territory demonstrated), diminishing returns already visible. Reaching 75%+ on router-only needs the harder work — resolving the semantic-boundary collision, not more anchor phrases. Full-pipeline accuracy (60.00% before this session's change) was not re-measured this session — router changes shift what reaches the LLM fallback, so it should be re-measured before being cited anywhere.
+- **Next:** decide whether to tackle the WebNav/InfoRetrieval boundary explicitly (the next real lever toward 75%), re-measure full-pipeline accuracy with the new router, and fold both into the still-pending Session 10 thesis update pack (`_context_packs/thesis_session10_update.md`) before dispatching — it currently cites the pre-this-session 54.25% figure, which is now stale.
+- **Old context below (Session 10 summary onward) is still accurate as history.**
 
 - **Full suite: 353 passed, 0 failed, 6 skipped (commit `b2c6c6a`).** Confirmed final — one interim run showed 1 failure (`test_web_navigation_full_pipeline`, the known live-network-dependent test), re-ran in isolation and passed cleanly; re-ran the full suite again after and got a clean 353/353. Same transient pattern as Session 9, not a regression (the dataset merge only touched a JSON data file, no code).
 - **Thesis final-numbers pass verified and merged (commit `b21708a`).** Every number traced to real measurements, 0 placeholders, 0 fabrication.
