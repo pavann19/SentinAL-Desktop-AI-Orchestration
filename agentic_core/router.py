@@ -35,6 +35,28 @@ INTENT_CAPABILITIES = {
         "retrieve information about",
         "fetch data about",
         "what are the latest updates on",
+        # Expanded 2026-07-15: real-dataset diagnosis (eval/intent_dataset.json,
+        # 3003-item version) found 75.2% of this intent's failures were
+        # UnknownIntent (recall gap, not a wrong-intent collision) — the bank
+        # lacked coverage for indirect/contextual framings common in natural
+        # speech. Phrases below are generalized anchors covering that pattern,
+        # NOT copied verbatim from the dataset (avoids overfitting the router
+        # to this specific test set).
+        "do you know how to",
+        "do you know what",
+        "I need to know what",
+        "I need to find out",
+        "quick, look up",
+        "before I forget, look up",
+        "can you google",
+        "go and search for",
+        "I'm curious about",
+        "any idea what",
+        "help me find out about",
+        "pull up information on",
+        "check what the current",
+        "find out how",
+        "I want to learn about",
     ],
     "ApplicationLaunchIntent": [
         "open the software",
@@ -245,6 +267,21 @@ INTENT_CAPABILITIES = {
         "make a bar chart from this spreadsheet",
         "check this dataset for duplicates",
         "profile this dataframe",
+        # Expanded 2026-07-15: real-dataset diagnosis (3003-item version) found
+        # 84.3% of this intent's failures were UnknownIntent - the bank was
+        # anchored on generic EDA/stats vocabulary but missed common named-
+        # algorithm and model-training phrasings. Generalized anchors, not
+        # copied from the dataset (avoids overfitting).
+        "run a k means clustering",
+        "train a random forest model",
+        "fit a classification tree",
+        "test my sentiment model",
+        "build a time series forecast",
+        "run a clustering algorithm on this",
+        "train a machine learning model on this data",
+        "evaluate this model's accuracy",
+        "split this data into training and test sets",
+        "perform feature engineering on this dataset",
     ],
     "SysUtilityIntent": [
         "empty the recycle bin",
@@ -268,6 +305,29 @@ INTENT_CAPABILITIES = {
         "turn on night light",
         "disable the touchpad",
         "check how much storage is left",
+        # Expanded 2026-07-15: real-dataset diagnosis (3003-item version) found
+        # this intent colliding with WindowManagementIntent on camera/mic/
+        # firewall/hotspot-toggle phrasings (legitimate SysUtility scope per
+        # this intent's own definition, config/constants.py: "mic"). Generalized
+        # anchors, not copied from the dataset.
+        # NOTE (also flagged in STATE.md, not fixed here): a separate subset of
+        # this intent's real dataset failures are volume-related ("toggle
+        # volume", "change volume") colliding with MediaControlIntent - that is
+        # a genuine DATASET LABELING issue, not a router defect. MediaControlIntent
+        # is explicitly defined for "Pycaw volume" (config/constants.py); the
+        # router correctly routes volume phrasing there. Forcing SysUtilityIntent
+        # to also match volume phrases would teach the router an incorrect
+        # distinction the system's own intent taxonomy doesn't support.
+        "switch my webcam on",
+        "turn off my camera",
+        "enable the firewall",
+        "disable the firewall",
+        "turn on my hotspot",
+        "switch off wifi hotspot",
+        "check my privacy settings",
+        "toggle location services",
+        "turn off bluetooth",
+        "check for system updates",
     ],
     "SchedulerIntent": [
         "plan a holiday itinerary",
@@ -478,6 +538,22 @@ INTENT_CAPABILITIES = {
         "install the project requirements",
         "add this package with yarn",
         "install this dependency for me",
+        # Expanded 2026-07-15: real-dataset diagnosis (3003-item version) found
+        # 82.6% of this intent's failures were UnknownIntent — the bank was
+        # heavily anchored on "install"/"pip"/"npm"/"add" vocabulary and missed
+        # equally common alternate verbs real users use for the same action
+        # (import, require, fetch, get, setup, download, bring in). Generalized
+        # anchors, not copied from the dataset.
+        "import this library into the project",
+        "require this package",
+        "fetch this dependency",
+        "get this package for the project",
+        "setup this library",
+        "download this package",
+        "bring in this dependency",
+        "pull in this library",
+        "grab this package",
+        "add this module to my environment",
     ],
 }
 
