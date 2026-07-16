@@ -50,6 +50,10 @@ class TestRouterIntentRecognition:
         result = router.route("list the files here")
         assert result["intent"] == "GeneralizedOSIntent"
         assert result["confidence"] >= 0.40
+        # GeneralizedOSIntent has no labeled examples in eval/intent_dataset.json, so
+        # the Phase A classifier can never predict it - route() falls back to
+        # zero-shot cosine similarity for this intent specifically (see router.py's
+        # _classifier_blind_intents). This asserts that fallback still works.
 
     def test_hello_routes_conversational(self, router):
         result = router.route("hello how are you doing today")
@@ -58,7 +62,10 @@ class TestRouterIntentRecognition:
 
     def test_continue_routes_continuation(self, router):
         result = router.route("please go on")
-        assert result["intent"] in ("ContinuationIntent", "InformationRetrievalIntent")
+        # ContinuationIntent has no labeled examples in eval/intent_dataset.json (same
+        # classifier blind spot as GeneralizedOSIntent above) - covered via zero-shot
+        # cosine fallback in router.py, not the trained classifier.
+        assert result["intent"] == "ContinuationIntent"
         assert result["confidence"] >= 0.40
 
 
@@ -122,6 +129,14 @@ class TestRouterIntentCoverage:
         ("ProcessManagementIntent",   "kill this stuck program"),
         ("ProjectScaffoldIntent",     "scaffold a brand new app for me"),
         ("DependencyInstallIntent",   "please install these dependencies for me"),
+        # Added 2026-07-16: DictationIntent and MediaControlIntent, alongside
+        # GeneralizedOSIntent/ContinuationIntent above, have no labeled examples in
+        # eval/intent_dataset.json - the Phase A classifier can never predict them.
+        # Explicit coverage here catches a regression if the zero-shot fallback for
+        # these classifier-blind intents (router.py's _classifier_blind_intents)
+        # ever breaks.
+        ("DictationIntent",          "begin dictating this note for me"),
+        ("MediaControlIntent",       "turn the volume down a little"),
     ])
     def test_intent_class_is_reachable(self, router, intent_class, phrase):
         result = router.route(phrase)

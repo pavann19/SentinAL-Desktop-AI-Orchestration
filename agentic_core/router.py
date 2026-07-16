@@ -616,11 +616,27 @@ class SemanticRouter:
                 self.classifier = None
                 self._use_classifier = False
                 self.intents = list(INTENT_CAPABILITIES.keys())
-            
+
             self.intent_embeddings = {}
             # Precompute cluster embeddings once at startup (for zero-shot fallback if classifier missing)
             for intent, phrases in INTENT_CAPABILITIES.items():
                 self.intent_embeddings[intent] = self.model.encode(phrases)
+
+            # Phase A blind spot: eval/intent_dataset.json (the classifier's training
+            # labels) only covers 15 of the ~19 intents in INTENT_CAPABILITIES.
+            # GeneralizedOSIntent, ContinuationIntent, DictationIntent, and
+            # MediaControlIntent have NO training examples, so clf.classes_ can never
+            # contain them - the classifier will confidently misroute these to a
+            # trained neighbor (e.g. "continue" -> ProcessManagementIntent @ 0.78,
+            # not flagged ambiguous). Keep zero-shot cosine coverage for exactly
+            # these classifier-blind intents so they stay reachable. Real fix is
+            # adding labeled training data for them in a Phase A-v2 dataset pass.
+            if self._use_classifier:
+                self._classifier_blind_intents = [
+                    i for i in INTENT_CAPABILITIES if i not in set(self.classifier.classes_)
+                ]
+            else:
+                self._classifier_blind_intents = []
             print("[Router] Semantic router ready.")
         except Exception as e:
             print(f"[Router] WARNING: Could not load sentence-transformers ({e}). Using keyword fallback.")
@@ -660,6 +676,20 @@ class SemanticRouter:
             highest_score = float(probs[top_two_idx[0]])
             second_score = float(probs[top_two_idx[1]])
             best_intent = self.classifier.classes_[top_two_idx[0]]
+
+            # Cover the classifier's blind spot (see __init__ comment): check the
+            # classifier-blind intents via zero-shot cosine similarity, and prefer
+            # one only if it clearly beats the classifier's own top confidence -
+            # avoids letting cosine noise override a genuinely confident classifier call.
+            for intent in self._classifier_blind_intents:
+                sim_scores = self._cos_sim(query_emb, self.intent_embeddings[intent])[0]
+                blind_score = float(np.max(sim_scores))
+                if blind_score >= 0.55 and blind_score > highest_score:
+                    second_score = highest_score
+                    highest_score = blind_score
+                    best_intent = intent
+                elif blind_score > second_score:
+                    second_score = blind_score
         else:
             # Legacy Zero-Shot Cosine Similarity Path
             for intent, embeddings in self.intent_embeddings.items():
