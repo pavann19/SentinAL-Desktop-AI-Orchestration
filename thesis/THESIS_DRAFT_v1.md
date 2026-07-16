@@ -779,7 +779,7 @@ The suite comprises 66 discrete test cases generating over 1,000 individual adve
 - Every forbidden intent (including empty strings, whitespace, SQL injection in intent names) is rejected by the allowlist.
 - 1,000 random garbage strings of arbitrary length do not crash the privacy router.
 
-Supported by 320+ passing tests across the complete suite, the multi-layered validation pipeline effectively contains malicious operations. A key validated finding during fuzzing was the system's previous vulnerability to bare-drive-root deletions (e.g., "format D:"), which was identified through the task success harness (Section 7.3) rather than the fuzzing suite—demonstrating the complementary value of both evaluation approaches.
+Supported by 369 passing tests across the complete suite, the multi-layered validation pipeline effectively contains malicious operations. A key validated finding during fuzzing was the system's previous vulnerability to bare-drive-root deletions (e.g., "format D:"), which was identified through the task success harness (Section 7.3) rather than the fuzzing suite—demonstrating the complementary value of both evaluation approaches.
 
 **Implications for RQ3:** The layered validation pipeline achieves a 100% block rate against all tested adversarial inputs (66/66 fuzz tests) without degrading the success rate of benign tasks. The two `deny-format` failures in the task success harness (Section 7.3) represent a coverage gap in the sandbox regex pattern, not a fundamental limitation of the validation architecture.
 
