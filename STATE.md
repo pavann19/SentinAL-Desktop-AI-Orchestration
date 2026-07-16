@@ -6,7 +6,16 @@
 
 ---
 
-## Current State (as of 2026-07-15, Session 11 — router accuracy improvement push, COMPLETE)
+## Current State (as of 2026-07-16, Session 12 — tie-break disambiguation, COMPLETE)
+
+- **Full suite: 361 passed, 0 failed, 6 skipped (commit `c44dfa2`).**
+- **Root cause found and confirmed empirically:** the WebNavigationIntent phrase-bank experiment (Session 11) proved the router's accuracy ceiling isn't a coverage gap — it's genuine semantic ambiguity between certain intent pairs (WebNav/InfoRetrieval), unfixable by more phrase tuning (+10.4pp on one intent cost -5.4pp on its neighbor, net +0.2pp).
+- **Tie-break mechanism added (`agentic_core/router.py` + `agentic_core/processor.py`, commit `c44dfa2`):** `router.route()` now also tracks the runner-up score and returns `margin`/`is_ambiguous`. Calibrated eps=0.05 empirically against the 3003-item dataset (wrong calls: median margin 0.040; right calls: 0.144 — real separation). `processor.py` now defers to LLM fallback when the router's top pick is ambiguous, not just when it's `UnknownIntent` (the earlier dead-zone fix).
+- **Router-only accuracy unchanged (58.87%) — expected, not a failure.** This metric only checks the raw router guess; the fix's entire point is to NOT trust that guess when ambiguous. Effect only shows in full-pipeline accuracy.
+- **Live-verified on a real dataset failure**: "my screen is a mess, hey, open teams" — router's wrong guess (`GeneralizedOSIntent`, margin=0.0) correctly flagged ambiguous, tie-break fired, LLM corrected it to the actual right answer (`ApplicationLaunchIntent`).
+- **NOT implemented: any new/redesigned architecture.** Everything this session and Session 11 is tuning within the existing single-stage embedding classifier. Fine-tuning the embedding model itself, per-intent-pair thresholds, or the Phase 2 roadmap (LangGraph planner) remain real, unstarted options if a bigger structural change is wanted.
+- **Next:** full-pipeline accuracy needs a fresh measurement against this tie-break fix specifically (the last full-pipeline number, 60.00%, predates it and also hit live LLM connectivity issues — treat as noisy). Then fold everything (router expansion, tie-break, both real numbers) into the still-pending thesis dispatch pack, which currently cites stale pre-Session-11 figures.
+- **Old context below (Session 10/11 summaries onward) is still accurate as history.**
 
 - **Full suite: 353 passed, 0 failed, 6 skipped (commit `559d8fe`).**
 - **No new Antigravity commits this session** (checked at session start — tip was still `a0cdccc` from Session 10; the only new commit this session is Claude's own, below).
