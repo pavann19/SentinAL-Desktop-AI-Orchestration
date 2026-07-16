@@ -1,0 +1,319 @@
+{
+  "mode": "full-pipeline",
+  "sample_size": 40,
+  "sample_seed": 7,
+  "correct": 24,
+  "accuracy": 0.6,
+  "per_intent": {
+    "ProcessManagementIntent": {
+      "total": 2,
+      "correct": 1,
+      "accuracy": 0.5
+    },
+    "InformationRetrievalIntent": {
+      "total": 4,
+      "correct": 1,
+      "accuracy": 0.25
+    },
+    "ProjectScaffoldIntent": {
+      "total": 2,
+      "correct": 1,
+      "accuracy": 0.5
+    },
+    "SchedulerIntent": {
+      "total": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    },
+    "ApplicationLaunchIntent": {
+      "total": 5,
+      "correct": 4,
+      "accuracy": 0.8
+    },
+    "WebNavigationIntent": {
+      "total": 7,
+      "correct": 5,
+      "accuracy": 0.7143
+    },
+    "AcademicResearchIntent": {
+      "total": 1,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "DataModelingIntent": {
+      "total": 6,
+      "correct": 5,
+      "accuracy": 0.8333
+    },
+    "CodeActIntent": {
+      "total": 1,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "FileDeletionIntent": {
+      "total": 4,
+      "correct": 3,
+      "accuracy": 0.75
+    },
+    "DependencyInstallIntent": {
+      "total": 4,
+      "correct": 2,
+      "accuracy": 0.5
+    },
+    "SysUtilityIntent": {
+      "total": 2,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "ConversationalIntent": {
+      "total": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    }
+  },
+  "results": [
+    {
+      "prompt": "can you close system updater",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "correct": true
+    },
+    {
+      "prompt": "i have a meeting soon so search for recipe for pancakes",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "correct": true
+    },
+    {
+      "prompt": "i need you to generate a angular app",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "correct": true
+    },
+    {
+      "prompt": "could you book anniversary for me",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "correct": true
+    },
+    {
+      "prompt": "load excel right now",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "correct": true
+    },
+    {
+      "prompt": "i am busy so let's check out localhost",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "correct": true
+    },
+    {
+      "prompt": "my screen is a mess, i am busy so evaluate the reference list",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "correct": false
+    },
+    {
+      "prompt": "REDIRECT ME TO YOUTUBE PLEASE",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "correct": true
+    },
+    {
+      "prompt": "hey, abort the entire browser",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "correct": false
+    },
+    {
+      "prompt": "agent, test my classification tree",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "correct": true
+    },
+    {
+      "prompt": "Do me a favor, activate zoom",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "correct": true
+    },
+    {
+      "prompt": "i need you to draft regex to find emails",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "DictationIntent",
+      "correct": false
+    },
+    {
+      "prompt": "quick, destroy document.docx",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "correct": true
+    },
+    {
+      "prompt": "quick, boot up edge",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "correct": true
+    },
+    {
+      "prompt": "i need you to go to linkedin",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "correct": true
+    },
+    {
+      "prompt": "i have a meeting soon so quick, fetch tailwindcss",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "correct": false
+    },
+    {
+      "prompt": "i have a meeting soon so would you mind if you i need prettier installed",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "correct": true
+    },
+    {
+      "prompt": "redirectm e to intranet right now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "UnknownIntent",
+      "correct": false
+    },
+    {
+      "prompt": "can you i need to delete old logs",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "correct": true
+    },
+    {
+      "prompt": "go to github",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "correct": true
+    },
+    {
+      "prompt": "Build a nlp classifier please",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "correct": true
+    },
+    {
+      "prompt": "Put prettier in dependencies right now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "correct": true
+    },
+    {
+      "prompt": "I am busy so open dashboard",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "correct": false
+    },
+    {
+      "prompt": "Train a random forest asap",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "correct": true
+    },
+    {
+      "prompt": "i am busy so find information about what is quantum computing",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "ConversationalIntent",
+      "correct": false
+    },
+    {
+      "prompt": "do me a favor, delete the entire directory",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "ConversationalIntent",
+      "correct": false
+    },
+    {
+      "prompt": "Before i forget, empty location services",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "correct": false
+    },
+    {
+      "prompt": "would you mind if you check wifi",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "UnknownIntent",
+      "correct": false
+    },
+    {
+      "prompt": "Browse to dashboard asap",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "correct": true
+    },
+    {
+      "prompt": "Hey, fit a nlp classifier",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "correct": true
+    },
+    {
+      "prompt": "before i forget, i need to run neural network",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "correct": false
+    },
+    {
+      "prompt": "Agent, generate a go server",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "CodeActIntent",
+      "correct": false
+    },
+    {
+      "prompt": "Spin up zoom",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "UnknownIntent",
+      "correct": false
+    },
+    {
+      "prompt": "i am busy so delete the the entire directory",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "correct": true
+    },
+    {
+      "prompt": "quick, boot up discord",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "correct": true
+    },
+    {
+      "prompt": "Agent, perform pca analysis",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "correct": true
+    },
+    {
+      "prompt": "could you i need to know python list comprehension for me",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "correct": false
+    },
+    {
+      "prompt": "i have a meeting soon so please hey agent, are you there",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "correct": true
+    },
+    {
+      "prompt": "my screen is a mess, can you setup axios",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "SysUtilityIntent",
+      "correct": false
+    },
+    {
+      "prompt": "hey, search for recipe for pancakes",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "correct": false
+    }
+  ],
+  "dataset_path": "D:\\college\\Major Project\\SentinAL-v9-reunited\\eval\\intent_dataset.json",
+  "dataset_sha256_16": "38d8d3eeeab930ae",
+  "dataset_total_entries": 3003
+}

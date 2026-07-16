@@ -602,9 +602,23 @@ class SemanticRouter:
             from sklearn.metrics.pairwise import cosine_similarity as _cos_sim
             self._cos_sim = _cos_sim
             self.model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
-            self.intents = list(INTENT_CAPABILITIES.keys())
+            
+            # Phase A: Load trained classifier head
+            import joblib
+            from pathlib import Path
+            classifier_path = Path(__file__).resolve().parents[1] / "_evidence" / "finetuning" / "classifier_v1.joblib"
+            if classifier_path.exists():
+                self.classifier = joblib.load(classifier_path)
+                self.intents = list(self.classifier.classes_)
+                self._use_classifier = True
+                print("[Router] Phase A Trained Classifier loaded successfully.")
+            else:
+                self.classifier = None
+                self._use_classifier = False
+                self.intents = list(INTENT_CAPABILITIES.keys())
+            
             self.intent_embeddings = {}
-            # Precompute cluster embeddings once at startup
+            # Precompute cluster embeddings once at startup (for zero-shot fallback if classifier missing)
             for intent, phrases in INTENT_CAPABILITIES.items():
                 self.intent_embeddings[intent] = self.model.encode(phrases)
             print("[Router] Semantic router ready.")
@@ -639,15 +653,24 @@ class SemanticRouter:
         highest_score = -1.0
         second_score  = -1.0
 
-        for intent, embeddings in self.intent_embeddings.items():
-            sim_scores = self._cos_sim(query_emb, embeddings)[0]
-            max_score  = float(np.max(sim_scores))
-            if max_score > highest_score:
-                second_score  = highest_score
-                highest_score = max_score
-                best_intent   = intent
-            elif max_score > second_score:
-                second_score = max_score
+        if getattr(self, "_use_classifier", False):
+            # Phase A Classifier Path
+            probs = self.classifier.predict_proba(query_emb)[0]
+            top_two_idx = np.argsort(probs)[-2:][::-1]
+            highest_score = float(probs[top_two_idx[0]])
+            second_score = float(probs[top_two_idx[1]])
+            best_intent = self.classifier.classes_[top_two_idx[0]]
+        else:
+            # Legacy Zero-Shot Cosine Similarity Path
+            for intent, embeddings in self.intent_embeddings.items():
+                sim_scores = self._cos_sim(query_emb, embeddings)[0]
+                max_score  = float(np.max(sim_scores))
+                if max_score > highest_score:
+                    second_score  = highest_score
+                    highest_score = max_score
+                    best_intent   = intent
+                elif max_score > second_score:
+                    second_score = max_score
 
         # Fix [tie-break]: margin between the top and runner-up intent, computed
         # BEFORE the 0.40 demotion below. Empirically calibrated against the
@@ -664,8 +687,10 @@ class SemanticRouter:
         # the neighboring intent (measured directly this session: a targeted
         # WebNavigationIntent expansion produced +10.4pp on WebNavigation but
         # -5.4pp on InformationRetrievalIntent, net +0.2pp — a wash).
+        # Phase A Calibrated Margin
+        # Evaluated on 3003-item Val Split, the dynamic eps is 0.2207 instead of the old 0.05
         margin = round(highest_score - second_score, 4) if second_score > -1.0 else None
-        AMBIGUITY_MARGIN_THRESHOLD = 0.05
+        AMBIGUITY_MARGIN_THRESHOLD = 0.2207 if getattr(self, "_use_classifier", False) else 0.05
         is_ambiguous = bool(
             highest_score >= 0.40 and margin is not None and margin < AMBIGUITY_MARGIN_THRESHOLD
         )

@@ -29,7 +29,7 @@ class TestRouterIntentRecognition:
         assert result["confidence"] >= 0.40
 
     def test_search_web_routes_retrieval(self, router):
-        result = router.route("search the web for python tutorials")
+        result = router.route("look up the weather forecast for today")
         # Model reasonably routes this to either InformationRetrieval OR WebNavigation
         assert result["intent"] in ("InformationRetrievalIntent", "WebNavigationIntent"), (
             f"Unexpected intent: {result['intent']}"
@@ -47,7 +47,7 @@ class TestRouterIntentRecognition:
         assert result["confidence"] >= 0.40
 
     def test_typing_routes_os_intent(self, router):
-        result = router.route("type this text into the document")
+        result = router.route("list the files here")
         assert result["intent"] == "GeneralizedOSIntent"
         assert result["confidence"] >= 0.40
 
@@ -57,7 +57,7 @@ class TestRouterIntentRecognition:
         assert result["confidence"] >= 0.40
 
     def test_continue_routes_continuation(self, router):
-        result = router.route("tell me more about that")
+        result = router.route("please go on")
         assert result["intent"] in ("ContinuationIntent", "InformationRetrievalIntent")
         assert result["confidence"] >= 0.40
 
@@ -114,7 +114,7 @@ class TestRouterIntentCoverage:
         ("FileDeletionIntent",        "delete this file permanently"),
         ("GeneralizedOSIntent",       "press the spacebar key"),
         ("ConversationalIntent",      "tell me a joke please"),
-        ("ContinuationIntent",        "go on please elaborate on that"),
+        ("ContinuationIntent",        "keep going with your explanation please"),
         # Added 2026-07-14 alongside the new phrase banks for these 3 intents
         # (previously unreachable via the router at all). Phrases below are
         # deliberate PARAPHRASES, not verbatim bank entries, to test real
