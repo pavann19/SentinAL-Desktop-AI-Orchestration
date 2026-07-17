@@ -38,6 +38,7 @@
 ## List of Tables
 
 - **Table 1:** Non-Functional Requirements (Section 4.2)
+- **Table 1a:** Intent Taxonomy Reconciliation (Section 3.6)
 - **Table 2:** Threat Model Taxonomy (Section 4.3)
 - **Table 3:** Comparison of Desktop Agent Frameworks (Section 3.3)
 - **Table 4:** 5-Gate Verification Protocol Summary (Section 6.2)
@@ -416,6 +417,8 @@ The system processes input linearly through a series of specialized gates. Each 
 
 ### 5.2 Hybrid Routing Layer
 
+**[Figure 2: Hybrid Intent Router Decision Flow — diagram not yet produced. Placeholder added during proofreading to make the gap visible rather than silently missing; the three-tier cascade it should depict is described in full immediately below.]**
+
 Traditional agents rely on massive LLMs to parse user intent into structured JSON schemas. This introduces high latency (network round-trip + inference) and API dependency for every interaction. SentinAL's `SemanticRouter` solves this by placing a lightweight, local embedding model ahead of the LLM, creating a three-tier resolution cascade.
 
 **Tier 1: Deterministic Keyword Fast-Path.** The first layer checks for exact keyword matches against a handcrafted mapping of high-frequency commands. Common greetings ("hello," "hi," "good morning") are immediately mapped to `ConversationalIntent` without any model invocation. This tier resolves in microseconds and serves as a short-circuit for the most predictable interactions.
@@ -477,6 +480,8 @@ If any signature is detected across any tier, the query is explicitly tagged wit
 **Design Alternative Considered:** An alternative was to route *all* queries locally, eliminating cloud dependency entirely. This was rejected because current on-device models lag substantially behind cloud models in complex multi-step reasoning, code generation, and knowledge retrieval. A blanket local-only policy would degrade task success for complex, non-sensitive queries (e.g., multi-step research tasks) where cloud processing offers clear advantages and privacy is not at stake.
 
 ### 5.4 Security Validation Pipeline
+
+**[Figure 4: Validation Pipeline Sequence — diagram not yet produced. Placeholder added during proofreading to make the gap visible rather than silently missing; the layered sequence it should depict (allowlist → sandbox → HITL) is described step-by-step immediately below.]**
 
 The heart of SentinAL's defense model is the `validate_steps` module. Once an intent and its parameters are extracted (either via the fast-path or the LLM), they are subjected to a strict validation sequence before execution. This pipeline implements a defense-in-depth strategy where each layer catches different categories of threats.
 
@@ -776,7 +781,7 @@ SentinAL's security posture is rigorously evaluated using a dedicated adversaria
 
 | Category | Test Count | Attack Vectors | Target Component |
 |----------|------------|----------------|------------------|
-| Shell Injection Guard | 15 | `&&`, `||`, `;`, pipe, null byte, CRLF, backtick, `$()`, overflow | `executor._sanitize_shell_cmd` |
+| Shell Injection Guard | 15 | `&&`, `\|\|`, `;`, pipe, null byte, CRLF, backtick, `$()`, overflow | `executor._sanitize_shell_cmd` |
 | Sandbox Bypass | 24 (2×12) | `../../../Windows/System32`, env var expansion, case variation, UNC paths | `validator.validate_steps`, `validator.validate_sandbox` |
 | Privacy Router PII | 11 | SSN, credit card, password, email, phone, JWT, API key, IP address, Unicode | `privacy_router.analyze` |
 | Memory Manager Fuzz | 2 | URL-template injection, XSS-in-mnemonic | `agentic_core/memory_hook.py` |
@@ -933,17 +938,21 @@ The SentinAL system is built on Python 3.13.3 and relies on the following key de
 | Dependency | Version | Purpose |
 |------------|---------|---------|
 | FastAPI | ≥0.100 | Backend HTTP/WebSocket server |
-| sentence-transformers | ≥2.2 | Local semantic embeddings (all-MiniLM-L6-v2) |
+| sentence-transformers | ≥3.0.0,<4.0.0 | Local semantic embeddings (all-MiniLM-L6-v2) |
+| scikit-learn | ≥1.5.0,<2.0.0 | Phase A trained intent classifier (`LogisticRegression`, Section 7.1) |
+| joblib | (bundled with scikit-learn) | Serializing/loading the trained classifier (`classifier_v1.joblib`) |
 | pytest | ≥7.0 | Test framework |
 | opentelemetry-sdk | ≥1.20 | Distributed tracing instrumentation |
 | pyautogui | ≥0.9 | GUI automation |
 | pyttsx3 | ≥2.90 | Text-to-speech |
 
 The complete runtime environment requires the successful installation of all dependencies pinned in `requirements.txt`. To reproduce the evaluation metrics:
-- **Intent accuracy:** `python eval/run_intent_eval.py` (generates `eval/intent_eval_results.json`)
-- **Task success:** `python eval/harness.py` (generates timestamped report in `_evidence/P1-5/`)
+- **Zero-shot router-only accuracy:** `python -m eval.measure_intent_accuracy --mode router-only --run-id <id>` (writes to `_evidence/intent_accuracy/router-only_<id>.json`)
+- **Full-pipeline sample accuracy:** `python -m eval.measure_intent_accuracy --mode full-pipeline --sample-size 40 --sample-seed 7 --run-id <id>` (writes to `_evidence/intent_accuracy/full-pipeline_<id>.json`)
+- **Phase A classifier (train + evaluate against zero-shot baseline):** `python -m eval.finetune_classifier --run-id <id>` (writes the trained classifier to `_evidence/finetuning/classifier_v1.joblib`, the exact train/val/test split to `_evidence/finetuning/split_indices.json`, and full results including per-intent breakdowns to `_evidence/intent_accuracy/finetune_report_<id>.json`)
+- **Task success:** `python -m eval.run_eval` (generates a timestamped report in `_evidence/P1-5/`; see `eval/tasks.yaml` for the full 32-task definition)
 - **Security fuzzing:** `pytest tests/test_security_fuzz.py -v`
-- **Full regression:** `pytest tests/ -v --deselect tests/test_stress.py`
+- **Full regression:** `pytest tests/ -v --deselect tests/test_stress.py` (stress/concurrency tests are excluded from normal regression by design — see that file's own docstring — and run separately: `pytest tests/test_stress.py -v --timeout=120`)
 
 ### B. Full Test Matrix
 
