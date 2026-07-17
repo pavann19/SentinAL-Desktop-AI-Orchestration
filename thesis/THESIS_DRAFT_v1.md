@@ -417,7 +417,28 @@ The system processes input linearly through a series of specialized gates. Each 
 
 ### 5.2 Hybrid Routing Layer
 
-**[Figure 2: Hybrid Intent Router Decision Flow — diagram not yet produced. Placeholder added during proofreading to make the gap visible rather than silently missing; the three-tier cascade it should depict is described in full immediately below.]**
+**Figure 2: Hybrid Intent Router Decision Flow**
+
+```mermaid
+flowchart TD
+    A[User Query] --> B{"is_developer_task():<br/>2+ developer keywords?"}
+    B -->|Yes| C["CodeAct Engine<br/>(bypasses router entirely)"]
+    B -->|No| D{"Tier 1: Keyword Fast-Path<br/>match? (greetings, etc.)"}
+    D -->|Yes| E["ConversationalIntent<br/>~microseconds, no model call"]
+    D -->|No| F["Tier 2: Encode query<br/>(all-MiniLM-L6-v2)"]
+    F --> G{"Intent in the classifier's<br/>15 trained classes?"}
+    G -->|"Yes (14 of 18 live)"| H["Phase A Classifier<br/>predict_proba, top-2 scores"]
+    G -->|"No (4 classifier-blind)"| I["Zero-shot cosine similarity<br/>vs. phrase-bank centroids"]
+    H --> J{"confidence >= 0.40?"}
+    I --> J
+    J -->|No| K["UnknownIntent"]
+    J -->|Yes| L{"margin < eps?<br/>(0.2207 classifier / 0.05 cosine)"}
+    L -->|"Yes (ambiguous)"| M["Tier 3: LLM Extraction Fallback<br/>structured JSON, LRU-cached"]
+    L -->|"No (confident)"| N["Return intent deterministically<br/>under 50ms, no LLM call"]
+    K --> M
+```
+
+*Diagram reflects the router as implemented (`agentic_core/router.py`, `agentic_core/processor.py`): the CodeAct pre-check and Tier 1 keyword fast-path run first; Tier 2 splits between the Phase A classifier (Section 7.1) for its 15 trained intents and a zero-shot cosine fallback for the 4 intents outside its training data (Table 1a); the 0.40 confidence threshold and eps ambiguity margin jointly gate whether the LLM fallback (Tier 3) is consulted.*
 
 Traditional agents rely on massive LLMs to parse user intent into structured JSON schemas. This introduces high latency (network round-trip + inference) and API dependency for every interaction. SentinAL's `SemanticRouter` solves this by placing a lightweight, local embedding model ahead of the LLM, creating a three-tier resolution cascade.
 
@@ -481,7 +502,26 @@ If any signature is detected across any tier, the query is explicitly tagged wit
 
 ### 5.4 Security Validation Pipeline
 
-**[Figure 4: Validation Pipeline Sequence — diagram not yet produced. Placeholder added during proofreading to make the gap visible rather than silently missing; the layered sequence it should depict (allowlist → sandbox → HITL) is described step-by-step immediately below.]**
+**Figure 4: Validation Pipeline Sequence**
+
+```mermaid
+flowchart TD
+    A["Extracted Intent + Parameters"] --> B{"Step 1: Intent Allowlist<br/>in ALLOWLIST_INTENTS (20)?"}
+    B -->|No| R1["DENY: unknown/hallucinated<br/>intent rejected categorically"]
+    B -->|Yes| C{"Step 2: Target required<br/>for this intent?"}
+    C -->|"Missing target"| R2["DENY: no target specified"]
+    C -->|OK| D{"Step 3: Sandbox Path Validation<br/>(expand vars, normalize, check)"}
+    D -->|"System32 / Windows core /<br/>bare drive root"| R3["DENY: sandbox violation"]
+    D -->|OK| E{"Step 4: Keyword Filtering<br/>(SENSITIVE_TARGETS / SOFT_SENSITIVE_TARGETS)"}
+    E -->|"Hard-blocked keyword<br/>(word-boundary match)"| R4["DENY: blocked keyword"]
+    E -->|OK| F{"Step 5: HITL required?<br/>(e.g. FileDeletionIntent)"}
+    F -->|Yes| G["Halt: render confirmation dialog,<br/>await explicit user authorization"]
+    F -->|No| H["APPROVED: proceed to execution"]
+    G -->|User confirms| H
+    G -->|User declines| R5["DENY: user declined"]
+```
+
+*Diagram reflects the five-step sequence implemented in `agentic_core/validator.py::validate_steps` and `validate_sandbox`, described in full below. Any DENY outcome short-circuits the pipeline — later steps are never reached for a request already rejected by an earlier one.*
 
 The heart of SentinAL's defense model is the `validate_steps` module. Once an intent and its parameters are extracted (either via the fast-path or the LLM), they are subjected to a strict validation sequence before execution. This pipeline implements a defense-in-depth strategy where each layer catches different categories of threats.
 
