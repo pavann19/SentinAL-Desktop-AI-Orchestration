@@ -6,7 +6,16 @@
 
 ---
 
-## Current State (as of 2026-07-16, Session 13e — coverage gate closed, 70.53%)
+## Current State (as of 2026-07-16, Session 13f — all thesis diagrams converted to Mermaid, 3 more real bugs fixed)
+
+- **Config B/C resolved**: confirmed via repo-wide search that this belongs to a separate, unrelated project (`AI_Governance_Project`, a security-guardrail API gateway that also happens to use the "SentinAL" brand — see `CODEBASE_ANALYSIS.md`). Not part of this desktop-agent thesis and correctly does not appear in it. Flag for the user: two different products share the "SentinAL" name — worth disambiguating in the SOP/CV if not already done.
+- **Full proofread pass** (`cd86b37`): fixed broken Appendix A reproducibility commands (referenced a non-existent `eval/run_intent_eval.py`; corrected to the real `eval.measure_intent_accuracy`/`eval.finetune_classifier` invocations), stale dependency versions, a dropped `--deselect tests/test_stress.py` flag, added the missing Table 1a front-matter entry, escaped a raw `||` in a table cell.
+- **All 6 figures now Mermaid** (`1e45335`, `cf56aaf`): Figures 2 and 4 built new (matching the actual `router.py`/`processor.py`/`validator.py` logic, not just prose); Figures 1, 3, 5 converted from ASCII art; Figure 6 was already Mermaid. Rendering caveat flagged to user: standard pandoc/Word PDF pipelines don't render Mermaid natively — may need static PNG/SVG export before final assembly.
+- **3 more real, previously-unflagged bugs found and fixed while verifying the diagrams against actual code** (not just prose): (1) Figure 5/Section 5.5 claimed "2 retries" for the postcondition replan — actual code default is `MAX_REPLANS=1` (2 total attempts); also added the honest scope caveat that live postcondition verification currently only covers `ApplicationLaunchIntent`. (2) Section 6.1's capability count was internally self-contradictory — "33 registered capabilities" headline vs. 12+8+3=23 in the same sentence's own itemization; fixed to 23 everywhere. (3) A "73-line" config file claim was off by one (actual 72).
+- **Flagged, not fixed** (methodology-dependent): "~8,500 lines / 60+ modules" claim — different reasonable counting methodologies give 38-50 modules / 6,834-9,019 lines; not clearly right or wrong, left as-is.
+- **Still open**: whether to add real (non-Mermaid) diagrams matching Figures 1/3/5/6's original style is moot now (all converted); front matter (title page, Eidesstattliche Erklärung, signatures) still deferred to final assembly per user's earlier call; Phase A-v2, sklearn pin, fast-path-rate measurement all still open from Session 13b's plan, non-blocking.
+
+## Prior State (as of 2026-07-16, Session 13e — coverage gate closed, 70.53%)
 
 - **Coverage gate closed** (`c263744`): 60.64% → 70.53%, via 66 new real tests (no gaming) across `dependency_installer.py` (19%→98%), `scaffolding.py` (22%→98%), `codeact_engine.py` (27%→100%), `process_manager.py` (38%→94%), and 10 new `executor.py` dispatch tests for ProcessManagement/ProjectScaffold/DependencyInstall intents. Full suite: 429 passed, 0 failed, 6 skipped.
 - **Remaining coverage gaps, not addressed (lower priority, not blocking):** `executor.py`'s `GeneralizedOSIntent` shell-execution block (lines 301-559, the single largest remaining gap — dense subprocess/GUI/LLM-healing-loop logic, would need substantial mocking work for real coverage, not attempted this pass), `gui_resolver.py` (9%, pixel/vision-based, hard to unit test meaningfully), `router.py`'s remaining branches (66%), `processor.py` (74%).
