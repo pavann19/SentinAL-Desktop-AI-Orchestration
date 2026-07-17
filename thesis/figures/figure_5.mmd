@@ -1,0 +1,8 @@
+flowchart LR
+    A["Validate<br/>(Pass)"] --> B["Execute Command"]
+    B --> C["Observe Postcondition"]
+    C --> D{"Success?"}
+    D -->|Yes| E["Done"]
+    D -->|No| F["Replan (whole-pipeline re-run)"]
+    F -->|"1 bounded replan<br/>(2 total attempts)"| B
+    F -->|"replan exhausted, or<br/>category is cancelled/pipeline_error"| G["Fail (report failure category)"]

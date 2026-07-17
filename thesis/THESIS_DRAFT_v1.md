@@ -335,6 +335,10 @@ The system processes input linearly through a series of specialized gates. Each 
 
 **Figure 1: SentinAL System Architecture Pipeline**
 
+![Figure 1: SentinAL System Architecture Pipeline](figures/figure_1.png)
+
+<details><summary>Mermaid source (Figure 1)</summary>
+
 ```mermaid
 flowchart TD
     A["USER VOICE INPUT"] --> B["Wake Word Detection<br/>('Hey SentinAL', local)"]
@@ -366,11 +370,17 @@ flowchart TD
     I --> J["TTS Response<br/>spoken feedback to user"]
 ```
 
+</details>
+
 **Design Alternative Considered:** An alternative architecture would have been a monolithic LLM-driven agent (similar to UFO [11] or Claude's computer use [12]) where a single cloud model handles all perception, planning, and execution. This was rejected for three reasons: (1) it imposes mandatory cloud round-trips even for trivial commands, violating NFR-1; (2) it provides no mechanism for content-aware privacy routing, violating NFR-3; and (3) it relies entirely on the LLM's alignment for safety, violating NFR-4. The modular pipeline design allows each concern (speed, privacy, safety) to be addressed by a dedicated, independently testable component.
 
 ### 5.2 Hybrid Routing Layer
 
 **Figure 2: Hybrid Intent Router Decision Flow**
+
+![Figure 2: Hybrid Intent Router Decision Flow](figures/figure_2.png)
+
+<details><summary>Mermaid source (Figure 2)</summary>
 
 ```mermaid
 flowchart TD
@@ -390,6 +400,8 @@ flowchart TD
     L -->|"No (confident)"| N["Return intent deterministically<br/>under 50ms, no LLM call"]
     K --> M
 ```
+
+</details>
 
 *Diagram reflects the router as implemented (`agentic_core/router.py`, `agentic_core/processor.py`): the CodeAct pre-check and Tier 1 keyword fast-path run first; Tier 2 splits between the Phase A classifier (Section 7.1) for its 15 trained intents and a zero-shot cosine fallback for the 4 intents outside its training data (Table 1a); the 0.40 confidence threshold and eps ambiguity margin jointly gate whether the LLM fallback (Tier 3) is consulted.*
 
@@ -421,6 +433,10 @@ The `PrivacyRouter` scans incoming natural language against a multi-tiered heuri
 
 **Figure 3: Privacy Router Tiered Detection Engine**
 
+![Figure 3: Privacy Router Tiered Detection Engine](figures/figure_3.png)
+
+<details><summary>Mermaid source (Figure 3)</summary>
+
 ```mermaid
 flowchart TD
     Q["Input Query"] --> T1
@@ -442,6 +458,8 @@ flowchart TD
     M -->|No| C["route = 'cloud'<br/>(permitted to use cloud API)"]
 ```
 
+</details>
+
 If any signature is detected across any tier, the query is explicitly tagged with `{"route": "local"}`. The system's execution pipeline is strictly bound to obey this flag, unconditionally routing the extraction and reasoning tasks to an on-device, localized LLM (e.g., a quantized Llama or Mistral model running via Ollama). If the query is clear of all sensitive patterns, it is permitted to leverage the cloud API for superior reasoning speed and quality. All routing decisions are durably recorded in an audit log for post-hoc compliance verification.
 
 **Design Alternative Considered:** An alternative was to route *all* queries locally, eliminating cloud dependency entirely. This was rejected because current on-device models lag substantially behind cloud models in complex multi-step reasoning, code generation, and knowledge retrieval. A blanket local-only policy would degrade task success for complex, non-sensitive queries (e.g., multi-step research tasks) where cloud processing offers clear advantages and privacy is not at stake.
@@ -449,6 +467,10 @@ If any signature is detected across any tier, the query is explicitly tagged wit
 ### 5.4 Security Validation Pipeline
 
 **Figure 4: Validation Pipeline Sequence**
+
+![Figure 4: Validation Pipeline Sequence](figures/figure_4.png)
+
+<details><summary>Mermaid source (Figure 4)</summary>
 
 ```mermaid
 flowchart TD
@@ -466,6 +488,8 @@ flowchart TD
     G -->|User confirms| H
     G -->|User declines| R5["DENY: user declined"]
 ```
+
+</details>
 
 *Diagram reflects the five-step sequence implemented in `agentic_core/validator.py::validate_steps` and `validate_sandbox`, described in full below. Any DENY outcome short-circuits the pipeline — later steps are never reached for a request already rejected by an earlier one.*
 
@@ -515,6 +539,10 @@ The observer verifies execution success across a tiered priority system:
 
 **Figure 5: Execute-Observe-Replan State Machine**
 
+![Figure 5: Execute-Observe-Replan State Machine](figures/figure_5.png)
+
+<details><summary>Mermaid source (Figure 5)</summary>
+
 ```mermaid
 flowchart LR
     A["Validate<br/>(Pass)"] --> B["Execute Command"]
@@ -525,6 +553,8 @@ flowchart LR
     F -->|"1 bounded replan<br/>(2 total attempts)"| B
     F -->|"replan exhausted, or<br/>category is cancelled/pipeline_error"| G["Fail (report failure category)"]
 ```
+
+</details>
 
 If the postcondition fails, the executor initiates one bounded whole-pipeline replan (`MAX_REPLANS = 1` by default, configurable via `EXECUTOR_MAX_REPLANS` — two total execution attempts, not the "2 retries/3 attempts" a looser reading might suggest) to recover from transient failures. This replan is skipped entirely for the `cancelled` and `pipeline_error` failure categories, since those are `execute_pipeline()`'s own authoritative signals that it already exhausted its own internal per-step retries — blindly re-running a pipeline that errored partway through risks duplicate side effects (e.g. a second file deletion). As of this writing, `expected_state` (and therefore live postcondition verification) is populated only for `ApplicationLaunchIntent` steps (`capabilities/system/api_wrapper.py::_derive_expected_state`) — the mechanism is architecturally general but not yet exercised for every intent in production. To facilitate rigorous debugging and evaluation, the entire execution flow is instrumented using OpenTelemetry [16]. The tracing layer (`agentic_core/tracing.py`) generates a comprehensive span tree serialized to JSON, capturing microsecond-level latency and exact parameter states across every node in the pipeline. This produces the detailed per-stage latency data analyzed in Section 7.2.
 
@@ -548,6 +578,10 @@ The system architecture is distributed across clearly delineated packages, each 
 
 **Figure 6: Module Dependency Graph**
 
+![Figure 6: Module Dependency Graph](figures/figure_6.png)
+
+<details><summary>Mermaid source (Figure 6)</summary>
+
 ```mermaid
 graph TD
     A[interfaces/voice] -->|STT transcript| B[agentic_core/processor]
@@ -562,6 +596,8 @@ graph TD
     F -->|trace data| I[agentic_core/tracing]
     J[config/constants] -->|policies| E
 ```
+
+</details>
 
 - **`agentic_core/`** — The brain of the operation. Contains the central `processor` (the main pipeline orchestrator), `router` (the three-tier hybrid intent classifier), `executor` (capability dispatch and execution management), `validator` (the five-stage security validation pipeline), `memory_hook` (SQLite-backed mnemonic URL template storage), and the OpenTelemetry `tracing` layer. This package has zero dependencies on GUI or voice components, enabling headless testing.
 

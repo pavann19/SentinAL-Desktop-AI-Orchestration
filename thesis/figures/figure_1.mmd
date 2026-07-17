@@ -1,0 +1,28 @@
+flowchart TD
+    A["USER VOICE INPUT"] --> B["Wake Word Detection<br/>('Hey SentinAL', local)"]
+    B --> C["Speech-to-Text (STT)<br/>Whisper local / Azure STT"]
+    C --> D["NLP Correction Layer<br/>hallucination/refusal filter"]
+    D --> E
+
+    subgraph E["HYBRID INTENT ROUTER (see Figure 2 for full decision logic)"]
+        direction TB
+        E1["Tier 1: Deterministic Keyword<br/>Fast-Path (match -> bypass LLM)"] --> E2
+        E2["Tier 2: Semantic Embedding<br/>(all-MiniLM-L6-v2, conf > 0.40 -> map intent)"] --> E3
+        E3["Tier 3: LLM Extraction Fallback<br/>(cloud/local, per Privacy Router)"]
+    end
+
+    E --> F["Privacy Router (Content-Aware)<br/>PII/credential/path detection<br/>forces local LLM if sensitive"]
+    F --> G
+
+    subgraph G["VALIDATION PIPELINE (see Figure 4 for full sequence)"]
+        direction TB
+        G1["1. Intent Allowlist Checker<br/>blocks hallucinated intents"] --> G2
+        G2["2. Target Requirement Check<br/>blocks empty targets"] --> G3
+        G3["3. Sandbox Path Validator<br/>blocks System32, Windows core dirs"] --> G4
+        G4["4. Keyword Filter (word-boundary regex)<br/>blocks del, rm, format"] --> G5
+        G5["5. HITL Confirmation Gate<br/>user consent for deletions"]
+    end
+
+    G --> H["Execute Pipeline<br/>capability dispatch<br/>(23 registered capabilities)"]
+    H --> I["Postcondition Observer<br/>Process -> Window -> VLM verification"]
+    I --> J["TTS Response<br/>spoken feedback to user"]
