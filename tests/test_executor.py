@@ -98,3 +98,83 @@ class TestExecutePipeline:
         steps = [{"intent": "UnknownIntent", "target": "gibberish"}]
         result = execute_pipeline(steps)
         assert "ERROR" in result
+
+
+class TestProcessManagementIntentDispatch:
+
+    @patch("agentic_core.executor.list_processes")
+    def test_list_action_with_results(self, mock_list):
+        mock_list.return_value = [{"name": "notepad.exe", "pid": 1234, "mem_kb": "10,000 K"}]
+        steps = [{"intent": "ProcessManagementIntent", "action": "list", "target": "notepad"}]
+        result = execute_pipeline(steps)
+        assert "notepad.exe" in result
+
+    @patch("agentic_core.executor.list_processes")
+    def test_list_action_no_results(self, mock_list):
+        mock_list.return_value = []
+        steps = [{"intent": "ProcessManagementIntent", "action": "list", "target": "nonexistent"}]
+        result = execute_pipeline(steps)
+        assert "No processes matching" in result
+
+    @patch("agentic_core.executor.kill_process")
+    def test_kill_action_delegates_to_kill_process(self, mock_kill):
+        mock_kill.return_value = "Process 'notepad.exe' terminated successfully."
+        steps = [{"intent": "ProcessManagementIntent", "action": "kill", "target": "notepad.exe"}]
+        result = execute_pipeline(steps)
+        mock_kill.assert_called_once_with("notepad.exe")
+        assert "terminated successfully" in result
+
+    def test_kill_action_without_target_returns_error(self):
+        steps = [{"intent": "ProcessManagementIntent", "action": "kill", "target": ""}]
+        result = execute_pipeline(steps)
+        assert "No process name or PID" in result
+
+    def test_unknown_action_returns_message(self):
+        steps = [{"intent": "ProcessManagementIntent", "action": "reboot", "target": ""}]
+        result = execute_pipeline(steps)
+        assert "Unknown ProcessManagementIntent action" in result
+
+
+class TestProjectScaffoldIntentDispatch:
+
+    @patch("agentic_core.executor.scaffold_project")
+    def test_scaffold_delegates_with_correct_args(self, mock_scaffold):
+        mock_scaffold.return_value = "'react' project 'my-app' scaffolded successfully."
+        steps = [{
+            "intent": "ProjectScaffoldIntent",
+            "framework": "react",
+            "project_name": "my-app",
+            "location": "C:/fake/loc",
+        }]
+        result = execute_pipeline(steps)
+        mock_scaffold.assert_called_once_with(framework="react", project_name="my-app", location="C:/fake/loc")
+        assert "scaffolded successfully" in result
+
+    def test_missing_framework_returns_error(self):
+        steps = [{"intent": "ProjectScaffoldIntent", "framework": "", "project_name": "my-app"}]
+        result = execute_pipeline(steps)
+        assert "No framework specified" in result
+
+
+class TestDependencyInstallIntentDispatch:
+
+    @patch("agentic_core.executor.pip_install")
+    def test_pip_manager_delegates_to_pip_install(self, mock_pip):
+        mock_pip.return_value = "Launched visible terminal for: pip install requests"
+        steps = [{"intent": "DependencyInstallIntent", "manager": "pip", "packages": "requests"}]
+        result = execute_pipeline(steps)
+        mock_pip.assert_called_once_with("requests")
+        assert "Launched visible terminal" in result
+
+    @patch("agentic_core.executor.npm_install")
+    def test_npm_manager_delegates_to_npm_install(self, mock_npm):
+        mock_npm.return_value = "Launched visible terminal for: npm install lodash"
+        steps = [{"intent": "DependencyInstallIntent", "manager": "npm", "packages": "lodash", "dev": True, "cwd": "C:/fake"}]
+        result = execute_pipeline(steps)
+        mock_npm.assert_called_once_with(packages="lodash", dev=True, cwd="C:/fake")
+        assert "Launched visible terminal" in result
+
+    def test_unknown_manager_returns_error(self):
+        steps = [{"intent": "DependencyInstallIntent", "manager": "yarn", "packages": "lodash"}]
+        result = execute_pipeline(steps)
+        assert "Unknown package manager" in result
