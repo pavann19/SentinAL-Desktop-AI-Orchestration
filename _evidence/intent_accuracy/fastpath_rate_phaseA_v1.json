@@ -1,0 +1,13 @@
+{
+  "dataset_total": 3003,
+  "fast_path_resolved": 2909,
+  "fast_path_rate": 0.9687,
+  "llm_fallback_total": 94,
+  "llm_fallback_rate": 0.0313,
+  "breakdown": {
+    "unknown_intent_demoted": 10,
+    "ambiguous_tiebreak": 84
+  },
+  "dataset_sha256_16": "38d8d3eeeab930ae",
+  "method": "Exhaustive router.route() over full dataset; fast-path = NOT (intent=='UnknownIntent' or is_ambiguous), exactly mirroring agentic_core/processor.py's real LLM-fallback trigger condition."
+}
