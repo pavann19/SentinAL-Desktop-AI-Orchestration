@@ -15,3 +15,6 @@ sentinal-ui/dist/
 sentinal-ui/build/
 sentinal-ui/release/
 _backups/
+
+# Local API auth token (generated at runtime, never commit)
+.sentinal_token

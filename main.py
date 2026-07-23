@@ -23,7 +23,12 @@ import psutil
 # ── 1. GLOBAL CONFIG & SYNC (Master Lock) ───────────────────────────────────
 def load_env_config():
     """Manual .env parser to keep startup time near zero without dependencies."""
-    config = {"SENTINAL_PORT": "8000", "SENTINAL_HOST": "0.0.0.0"}
+    # SECURITY: default bind is loopback-only. This server exposes an endpoint
+    # that executes real OS actions; binding 0.0.0.0 (the previous default)
+    # published it to every interface, making it reachable from any host on the
+    # same network. Override SENTINAL_HOST deliberately if remote access is
+    # genuinely required — and only behind authentication and a trusted network.
+    config = {"SENTINAL_PORT": "8000", "SENTINAL_HOST": "127.0.0.1"}
     env_path = ".env"
     if os.path.exists(env_path):
         try:
@@ -50,7 +55,8 @@ SYSTEM_CONFIG = {
     "active_skills": ["SYS_CONTROL", "FILE_OPS", "NET_SOCKET"]
 }
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+import secrets
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocketState
 from pydantic import BaseModel
@@ -207,11 +213,72 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Local API Authentication ─────────────────────────────────────────────────
+# SECURITY: /api/command executes real OS actions. CORS alone does NOT protect
+# it — CORS is a browser-enforced policy, so any non-browser caller (curl, a
+# script, another local process) bypasses it entirely. Combined with the
+# previous default bind of 0.0.0.0 (all interfaces, now 127.0.0.1 — see the
+# __main__ block), this endpoint was reachable and executable without
+# credentials from any host on the same network.
+#
+# Mitigation: a bearer token required on every state-changing or
+# information-disclosing REST endpoint. The token is read from
+# SENTINAL_API_TOKEN; if unset, one is generated at startup and written to
+# .sentinal_token (gitignored) so a local UI/CLI can read it, and printed once
+# to the console. Health checks stay unauthenticated so process supervisors and
+# container health probes keep working.
+_TOKEN_FILE = ".sentinal_token"
+
+
+def _resolve_api_token() -> str:
+    """Returns the API token, generating and persisting one if not configured."""
+    token = os.getenv("SENTINAL_API_TOKEN", "").strip()
+    if token:
+        return token
+    try:
+        if os.path.exists(_TOKEN_FILE):
+            with open(_TOKEN_FILE, "r", encoding="utf-8") as fh:
+                existing = fh.read().strip()
+            if existing:
+                return existing
+    except Exception as exc:
+        print(f"[SECURITY] Could not read {_TOKEN_FILE}: {exc}")
+
+    generated = secrets.token_urlsafe(32)
+    try:
+        with open(_TOKEN_FILE, "w", encoding="utf-8") as fh:
+            fh.write(generated)
+        print(f"[SECURITY] Generated a new local API token -> {_TOKEN_FILE}")
+    except Exception as exc:
+        # Non-fatal: the token still works for this process, it just is not
+        # persisted. Failing closed here would make the server unstartable on a
+        # read-only filesystem, which is a worse outcome than an ephemeral token.
+        print(f"[SECURITY] Could not persist API token ({exc}); using an in-memory token.")
+    return generated
+
+
+API_TOKEN = _resolve_api_token()
+
+
+async def require_api_token(authorization: str = Header(default="")) -> None:
+    """FastAPI dependency: enforces `Authorization: Bearer <token>`.
+
+    Uses secrets.compare_digest to avoid leaking the token through response
+    timing. Raises 401 rather than 403 so a missing credential is distinguishable
+    from a rejected one in logs.
+    """
+    scheme, _, presented = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not presented:
+        raise HTTPException(status_code=401, detail="Missing bearer token.")
+    if not secrets.compare_digest(presented.strip(), API_TOKEN):
+        raise HTTPException(status_code=401, detail="Invalid bearer token.")
+
+
 @app.get("/")
 @app.get("/health")
 @app.get("/api/health")
 async def health_check():
-    """// REST API Health Monitor"""
+    """// REST API Health Monitor (intentionally unauthenticated)"""
     return {"status": "online", "version": "2.4.2"}
 
 class CommandRequest(BaseModel):
@@ -220,9 +287,9 @@ class CommandRequest(BaseModel):
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. REST Endpoint: Command Processing
 # ─────────────────────────────────────────────────────────────────────────────
-@app.post("/api/command")
+@app.post("/api/command", dependencies=[Depends(require_api_token)])
 async def handle_command(req: CommandRequest):
-    """// REST Execution Endpoint (Legacy Interface)"""
+    """// REST Execution Endpoint (Legacy Interface) — requires bearer token"""
     try:
         from capabilities.system.api_wrapper import process_command
         result = await process_command(req.prompt)  # process_command is now async (Fix 3.12)
@@ -230,9 +297,9 @@ async def handle_command(req: CommandRequest):
     except Exception as e:
         return {"input": req.prompt, "steps": [], "validation": "Error", "execution": "Error", "response": str(e)}
 
-@app.get("/api/logs")
+@app.get("/api/logs", dependencies=[Depends(require_api_token)])
 async def get_logs():
-    """// Diagnostic Log Retrieval"""
+    """// Diagnostic Log Retrieval — requires bearer token"""
     return _read_last_10_logs()
 
 def _read_last_10_logs():
@@ -683,6 +750,13 @@ async def websocket_agent(websocket: WebSocket):
 if __name__ == "__main__":
     import uvicorn
     port = int(SYNC_CONFIG.get("SENTINAL_PORT", 8000))
-    host = SYNC_CONFIG.get("SENTINAL_HOST", "0.0.0.0")
+    # SECURITY: loopback-only default — see load_env_config() for rationale.
+    host = SYNC_CONFIG.get("SENTINAL_HOST", "127.0.0.1")
     print(f"[SRE] SentinAL Core v9.0 online at http://{host}:{port}")
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        print(
+            f"[SECURITY] WARNING: bound to {host}, not loopback. /api/command executes "
+            f"real OS actions — ensure this network is trusted and SENTINAL_API_TOKEN is set."
+        )
+    print(f"[SECURITY] REST API token required for /api/command and /api/logs (see {_TOKEN_FILE}).")
     uvicorn.run("main:app", host=host, port=port, reload=False)
