@@ -1,0 +1,28 @@
+# The eval image only needs eval/, router.py, and the committed model/split
+# (see Dockerfile). Everything below is either irrelevant to reproduction or
+# large — excluded to keep the build context small and fast.
+venv/
+.venv/
+node_modules/
+sentinal-ui/
+htmlcov/
+_backups/
+_context_packs/
+logs/
+telemetry/
+memory/
+images/
+thesis/
+tests/
+__pycache__/
+*.pyc
+.git/
+.github/
+.pytest_cache/
+*.docx
+*.pdf
+.env
+.sentinal_token
+# Cached embeddings are regenerated inside the container from the datasets;
+# no need to ship the .npy files.
+_evidence/finetuning/*.npy
