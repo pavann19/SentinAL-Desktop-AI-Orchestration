@@ -167,7 +167,12 @@ def main():
     best_val_acc = 0.0
     print("\n--- Sweeping C ---")
     for c in [0.1, 0.3, 1.0, 3.0, 10.0]:
-        clf = LogisticRegression(max_iter=2000, multi_class="multinomial", C=c)
+        # NOTE: multinomial is the (and only) multiclass strategy in scikit-learn
+        # >= 1.7, where the multi_class argument was removed. Passing it explicitly
+        # breaks under 1.8.0 (TypeError). Omitting it preserves the exact same
+        # behaviour that multi_class="multinomial" gave under the 1.5/1.6 line the
+        # model was originally trained on.
+        clf = LogisticRegression(max_iter=2000, C=c)
         clf.fit(train_emb, train_labels)
         preds = clf.predict(val_emb)
         acc = accuracy_score(val_labels, preds)
@@ -178,8 +183,8 @@ def main():
             
     print(f"\nBest C: {best_c}")
     
-    # Final train on best C
-    clf = LogisticRegression(max_iter=2000, multi_class="multinomial", C=best_c)
+    # Final train on best C (multi_class omitted — see sweep loop comment above)
+    clf = LogisticRegression(max_iter=2000, C=best_c)
     clf.fit(train_emb, train_labels)
     joblib.dump(clf, CLASSIFIER_PATH)
     

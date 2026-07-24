@@ -1,0 +1,327 @@
+{
+    "run_id": "repin_sklearn180",
+    "dataset_path": "D:\\college\\Major Project\\SentinAL-v9-reunited\\eval\\intent_dataset.json",
+    "dataset_sha256_16": "38d8d3eeeab930ae",
+    "ood_dataset_path": "D:\\college\\Major Project\\SentinAL-v9-reunited\\eval\\intent_dataset_ood_test.json",
+    "classifier_metrics": {
+        "train_acc": 1.0,
+        "val_acc": 0.9866666666666667,
+        "test_acc": 0.9933481152993349,
+        "ood_acc": 0.92,
+        "best_c": 10.0,
+        "new_eps": 0.2207,
+        "old_eps": 0.05,
+        "test_per_intent": {
+            "ProjectScaffoldIntent": {
+                "total": 30,
+                "correct": 30,
+                "accuracy": 1.0
+            },
+            "InformationRetrievalIntent": {
+                "total": 31,
+                "correct": 31,
+                "accuracy": 1.0
+            },
+            "WebNavigationIntent": {
+                "total": 34,
+                "correct": 34,
+                "accuracy": 1.0
+            },
+            "DataModelingIntent": {
+                "total": 25,
+                "correct": 25,
+                "accuracy": 1.0
+            },
+            "AcademicResearchIntent": {
+                "total": 25,
+                "correct": 25,
+                "accuracy": 1.0
+            },
+            "ApplicationLaunchIntent": {
+                "total": 36,
+                "correct": 35,
+                "accuracy": 0.9722
+            },
+            "ProcessManagementIntent": {
+                "total": 31,
+                "correct": 31,
+                "accuracy": 1.0
+            },
+            "SchedulerIntent": {
+                "total": 25,
+                "correct": 24,
+                "accuracy": 0.96
+            },
+            "CodeActIntent": {
+                "total": 25,
+                "correct": 25,
+                "accuracy": 1.0
+            },
+            "SysUtilityIntent": {
+                "total": 31,
+                "correct": 31,
+                "accuracy": 1.0
+            },
+            "ConversationalIntent": {
+                "total": 34,
+                "correct": 33,
+                "accuracy": 0.9706
+            },
+            "WindowManagementIntent": {
+                "total": 31,
+                "correct": 31,
+                "accuracy": 1.0
+            },
+            "DependencyInstallIntent": {
+                "total": 31,
+                "correct": 31,
+                "accuracy": 1.0
+            },
+            "FileDeletionIntent": {
+                "total": 31,
+                "correct": 31,
+                "accuracy": 1.0
+            },
+            "MediaStreamingIntent": {
+                "total": 31,
+                "correct": 31,
+                "accuracy": 1.0
+            }
+        },
+        "ood_per_intent": {
+            "ApplicationLaunchIntent": {
+                "total": 10,
+                "correct": 9,
+                "accuracy": 0.9
+            },
+            "WebNavigationIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "InformationRetrievalIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "MediaStreamingIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "FileDeletionIntent": {
+                "total": 10,
+                "correct": 9,
+                "accuracy": 0.9
+            },
+            "ConversationalIntent": {
+                "total": 10,
+                "correct": 6,
+                "accuracy": 0.6
+            },
+            "ProcessManagementIntent": {
+                "total": 10,
+                "correct": 8,
+                "accuracy": 0.8
+            },
+            "ProjectScaffoldIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "DependencyInstallIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "CodeActIntent": {
+                "total": 10,
+                "correct": 9,
+                "accuracy": 0.9
+            },
+            "AcademicResearchIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "DataModelingIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "SysUtilityIntent": {
+                "total": 10,
+                "correct": 9,
+                "accuracy": 0.9
+            },
+            "SchedulerIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "WindowManagementIntent": {
+                "total": 10,
+                "correct": 8,
+                "accuracy": 0.8
+            }
+        }
+    },
+    "zeroshot_metrics": {
+        "test_acc": 0.9866962305986696,
+        "ood_acc": 0.8666666666666667,
+        "test_per_intent": {
+            "ProjectScaffoldIntent": {
+                "total": 30,
+                "correct": 30,
+                "accuracy": 1.0
+            },
+            "InformationRetrievalIntent": {
+                "total": 31,
+                "correct": 31,
+                "accuracy": 1.0
+            },
+            "WebNavigationIntent": {
+                "total": 34,
+                "correct": 34,
+                "accuracy": 1.0
+            },
+            "DataModelingIntent": {
+                "total": 25,
+                "correct": 25,
+                "accuracy": 1.0
+            },
+            "AcademicResearchIntent": {
+                "total": 25,
+                "correct": 25,
+                "accuracy": 1.0
+            },
+            "ApplicationLaunchIntent": {
+                "total": 36,
+                "correct": 35,
+                "accuracy": 0.9722
+            },
+            "ProcessManagementIntent": {
+                "total": 31,
+                "correct": 30,
+                "accuracy": 0.9677
+            },
+            "SchedulerIntent": {
+                "total": 25,
+                "correct": 24,
+                "accuracy": 0.96
+            },
+            "CodeActIntent": {
+                "total": 25,
+                "correct": 25,
+                "accuracy": 1.0
+            },
+            "SysUtilityIntent": {
+                "total": 31,
+                "correct": 30,
+                "accuracy": 0.9677
+            },
+            "ConversationalIntent": {
+                "total": 34,
+                "correct": 33,
+                "accuracy": 0.9706
+            },
+            "WindowManagementIntent": {
+                "total": 31,
+                "correct": 31,
+                "accuracy": 1.0
+            },
+            "DependencyInstallIntent": {
+                "total": 31,
+                "correct": 30,
+                "accuracy": 0.9677
+            },
+            "FileDeletionIntent": {
+                "total": 31,
+                "correct": 31,
+                "accuracy": 1.0
+            },
+            "MediaStreamingIntent": {
+                "total": 31,
+                "correct": 31,
+                "accuracy": 1.0
+            }
+        },
+        "ood_per_intent": {
+            "ApplicationLaunchIntent": {
+                "total": 10,
+                "correct": 8,
+                "accuracy": 0.8
+            },
+            "WebNavigationIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "InformationRetrievalIntent": {
+                "total": 10,
+                "correct": 9,
+                "accuracy": 0.9
+            },
+            "MediaStreamingIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "FileDeletionIntent": {
+                "total": 10,
+                "correct": 9,
+                "accuracy": 0.9
+            },
+            "ConversationalIntent": {
+                "total": 10,
+                "correct": 5,
+                "accuracy": 0.5
+            },
+            "ProcessManagementIntent": {
+                "total": 10,
+                "correct": 7,
+                "accuracy": 0.7
+            },
+            "ProjectScaffoldIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "DependencyInstallIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "CodeActIntent": {
+                "total": 10,
+                "correct": 9,
+                "accuracy": 0.9
+            },
+            "AcademicResearchIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "DataModelingIntent": {
+                "total": 10,
+                "correct": 8,
+                "accuracy": 0.8
+            },
+            "SysUtilityIntent": {
+                "total": 10,
+                "correct": 7,
+                "accuracy": 0.7
+            },
+            "SchedulerIntent": {
+                "total": 10,
+                "correct": 10,
+                "accuracy": 1.0
+            },
+            "WindowManagementIntent": {
+                "total": 10,
+                "correct": 8,
+                "accuracy": 0.8
+            }
+        }
+    }
+}

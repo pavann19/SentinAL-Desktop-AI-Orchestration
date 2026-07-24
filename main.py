@@ -747,7 +747,8 @@ async def websocket_agent(websocket: WebSocket):
 # ─────────────────────────────────────────────────────────────────────────────
 # 8. Optimized Direct Launch
 # ─────────────────────────────────────────────────────────────────────────────
-if __name__ == "__main__":
+def __main_entry__():
+    """Console-script entry point (`sentinal` command, see pyproject.toml)."""
     import uvicorn
     port = int(SYNC_CONFIG.get("SENTINAL_PORT", 8000))
     # SECURITY: loopback-only default — see load_env_config() for rationale.
@@ -760,3 +761,7 @@ if __name__ == "__main__":
         )
     print(f"[SECURITY] REST API token required for /api/command and /api/logs (see {_TOKEN_FILE}).")
     uvicorn.run("main:app", host=host, port=port, reload=False)
+
+
+if __name__ == "__main__":
+    __main_entry__()
