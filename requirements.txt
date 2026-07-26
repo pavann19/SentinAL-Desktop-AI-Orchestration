@@ -24,7 +24,13 @@ scikit-learn>=1.5.0,<2.0.0
 faster-whisper>=1.0.0,<2.0.0
 sounddevice>=0.4.7,<1.0.0
 soundfile>=0.12.1,<1.0.0
-numpy>=1.26.0,<2.0.0
+# Lower bound 2.0.2 (raised from a stale 1.26.0/<2.0.0 pin, real conflict found
+# via a genuinely clean `pip install -r requirements.txt`): kokoro-onnx>=0.4.0
+# below requires numpy>=2.0.2 in every version pip resolves, making the old
+# <2.0.0 cap unsatisfiable. The old pin had been silently violated in every
+# working local environment for a long time (already running numpy 2.4.x) -
+# this file just never said so until a fresh install actually enforced it.
+numpy>=2.0.2,<3.0.0
 scipy>=1.13.0,<2.0.0
 
 # ── TTS / Audio Output ────────────────────────────────────────────────────────
