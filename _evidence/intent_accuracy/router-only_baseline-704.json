@@ -1,0 +1,5016 @@
+{
+  "mode": "router-only",
+  "total": 704,
+  "correct": 438,
+  "accuracy": 0.6222,
+  "per_intent": {
+    "ApplicationLaunchIntent": {
+      "total": 56,
+      "correct": 42,
+      "accuracy": 0.75
+    },
+    "WebNavigationIntent": {
+      "total": 52,
+      "correct": 28,
+      "accuracy": 0.5385
+    },
+    "InformationRetrievalIntent": {
+      "total": 48,
+      "correct": 15,
+      "accuracy": 0.3125
+    },
+    "MediaStreamingIntent": {
+      "total": 48,
+      "correct": 42,
+      "accuracy": 0.875
+    },
+    "FileDeletionIntent": {
+      "total": 48,
+      "correct": 35,
+      "accuracy": 0.7292
+    },
+    "ConversationalIntent": {
+      "total": 52,
+      "correct": 46,
+      "accuracy": 0.8846
+    },
+    "ProcessManagementIntent": {
+      "total": 48,
+      "correct": 30,
+      "accuracy": 0.625
+    },
+    "ProjectScaffoldIntent": {
+      "total": 48,
+      "correct": 42,
+      "accuracy": 0.875
+    },
+    "DependencyInstallIntent": {
+      "total": 48,
+      "correct": 18,
+      "accuracy": 0.375
+    },
+    "CodeActIntent": {
+      "total": 40,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "AcademicResearchIntent": {
+      "total": 40,
+      "correct": 40,
+      "accuracy": 1.0
+    },
+    "DataModelingIntent": {
+      "total": 40,
+      "correct": 13,
+      "accuracy": 0.325
+    },
+    "SysUtilityIntent": {
+      "total": 48,
+      "correct": 27,
+      "accuracy": 0.5625
+    },
+    "SchedulerIntent": {
+      "total": 40,
+      "correct": 30,
+      "accuracy": 0.75
+    },
+    "WindowManagementIntent": {
+      "total": 48,
+      "correct": 30,
+      "accuracy": 0.625
+    }
+  },
+  "results": [
+    {
+      "prompt": "can you open notepad",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7197,
+      "correct": true
+    },
+    {
+      "prompt": "i need excel open",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7315,
+      "correct": true
+    },
+    {
+      "prompt": "launch settings now",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7114,
+      "correct": true
+    },
+    {
+      "prompt": "hey could you start chrome for me",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7549,
+      "correct": true
+    },
+    {
+      "prompt": "please open terminal now",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.8022,
+      "correct": false
+    },
+    {
+      "prompt": "hey pull up excel",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.5847,
+      "correct": true
+    },
+    {
+      "prompt": "can you open settings now",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6665,
+      "correct": true
+    },
+    {
+      "prompt": "run excel now",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.704,
+      "correct": true
+    },
+    {
+      "prompt": "hey run slack",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3697,
+      "correct": false
+    },
+    {
+      "prompt": "pull up vscode",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.4843,
+      "correct": true
+    },
+    {
+      "prompt": "start chrome",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.943,
+      "correct": true
+    },
+    {
+      "prompt": "slack pls now",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3593,
+      "correct": false
+    },
+    {
+      "prompt": "get me into terminal",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7119,
+      "correct": true
+    },
+    {
+      "prompt": "hey get me into slack",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3445,
+      "correct": false
+    },
+    {
+      "prompt": "boot up chrome now",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6951,
+      "correct": true
+    },
+    {
+      "prompt": "RUN CALCULATOR",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7884,
+      "correct": true
+    },
+    {
+      "prompt": "hey launch slack",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.4683,
+      "correct": true
+    },
+    {
+      "prompt": "hey can you open powershell",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.4859,
+      "correct": false
+    },
+    {
+      "prompt": "open settings now",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6953,
+      "correct": true
+    },
+    {
+      "prompt": "hey boot up discord",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6982,
+      "correct": true
+    },
+    {
+      "prompt": "launch terminal now",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.7286,
+      "correct": false
+    },
+    {
+      "prompt": "hey could you start notepad for me",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7647,
+      "correct": true
+    },
+    {
+      "prompt": "hey launch word",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.5543,
+      "correct": true
+    },
+    {
+      "prompt": "terminal pls now",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6777,
+      "correct": false
+    },
+    {
+      "prompt": "hey can you open vscode",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.5176,
+      "correct": true
+    },
+    {
+      "prompt": "run powershell now",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6,
+      "correct": false
+    },
+    {
+      "prompt": "hey boot up browser",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6135,
+      "correct": true
+    },
+    {
+      "prompt": "get me into notepad now",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6734,
+      "correct": true
+    },
+    {
+      "prompt": "start settings now",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7714,
+      "correct": true
+    },
+    {
+      "prompt": "hey get me into powershell",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.4857,
+      "correct": false
+    },
+    {
+      "prompt": "hey start powershell",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.4983,
+      "correct": false
+    },
+    {
+      "prompt": "start calculator",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.793,
+      "correct": true
+    },
+    {
+      "prompt": "DISCORD PLS",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6984,
+      "correct": true
+    },
+    {
+      "prompt": "hey get me into settings",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.5521,
+      "correct": true
+    },
+    {
+      "prompt": "hey can you open chrome",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6643,
+      "correct": true
+    },
+    {
+      "prompt": "hey run settings",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.5339,
+      "correct": true
+    },
+    {
+      "prompt": "hey open task manager",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.8697,
+      "correct": true
+    },
+    {
+      "prompt": "start vscode",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7712,
+      "correct": true
+    },
+    {
+      "prompt": "hey pull up calculator",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6948,
+      "correct": true
+    },
+    {
+      "prompt": "hey get me into word",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.4607,
+      "correct": true
+    },
+    {
+      "prompt": "OPEN CALCULATOR",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.8699,
+      "correct": true
+    },
+    {
+      "prompt": "can you open settings",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7169,
+      "correct": true
+    },
+    {
+      "prompt": "open notepad",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7605,
+      "correct": true
+    },
+    {
+      "prompt": "hey i need notepad open",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7194,
+      "correct": true
+    },
+    {
+      "prompt": "hey start task manager",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.742,
+      "correct": true
+    },
+    {
+      "prompt": "please open browser",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6637,
+      "correct": true
+    },
+    {
+      "prompt": "hey powershell pls",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.4809,
+      "correct": false
+    },
+    {
+      "prompt": "hey i need browser open",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7195,
+      "correct": true
+    },
+    {
+      "prompt": "hey calculator pls",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7343,
+      "correct": true
+    },
+    {
+      "prompt": "hey open word",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.4838,
+      "correct": false
+    },
+    {
+      "prompt": "hey could you start spotify for me",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7585,
+      "correct": true
+    },
+    {
+      "prompt": "hey start notepad",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7365,
+      "correct": true
+    },
+    {
+      "prompt": "open terminal",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.8305,
+      "correct": false
+    },
+    {
+      "prompt": "hey launch discord",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.8809,
+      "correct": true
+    },
+    {
+      "prompt": "hey get me into terminal",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6684,
+      "correct": false
+    },
+    {
+      "prompt": "hey get me into browser",
+      "expected_intent": "ApplicationLaunchIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6101,
+      "correct": true
+    },
+    {
+      "prompt": "can you go to my email",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "DictationIntent",
+      "confidence": 0.4673,
+      "correct": false
+    },
+    {
+      "prompt": "head over to youtube now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.6724,
+      "correct": false
+    },
+    {
+      "prompt": "load gmail now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.4714,
+      "correct": true
+    },
+    {
+      "prompt": "let's check out wikipedia",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4535,
+      "correct": false
+    },
+    {
+      "prompt": "open news site now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.5216,
+      "correct": true
+    },
+    {
+      "prompt": "open google.com now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.5971,
+      "correct": true
+    },
+    {
+      "prompt": "go to news site",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.5576,
+      "correct": true
+    },
+    {
+      "prompt": "wikipedia pls",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.5215,
+      "correct": false
+    },
+    {
+      "prompt": "hey can you go to reddit",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.6013,
+      "correct": true
+    },
+    {
+      "prompt": "load stackoverflow now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.584,
+      "correct": true
+    },
+    {
+      "prompt": "open my email",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.557,
+      "correct": true
+    },
+    {
+      "prompt": "i want to see netflix now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.4328,
+      "correct": true
+    },
+    {
+      "prompt": "facebook please now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3704,
+      "correct": false
+    },
+    {
+      "prompt": "head over to news site now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4771,
+      "correct": false
+    },
+    {
+      "prompt": "head over to the verge now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "ContinuationIntent",
+      "confidence": 0.4193,
+      "correct": false
+    },
+    {
+      "prompt": "open stackoverflow now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.5521,
+      "correct": true
+    },
+    {
+      "prompt": "take me to stackoverflow",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.674,
+      "correct": true
+    },
+    {
+      "prompt": "visit youtube now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.7258,
+      "correct": true
+    },
+    {
+      "prompt": "hey take me to youtube",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.599,
+      "correct": false
+    },
+    {
+      "prompt": "reddit please now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.4743,
+      "correct": true
+    },
+    {
+      "prompt": "hey take me to my email",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.5563,
+      "correct": true
+    },
+    {
+      "prompt": "go to amazon",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.9441,
+      "correct": true
+    },
+    {
+      "prompt": "navigate to wikipedia",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4791,
+      "correct": false
+    },
+    {
+      "prompt": "navigate to gmail now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.5339,
+      "correct": true
+    },
+    {
+      "prompt": "hey please navigate to facebook",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.4543,
+      "correct": true
+    },
+    {
+      "prompt": "can you go to wikipedia",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.5789,
+      "correct": false
+    },
+    {
+      "prompt": "CAN YOU GO TO GOOGLE.COM",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.6192,
+      "correct": true
+    },
+    {
+      "prompt": "i want to see twitter now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3828,
+      "correct": false
+    },
+    {
+      "prompt": "hey head over to netflix",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.4556,
+      "correct": false
+    },
+    {
+      "prompt": "hey i want to see twitter",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.401,
+      "correct": false
+    },
+    {
+      "prompt": "please navigate to twitter",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.4868,
+      "correct": true
+    },
+    {
+      "prompt": "take me to facebook",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.663,
+      "correct": true
+    },
+    {
+      "prompt": "hey can you go to news site",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.5725,
+      "correct": false
+    },
+    {
+      "prompt": "can you go to youtube",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.6935,
+      "correct": true
+    },
+    {
+      "prompt": "i want to see google.com",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.476,
+      "correct": true
+    },
+    {
+      "prompt": "hey can you go to youtube",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.5579,
+      "correct": false
+    },
+    {
+      "prompt": "i want to see news site now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.5394,
+      "correct": false
+    },
+    {
+      "prompt": "HEAD OVER TO GMAIL",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3728,
+      "correct": false
+    },
+    {
+      "prompt": "I WANT TO SEE MY EMAIL",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "DictationIntent",
+      "confidence": 0.4689,
+      "correct": false
+    },
+    {
+      "prompt": "reddit please",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.503,
+      "correct": true
+    },
+    {
+      "prompt": "navigate to wikipedia now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4807,
+      "correct": false
+    },
+    {
+      "prompt": "hey load reddit",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.4698,
+      "correct": true
+    },
+    {
+      "prompt": "i want to see reddit",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.587,
+      "correct": true
+    },
+    {
+      "prompt": "PLEASE NAVIGATE TO THE VERGE",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.4425,
+      "correct": true
+    },
+    {
+      "prompt": "hey open my email",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.479,
+      "correct": true
+    },
+    {
+      "prompt": "hey navigate to youtube",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.8058,
+      "correct": true
+    },
+    {
+      "prompt": "gmail please",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "DictationIntent",
+      "confidence": 0.4218,
+      "correct": false
+    },
+    {
+      "prompt": "head over to facebook now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.4277,
+      "correct": false
+    },
+    {
+      "prompt": "please navigate to news site now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.5168,
+      "correct": false
+    },
+    {
+      "prompt": "open the verge now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "ContinuationIntent",
+      "confidence": 0.4313,
+      "correct": false
+    },
+    {
+      "prompt": "hey visit gmail",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.4128,
+      "correct": true
+    },
+    {
+      "prompt": "open youtube now",
+      "expected_intent": "WebNavigationIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.7748,
+      "correct": false
+    },
+    {
+      "prompt": "find information about stock price of apple now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3323,
+      "correct": false
+    },
+    {
+      "prompt": "i need to know recipe for pancakes now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2426,
+      "correct": false
+    },
+    {
+      "prompt": "hey search for meaning of life",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7595,
+      "correct": false
+    },
+    {
+      "prompt": "search for capital of france now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.5016,
+      "correct": true
+    },
+    {
+      "prompt": "hey search for python tutorials",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3675,
+      "correct": false
+    },
+    {
+      "prompt": "can you look up weather in tokyo",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3486,
+      "correct": false
+    },
+    {
+      "prompt": "hey google capital of france",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4723,
+      "correct": true
+    },
+    {
+      "prompt": "hey what is recipe for pancakes",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3083,
+      "correct": false
+    },
+    {
+      "prompt": "google who won the world cup now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4945,
+      "correct": true
+    },
+    {
+      "prompt": "hey give me info on latest news",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.9167,
+      "correct": true
+    },
+    {
+      "prompt": "find meaning of life now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7346,
+      "correct": false
+    },
+    {
+      "prompt": "hey give me info on population of new york",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3532,
+      "correct": false
+    },
+    {
+      "prompt": "hey i need to know recipe for pancakes",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2483,
+      "correct": false
+    },
+    {
+      "prompt": "what is capital of france",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.5935,
+      "correct": true
+    },
+    {
+      "prompt": "google stock price of apple now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3974,
+      "correct": false
+    },
+    {
+      "prompt": "do you know stock price of apple now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4057,
+      "correct": true
+    },
+    {
+      "prompt": "DO YOU KNOW RECIPE FOR PANCAKES",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2453,
+      "correct": false
+    },
+    {
+      "prompt": "tell me about latest news now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.9042,
+      "correct": true
+    },
+    {
+      "prompt": "i need to know distance to the moon",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2674,
+      "correct": false
+    },
+    {
+      "prompt": "LOOK FOR WHO WON THE WORLD CUP",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.569,
+      "correct": true
+    },
+    {
+      "prompt": "hey query symptoms of a cold",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3004,
+      "correct": false
+    },
+    {
+      "prompt": "what is meaning of life now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.8491,
+      "correct": false
+    },
+    {
+      "prompt": "i need to know meaning of life",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.8314,
+      "correct": false
+    },
+    {
+      "prompt": "can you look up how to tie a tie",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2834,
+      "correct": false
+    },
+    {
+      "prompt": "find information about distance to the moon",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3744,
+      "correct": false
+    },
+    {
+      "prompt": "query how to tie a tie now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2941,
+      "correct": false
+    },
+    {
+      "prompt": "look for latest news",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.7543,
+      "correct": true
+    },
+    {
+      "prompt": "search for recipe for pancakes",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3572,
+      "correct": false
+    },
+    {
+      "prompt": "hey query latest news",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.7067,
+      "correct": true
+    },
+    {
+      "prompt": "look for weather in tokyo",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3329,
+      "correct": false
+    },
+    {
+      "prompt": "google python tutorials",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3469,
+      "correct": false
+    },
+    {
+      "prompt": "google population of new york",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2799,
+      "correct": false
+    },
+    {
+      "prompt": "give me info on python tutorials",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3584,
+      "correct": false
+    },
+    {
+      "prompt": "look for population of new york now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2809,
+      "correct": false
+    },
+    {
+      "prompt": "can you look up weather in tokyo now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4103,
+      "correct": true
+    },
+    {
+      "prompt": "do you know recipe for pancakes now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2633,
+      "correct": false
+    },
+    {
+      "prompt": "do you know meaning of life now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7368,
+      "correct": false
+    },
+    {
+      "prompt": "can you look up symptoms of a cold",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2681,
+      "correct": false
+    },
+    {
+      "prompt": "i need to know capital of france now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.5446,
+      "correct": true
+    },
+    {
+      "prompt": "hey search for stock price of apple",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4222,
+      "correct": true
+    },
+    {
+      "prompt": "hey query population of new york",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3181,
+      "correct": false
+    },
+    {
+      "prompt": "i need to know how to tie a tie",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3061,
+      "correct": false
+    },
+    {
+      "prompt": "tell me about recipe for pancakes",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2468,
+      "correct": false
+    },
+    {
+      "prompt": "google meaning of life now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7296,
+      "correct": false
+    },
+    {
+      "prompt": "find capital of france now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.5275,
+      "correct": true
+    },
+    {
+      "prompt": "FIND DISTANCE TO THE MOON",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2461,
+      "correct": false
+    },
+    {
+      "prompt": "hey find information about weather in tokyo",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4077,
+      "correct": true
+    },
+    {
+      "prompt": "can you look up population of new york now",
+      "expected_intent": "InformationRetrievalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.334,
+      "correct": false
+    },
+    {
+      "prompt": "i want to listen to some relaxing sounds",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.5679,
+      "correct": true
+    },
+    {
+      "prompt": "listen to movie trailer",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.586,
+      "correct": true
+    },
+    {
+      "prompt": "put on a podcast",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.8394,
+      "correct": true
+    },
+    {
+      "prompt": "lofi hip hop please",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.6497,
+      "correct": true
+    },
+    {
+      "prompt": "listen to lofi hip hop now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.7133,
+      "correct": true
+    },
+    {
+      "prompt": "play some the beatles",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.6025,
+      "correct": true
+    },
+    {
+      "prompt": "put on classical music",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.722,
+      "correct": true
+    },
+    {
+      "prompt": "hey play classical music",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.5893,
+      "correct": true
+    },
+    {
+      "prompt": "hey how about some the beatles",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3983,
+      "correct": false
+    },
+    {
+      "prompt": "put on funny videos now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.4788,
+      "correct": true
+    },
+    {
+      "prompt": "let's play the beatles",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.5185,
+      "correct": true
+    },
+    {
+      "prompt": "listen to funny videos now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.5225,
+      "correct": false
+    },
+    {
+      "prompt": "hey let's play the beatles",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.4808,
+      "correct": true
+    },
+    {
+      "prompt": "put on the beatles",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.6532,
+      "correct": true
+    },
+    {
+      "prompt": "hey listen to the beatles",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.4961,
+      "correct": true
+    },
+    {
+      "prompt": "start movie trailer now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3408,
+      "correct": false
+    },
+    {
+      "prompt": "play some a podcast now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.7959,
+      "correct": true
+    },
+    {
+      "prompt": "start playing workout playlist now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.5237,
+      "correct": true
+    },
+    {
+      "prompt": "put on workout playlist now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.543,
+      "correct": true
+    },
+    {
+      "prompt": "hey play lofi hip hop",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.7377,
+      "correct": true
+    },
+    {
+      "prompt": "start playing a podcast now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.834,
+      "correct": true
+    },
+    {
+      "prompt": "hey put on jazz music",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.7497,
+      "correct": true
+    },
+    {
+      "prompt": "i want to listen to lofi hip hop now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.6798,
+      "correct": true
+    },
+    {
+      "prompt": "how about some classical music now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.5101,
+      "correct": true
+    },
+    {
+      "prompt": "listen to jazz music",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.832,
+      "correct": true
+    },
+    {
+      "prompt": "hey stream lofi hip hop",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.5626,
+      "correct": true
+    },
+    {
+      "prompt": "play some some relaxing sounds",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.5041,
+      "correct": true
+    },
+    {
+      "prompt": "start playing rock anthems",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.6408,
+      "correct": true
+    },
+    {
+      "prompt": "hey can we hear jazz music",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.701,
+      "correct": true
+    },
+    {
+      "prompt": "put on white noise now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaControlIntent",
+      "confidence": 0.5115,
+      "correct": false
+    },
+    {
+      "prompt": "play the beatles now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.5285,
+      "correct": true
+    },
+    {
+      "prompt": "start rock anthems now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.4979,
+      "correct": true
+    },
+    {
+      "prompt": "classical music please",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.4258,
+      "correct": true
+    },
+    {
+      "prompt": "stream movie trailer",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.6045,
+      "correct": true
+    },
+    {
+      "prompt": "movie trailer please now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3739,
+      "correct": false
+    },
+    {
+      "prompt": "listen to the beatles now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.552,
+      "correct": true
+    },
+    {
+      "prompt": "hey how about some white noise",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaControlIntent",
+      "confidence": 0.4173,
+      "correct": false
+    },
+    {
+      "prompt": "hey put on classical music",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.5991,
+      "correct": true
+    },
+    {
+      "prompt": "play some latest pop hits",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.6555,
+      "correct": true
+    },
+    {
+      "prompt": "jazz music please now",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.7156,
+      "correct": true
+    },
+    {
+      "prompt": "hey i want to listen to a podcast",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.8643,
+      "correct": true
+    },
+    {
+      "prompt": "play some funny videos",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.6734,
+      "correct": true
+    },
+    {
+      "prompt": "stream latest pop hits",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.5262,
+      "correct": true
+    },
+    {
+      "prompt": "start playing jazz music",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.8901,
+      "correct": true
+    },
+    {
+      "prompt": "how about some a podcast",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.7041,
+      "correct": true
+    },
+    {
+      "prompt": "hey start rock anthems",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.478,
+      "correct": true
+    },
+    {
+      "prompt": "i want to listen to white noise",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.4624,
+      "correct": true
+    },
+    {
+      "prompt": "hey stream rock anthems",
+      "expected_intent": "MediaStreamingIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.507,
+      "correct": true
+    },
+    {
+      "prompt": "delete old logs now",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.8618,
+      "correct": true
+    },
+    {
+      "prompt": "erase everything in trash now",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.82,
+      "correct": false
+    },
+    {
+      "prompt": "hey delete the project zip",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.5428,
+      "correct": true
+    },
+    {
+      "prompt": "erase this picture",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.5709,
+      "correct": true
+    },
+    {
+      "prompt": "hey get rid of document.docx",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7257,
+      "correct": true
+    },
+    {
+      "prompt": "get rid of unused assets",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7034,
+      "correct": true
+    },
+    {
+      "prompt": "pls remove temp folder",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.8054,
+      "correct": true
+    },
+    {
+      "prompt": "wipe backup folder",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7341,
+      "correct": true
+    },
+    {
+      "prompt": "i need to delete cache files",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.6639,
+      "correct": true
+    },
+    {
+      "prompt": "wipe everything in trash now",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.7525,
+      "correct": false
+    },
+    {
+      "prompt": "delete file on desktop now",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.658,
+      "correct": true
+    },
+    {
+      "prompt": "delete old logs",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.898,
+      "correct": true
+    },
+    {
+      "prompt": "pls remove project zip",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.5681,
+      "correct": false
+    },
+    {
+      "prompt": "please remove project zip now",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.5143,
+      "correct": false
+    },
+    {
+      "prompt": "remove document.docx now",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7364,
+      "correct": true
+    },
+    {
+      "prompt": "can you delete old logs now",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7864,
+      "correct": true
+    },
+    {
+      "prompt": "remove everything in trash",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.7384,
+      "correct": false
+    },
+    {
+      "prompt": "throw away temp folder",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.8124,
+      "correct": true
+    },
+    {
+      "prompt": "hey clear out project zip",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.5283,
+      "correct": false
+    },
+    {
+      "prompt": "hey clear out this picture",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3715,
+      "correct": false
+    },
+    {
+      "prompt": "hey please remove this picture",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.5108,
+      "correct": true
+    },
+    {
+      "prompt": "hey delete the the draft document",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.6059,
+      "correct": true
+    },
+    {
+      "prompt": "hey i need to delete backup folder",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.8291,
+      "correct": true
+    },
+    {
+      "prompt": "trash this picture",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7055,
+      "correct": true
+    },
+    {
+      "prompt": "hey remove downloads",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.6811,
+      "correct": true
+    },
+    {
+      "prompt": "delete everything in trash",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.7525,
+      "correct": false
+    },
+    {
+      "prompt": "hey clear out everything in trash",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.805,
+      "correct": false
+    },
+    {
+      "prompt": "pls remove the draft document",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7214,
+      "correct": true
+    },
+    {
+      "prompt": "please remove file on desktop",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.6814,
+      "correct": true
+    },
+    {
+      "prompt": "PLEASE REMOVE OLD LOGS",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.8409,
+      "correct": true
+    },
+    {
+      "prompt": "hey delete the file on desktop",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7611,
+      "correct": true
+    },
+    {
+      "prompt": "hey delete cache files",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.6567,
+      "correct": true
+    },
+    {
+      "prompt": "delete the old logs now",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.8175,
+      "correct": true
+    },
+    {
+      "prompt": "hey clear out file on desktop",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.645,
+      "correct": true
+    },
+    {
+      "prompt": "delete the document.docx now",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7272,
+      "correct": true
+    },
+    {
+      "prompt": "pls remove document.docx",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7689,
+      "correct": true
+    },
+    {
+      "prompt": "hey clear out backup folder",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.8417,
+      "correct": true
+    },
+    {
+      "prompt": "throw away everything in trash",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.7896,
+      "correct": false
+    },
+    {
+      "prompt": "hey get rid of downloads",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.707,
+      "correct": true
+    },
+    {
+      "prompt": "delete unused assets now",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.6638,
+      "correct": true
+    },
+    {
+      "prompt": "get rid of old logs",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.9288,
+      "correct": true
+    },
+    {
+      "prompt": "trash cache files now",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.6039,
+      "correct": false
+    },
+    {
+      "prompt": "wipe file on desktop now",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.604,
+      "correct": true
+    },
+    {
+      "prompt": "hey trash this picture",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.5519,
+      "correct": true
+    },
+    {
+      "prompt": "hey delete the document.docx",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7627,
+      "correct": true
+    },
+    {
+      "prompt": "throw away cache files now",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.5969,
+      "correct": false
+    },
+    {
+      "prompt": "throw away downloads",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7395,
+      "correct": true
+    },
+    {
+      "prompt": "i need to delete everything in trash",
+      "expected_intent": "FileDeletionIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.7004,
+      "correct": false
+    },
+    {
+      "prompt": "so hey computer",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.4793,
+      "correct": true
+    },
+    {
+      "prompt": "hey what can you do!",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.5659,
+      "correct": true
+    },
+    {
+      "prompt": "hey say thanks",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.4214,
+      "correct": true
+    },
+    {
+      "prompt": "hey how are you!",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.6923,
+      "correct": true
+    },
+    {
+      "prompt": "hey so thanks",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.4053,
+      "correct": true
+    },
+    {
+      "prompt": "hey just hey computer",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.4978,
+      "correct": true
+    },
+    {
+      "prompt": "hey i wanted to say hi there",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.569,
+      "correct": true
+    },
+    {
+      "prompt": "hey who are you",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7772,
+      "correct": true
+    },
+    {
+      "prompt": "just what's up now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7793,
+      "correct": true
+    },
+    {
+      "prompt": "i am bored!",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.4572,
+      "correct": true
+    },
+    {
+      "prompt": "I WANTED TO SAY TELL ME A JOKE",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.8288,
+      "correct": true
+    },
+    {
+      "prompt": "hey so listen to me",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "MediaStreamingIntent",
+      "confidence": 0.5054,
+      "correct": false
+    },
+    {
+      "prompt": "i wanted to say good evening now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.6208,
+      "correct": true
+    },
+    {
+      "prompt": "so you're smart",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3647,
+      "correct": false
+    },
+    {
+      "prompt": "hey well, are you there",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.6905,
+      "correct": true
+    },
+    {
+      "prompt": "so good morning",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.9061,
+      "correct": true
+    },
+    {
+      "prompt": "say good morning",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7013,
+      "correct": true
+    },
+    {
+      "prompt": "just hey computer now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.5356,
+      "correct": true
+    },
+    {
+      "prompt": "tell me a joke",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 1.0,
+      "correct": true
+    },
+    {
+      "prompt": "so tell me a joke now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.8449,
+      "correct": true
+    },
+    {
+      "prompt": "WELL, WHAT CAN YOU DO",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7393,
+      "correct": true
+    },
+    {
+      "prompt": "hey say i am bored",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.474,
+      "correct": true
+    },
+    {
+      "prompt": "hey, how is your day now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.6073,
+      "correct": true
+    },
+    {
+      "prompt": "say are you there",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.5986,
+      "correct": true
+    },
+    {
+      "prompt": "good morning bro",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.8787,
+      "correct": true
+    },
+    {
+      "prompt": "hey good morning please",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7795,
+      "correct": true
+    },
+    {
+      "prompt": "say good evening",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.5554,
+      "correct": true
+    },
+    {
+      "prompt": "hey so how are you",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.709,
+      "correct": true
+    },
+    {
+      "prompt": "hey just hi there",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.6626,
+      "correct": true
+    },
+    {
+      "prompt": "well, are you there now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7075,
+      "correct": true
+    },
+    {
+      "prompt": "hello!",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7462,
+      "correct": true
+    },
+    {
+      "prompt": "bye please now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ContinuationIntent",
+      "confidence": 0.5109,
+      "correct": false
+    },
+    {
+      "prompt": "hey agent, good morning now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.637,
+      "correct": true
+    },
+    {
+      "prompt": "hey hey, are you there",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.6557,
+      "correct": true
+    },
+    {
+      "prompt": "bye bro now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ContinuationIntent",
+      "confidence": 0.467,
+      "correct": false
+    },
+    {
+      "prompt": "hello now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7245,
+      "correct": true
+    },
+    {
+      "prompt": "can you just you're smart",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.382,
+      "correct": false
+    },
+    {
+      "prompt": "hey just i am bored",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.5663,
+      "correct": true
+    },
+    {
+      "prompt": "can you just hey computer now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.4651,
+      "correct": true
+    },
+    {
+      "prompt": "so good morning now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.8714,
+      "correct": true
+    },
+    {
+      "prompt": "say what's up now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.6946,
+      "correct": true
+    },
+    {
+      "prompt": "just what can you do now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7414,
+      "correct": true
+    },
+    {
+      "prompt": "hey what can you do bro",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.5874,
+      "correct": true
+    },
+    {
+      "prompt": "i wanted to say how are you now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.6775,
+      "correct": true
+    },
+    {
+      "prompt": "hey bye bro",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ContinuationIntent",
+      "confidence": 0.4175,
+      "correct": false
+    },
+    {
+      "prompt": "listen to me",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.5736,
+      "correct": true
+    },
+    {
+      "prompt": "can you just what can you do now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.7518,
+      "correct": true
+    },
+    {
+      "prompt": "well, listen to me",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.4702,
+      "correct": true
+    },
+    {
+      "prompt": "hey computer! now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.4769,
+      "correct": true
+    },
+    {
+      "prompt": "so how is your day now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.6302,
+      "correct": true
+    },
+    {
+      "prompt": "well, hi there now",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.6227,
+      "correct": true
+    },
+    {
+      "prompt": "hey say how are you",
+      "expected_intent": "ConversationalIntent",
+      "got_intent": "ConversationalIntent",
+      "confidence": 0.6553,
+      "correct": true
+    },
+    {
+      "prompt": "stop node server",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.467,
+      "correct": true
+    },
+    {
+      "prompt": "end frozen app",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.8544,
+      "correct": true
+    },
+    {
+      "prompt": "force close discord now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6931,
+      "correct": false
+    },
+    {
+      "prompt": "can you kill background tasks now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.7189,
+      "correct": true
+    },
+    {
+      "prompt": "ABORT MEMORY HOG",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.5844,
+      "correct": true
+    },
+    {
+      "prompt": "QUIT SPOTIFY PROCESS",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.625,
+      "correct": false
+    },
+    {
+      "prompt": "force close chrome process",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.6218,
+      "correct": true
+    },
+    {
+      "prompt": "hey terminate chrome process",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.596,
+      "correct": false
+    },
+    {
+      "prompt": "shut down python script",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.6351,
+      "correct": true
+    },
+    {
+      "prompt": "close spotify process",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7147,
+      "correct": false
+    },
+    {
+      "prompt": "close slack",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.4497,
+      "correct": false
+    },
+    {
+      "prompt": "hey terminate python script",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.6946,
+      "correct": true
+    },
+    {
+      "prompt": "terminate system updater",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.7858,
+      "correct": true
+    },
+    {
+      "prompt": "kill the notepad now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6131,
+      "correct": false
+    },
+    {
+      "prompt": "close frozen app",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.9137,
+      "correct": true
+    },
+    {
+      "prompt": "force close notepad",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.6205,
+      "correct": true
+    },
+    {
+      "prompt": "end java process now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.842,
+      "correct": true
+    },
+    {
+      "prompt": "please stop memory hog",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.5744,
+      "correct": true
+    },
+    {
+      "prompt": "kill python script",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.5477,
+      "correct": true
+    },
+    {
+      "prompt": "force close memory hog",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.526,
+      "correct": true
+    },
+    {
+      "prompt": "hey kill memory hog",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.5189,
+      "correct": true
+    },
+    {
+      "prompt": "stop spotify process",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6521,
+      "correct": false
+    },
+    {
+      "prompt": "stop java process",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.9009,
+      "correct": true
+    },
+    {
+      "prompt": "can you kill discord now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6621,
+      "correct": false
+    },
+    {
+      "prompt": "close python script",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.5263,
+      "correct": true
+    },
+    {
+      "prompt": "quit notepad now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6075,
+      "correct": false
+    },
+    {
+      "prompt": "close system updater",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.7359,
+      "correct": true
+    },
+    {
+      "prompt": "hey stop slack",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3797,
+      "correct": false
+    },
+    {
+      "prompt": "quit python script now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.5467,
+      "correct": true
+    },
+    {
+      "prompt": "shut down frozen app now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.8134,
+      "correct": true
+    },
+    {
+      "prompt": "hey kill the chrome process",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6094,
+      "correct": false
+    },
+    {
+      "prompt": "hey terminate the entire browser",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.5572,
+      "correct": false
+    },
+    {
+      "prompt": "abort system updater now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.8037,
+      "correct": true
+    },
+    {
+      "prompt": "hey force close the entire browser",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6049,
+      "correct": false
+    },
+    {
+      "prompt": "kill frozen app",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.8184,
+      "correct": true
+    },
+    {
+      "prompt": "terminate explorer.exe now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.5142,
+      "correct": true
+    },
+    {
+      "prompt": "kill the chrome process now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6345,
+      "correct": false
+    },
+    {
+      "prompt": "hey close java process",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.8193,
+      "correct": true
+    },
+    {
+      "prompt": "hey please stop chrome process",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.5892,
+      "correct": false
+    },
+    {
+      "prompt": "kill background tasks now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.7527,
+      "correct": true
+    },
+    {
+      "prompt": "close memory hog now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.6439,
+      "correct": true
+    },
+    {
+      "prompt": "stop background tasks now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.7443,
+      "correct": true
+    },
+    {
+      "prompt": "SHUT DOWN DISCORD",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6928,
+      "correct": false
+    },
+    {
+      "prompt": "kill explorer.exe",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.5092,
+      "correct": true
+    },
+    {
+      "prompt": "shut down discord",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6928,
+      "correct": false
+    },
+    {
+      "prompt": "force close background tasks now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.6672,
+      "correct": true
+    },
+    {
+      "prompt": "end discord",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.7435,
+      "correct": false
+    },
+    {
+      "prompt": "force close explorer.exe now",
+      "expected_intent": "ProcessManagementIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.641,
+      "correct": true
+    },
+    {
+      "prompt": "MAKE A NEW RUBY ON RAILS PROJECT",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.5169,
+      "correct": true
+    },
+    {
+      "prompt": "hey scaffold a react app",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.7138,
+      "correct": true
+    },
+    {
+      "prompt": "start a flask api now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.7852,
+      "correct": true
+    },
+    {
+      "prompt": "create a new spring boot",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.433,
+      "correct": true
+    },
+    {
+      "prompt": "can you set up a ruby on rails project",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.4497,
+      "correct": true
+    },
+    {
+      "prompt": "spin up a vue template",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6403,
+      "correct": true
+    },
+    {
+      "prompt": "please create a vue template",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6928,
+      "correct": true
+    },
+    {
+      "prompt": "hey spin up a express server",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.5765,
+      "correct": false
+    },
+    {
+      "prompt": "scaffold a empty repo now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.5319,
+      "correct": true
+    },
+    {
+      "prompt": "hey scaffold a django app",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.8231,
+      "correct": true
+    },
+    {
+      "prompt": "spin up a express server now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6061,
+      "correct": true
+    },
+    {
+      "prompt": "hey can you set up a typescript boilerplate",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.7352,
+      "correct": true
+    },
+    {
+      "prompt": "create a new go server",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.455,
+      "correct": true
+    },
+    {
+      "prompt": "pls create a node backend",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.4917,
+      "correct": true
+    },
+    {
+      "prompt": "hey build a ruby on rails project",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.4272,
+      "correct": true
+    },
+    {
+      "prompt": "create a new node backend now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.5844,
+      "correct": true
+    },
+    {
+      "prompt": "build a angular app",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.7778,
+      "correct": true
+    },
+    {
+      "prompt": "scaffold a express server",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.7329,
+      "correct": true
+    },
+    {
+      "prompt": "hey start a go server",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3919,
+      "correct": false
+    },
+    {
+      "prompt": "hey please create a vue template",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6841,
+      "correct": true
+    },
+    {
+      "prompt": "hey spin up a typescript boilerplate",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.7171,
+      "correct": true
+    },
+    {
+      "prompt": "hey generate a react app",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.8089,
+      "correct": true
+    },
+    {
+      "prompt": "hey scaffold a angular app",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6424,
+      "correct": true
+    },
+    {
+      "prompt": "spin up a react app now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6543,
+      "correct": true
+    },
+    {
+      "prompt": "initialize a django app",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6025,
+      "correct": true
+    },
+    {
+      "prompt": "hey start a python project",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.5296,
+      "correct": false
+    },
+    {
+      "prompt": "can you set up a nextjs site now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6487,
+      "correct": true
+    },
+    {
+      "prompt": "please create a django app now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6114,
+      "correct": true
+    },
+    {
+      "prompt": "create a new empty repo now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.5575,
+      "correct": true
+    },
+    {
+      "prompt": "generate a typescript boilerplate now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.7502,
+      "correct": true
+    },
+    {
+      "prompt": "please create a ruby on rails project now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.451,
+      "correct": true
+    },
+    {
+      "prompt": "spin up a typescript boilerplate now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.705,
+      "correct": true
+    },
+    {
+      "prompt": "create a new python project",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.6095,
+      "correct": false
+    },
+    {
+      "prompt": "start a node backend now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.5699,
+      "correct": true
+    },
+    {
+      "prompt": "hey build a django app",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6845,
+      "correct": true
+    },
+    {
+      "prompt": "i need a nextjs site now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6221,
+      "correct": true
+    },
+    {
+      "prompt": "make a new node backend",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.5705,
+      "correct": true
+    },
+    {
+      "prompt": "scaffold a empty repo",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.4957,
+      "correct": true
+    },
+    {
+      "prompt": "setup a express server",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.7632,
+      "correct": true
+    },
+    {
+      "prompt": "hey start a spring boot",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3847,
+      "correct": false
+    },
+    {
+      "prompt": "create a new flask api",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.8327,
+      "correct": true
+    },
+    {
+      "prompt": "i need a django app",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.5886,
+      "correct": true
+    },
+    {
+      "prompt": "start a react app now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.7718,
+      "correct": true
+    },
+    {
+      "prompt": "hey setup a nextjs site",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.687,
+      "correct": true
+    },
+    {
+      "prompt": "hey generate a node backend",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.4529,
+      "correct": false
+    },
+    {
+      "prompt": "initialize a ruby on rails project now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.5401,
+      "correct": true
+    },
+    {
+      "prompt": "pls create a nextjs site",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6539,
+      "correct": true
+    },
+    {
+      "prompt": "create a new django app now",
+      "expected_intent": "ProjectScaffoldIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6244,
+      "correct": true
+    },
+    {
+      "prompt": "put beautifulsoup in dependencies now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.4358,
+      "correct": true
+    },
+    {
+      "prompt": "hey can you install tensorflow",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3881,
+      "correct": false
+    },
+    {
+      "prompt": "npm/pip install lodash",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.5189,
+      "correct": true
+    },
+    {
+      "prompt": "fetch axios now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4092,
+      "correct": false
+    },
+    {
+      "prompt": "hey get react",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3881,
+      "correct": false
+    },
+    {
+      "prompt": "download beautifulsoup now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.401,
+      "correct": false
+    },
+    {
+      "prompt": "get pandas",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.6631,
+      "correct": true
+    },
+    {
+      "prompt": "get requests now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4239,
+      "correct": false
+    },
+    {
+      "prompt": "FETCH LODASH",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4396,
+      "correct": false
+    },
+    {
+      "prompt": "install axios now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3814,
+      "correct": false
+    },
+    {
+      "prompt": "get prettier",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.34,
+      "correct": false
+    },
+    {
+      "prompt": "hey add webpack",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.4762,
+      "correct": true
+    },
+    {
+      "prompt": "require tensorflow now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2828,
+      "correct": false
+    },
+    {
+      "prompt": "hey put eslint in dependencies",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.5289,
+      "correct": true
+    },
+    {
+      "prompt": "get requests",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4695,
+      "correct": false
+    },
+    {
+      "prompt": "please add pandas",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.5936,
+      "correct": true
+    },
+    {
+      "prompt": "put lodash in dependencies",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.4853,
+      "correct": true
+    },
+    {
+      "prompt": "install jest",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3594,
+      "correct": false
+    },
+    {
+      "prompt": "require pytest",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3554,
+      "correct": false
+    },
+    {
+      "prompt": "fetch tensorflow",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3294,
+      "correct": false
+    },
+    {
+      "prompt": "please add pytest now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3315,
+      "correct": false
+    },
+    {
+      "prompt": "hey get pandas",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.5358,
+      "correct": true
+    },
+    {
+      "prompt": "npm/pip install beautifulsoup now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.5227,
+      "correct": true
+    },
+    {
+      "prompt": "hey download axios",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3563,
+      "correct": false
+    },
+    {
+      "prompt": "grab lodash",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3645,
+      "correct": false
+    },
+    {
+      "prompt": "hey put prettier in dependencies",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.517,
+      "correct": true
+    },
+    {
+      "prompt": "npm/pip install express",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.6356,
+      "correct": true
+    },
+    {
+      "prompt": "hey grab axios",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.326,
+      "correct": false
+    },
+    {
+      "prompt": "can you install tensorflow now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3611,
+      "correct": false
+    },
+    {
+      "prompt": "hey add lodash",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3404,
+      "correct": false
+    },
+    {
+      "prompt": "download jest",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3499,
+      "correct": false
+    },
+    {
+      "prompt": "hey fetch prettier",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "InformationRetrievalIntent",
+      "confidence": 0.4075,
+      "correct": false
+    },
+    {
+      "prompt": "npm/pip install jest now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.5665,
+      "correct": true
+    },
+    {
+      "prompt": "hey put pytest in dependencies",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.4781,
+      "correct": true
+    },
+    {
+      "prompt": "download requests now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.4528,
+      "correct": false
+    },
+    {
+      "prompt": "add lodash",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3749,
+      "correct": false
+    },
+    {
+      "prompt": "pls add lodash",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3258,
+      "correct": false
+    },
+    {
+      "prompt": "can you install react now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.5815,
+      "correct": false
+    },
+    {
+      "prompt": "hey require requests",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3588,
+      "correct": false
+    },
+    {
+      "prompt": "hey grab tensorflow",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3108,
+      "correct": false
+    },
+    {
+      "prompt": "i need react installed",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.6126,
+      "correct": false
+    },
+    {
+      "prompt": "hey npm/pip install react",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.6114,
+      "correct": true
+    },
+    {
+      "prompt": "put eslint in dependencies",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.4666,
+      "correct": true
+    },
+    {
+      "prompt": "hey npm/pip install lodash",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.536,
+      "correct": true
+    },
+    {
+      "prompt": "npm/pip install pandas",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.9064,
+      "correct": true
+    },
+    {
+      "prompt": "get prettier now",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3041,
+      "correct": false
+    },
+    {
+      "prompt": "can you install webpack",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "DependencyInstallIntent",
+      "confidence": 0.4683,
+      "correct": true
+    },
+    {
+      "prompt": "require react",
+      "expected_intent": "DependencyInstallIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.529,
+      "correct": false
+    },
+    {
+      "prompt": "please create powershell script to list processes now",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.6856,
+      "correct": false
+    },
+    {
+      "prompt": "hey create tool to parse json",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3407,
+      "correct": false
+    },
+    {
+      "prompt": "pls create code to scrape a website",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.5145,
+      "correct": false
+    },
+    {
+      "prompt": "can you write script to clean directory",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7362,
+      "correct": false
+    },
+    {
+      "prompt": "hey write script to clean directory",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7144,
+      "correct": false
+    },
+    {
+      "prompt": "hey create batch script to backup",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6503,
+      "correct": false
+    },
+    {
+      "prompt": "can you write bash script to find logs now",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.5638,
+      "correct": false
+    },
+    {
+      "prompt": "create batch script to backup",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6192,
+      "correct": false
+    },
+    {
+      "prompt": "generate script to clean directory now",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.6733,
+      "correct": false
+    },
+    {
+      "prompt": "generate bash script to find logs now",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.5668,
+      "correct": false
+    },
+    {
+      "prompt": "can we get python script to sort files",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.4178,
+      "correct": false
+    },
+    {
+      "prompt": "build batch script to backup",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6058,
+      "correct": false
+    },
+    {
+      "prompt": "create powershell script to list processes now",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.6937,
+      "correct": false
+    },
+    {
+      "prompt": "pls create tool to parse json",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3101,
+      "correct": false
+    },
+    {
+      "prompt": "develop tool to parse json",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3219,
+      "correct": false
+    },
+    {
+      "prompt": "pls create macro to click buttons",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.4706,
+      "correct": false
+    },
+    {
+      "prompt": "CAN WE GET CODE TO SCRAPE A WEBSITE",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.5898,
+      "correct": false
+    },
+    {
+      "prompt": "hey generate batch script to backup",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6195,
+      "correct": false
+    },
+    {
+      "prompt": "please create batch script to backup now",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6208,
+      "correct": false
+    },
+    {
+      "prompt": "write tool to parse json",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.312,
+      "correct": false
+    },
+    {
+      "prompt": "hey create powershell script to list processes",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.6564,
+      "correct": false
+    },
+    {
+      "prompt": "hey develop powershell script to list processes",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.6731,
+      "correct": false
+    },
+    {
+      "prompt": "hey create python script to sort files",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.4403,
+      "correct": false
+    },
+    {
+      "prompt": "hey build code to scrape a website",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.5292,
+      "correct": false
+    },
+    {
+      "prompt": "BUILD BASH SCRIPT TO FIND LOGS",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.5415,
+      "correct": false
+    },
+    {
+      "prompt": "can we get utility to monitor cpu now",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.403,
+      "correct": false
+    },
+    {
+      "prompt": "make script to clean directory now",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7023,
+      "correct": false
+    },
+    {
+      "prompt": "hey make macro to click buttons",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.5158,
+      "correct": false
+    },
+    {
+      "prompt": "hey develop bash script to find logs",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.5358,
+      "correct": false
+    },
+    {
+      "prompt": "hey draft batch script to backup",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6129,
+      "correct": false
+    },
+    {
+      "prompt": "hey develop batch script to backup",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6188,
+      "correct": false
+    },
+    {
+      "prompt": "DEVELOP SCRIPT TO RENAME IMAGES",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.5586,
+      "correct": false
+    },
+    {
+      "prompt": "hey i need you to code batch script to backup",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6344,
+      "correct": false
+    },
+    {
+      "prompt": "generate script to rename images",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.5299,
+      "correct": false
+    },
+    {
+      "prompt": "write utility to monitor cpu now",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.4469,
+      "correct": false
+    },
+    {
+      "prompt": "code script to rename images",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.5758,
+      "correct": false
+    },
+    {
+      "prompt": "develop script to clean directory now",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.7277,
+      "correct": false
+    },
+    {
+      "prompt": "can we get batch script to backup",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6267,
+      "correct": false
+    },
+    {
+      "prompt": "i need you to code code to scrape a website now",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.5479,
+      "correct": false
+    },
+    {
+      "prompt": "generate code to scrape a website now",
+      "expected_intent": "CodeActIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.5272,
+      "correct": false
+    },
+    {
+      "prompt": "give me the gist of results from the experiment now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.5505,
+      "correct": true
+    },
+    {
+      "prompt": "hey what does methodology of this study say",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.7361,
+      "correct": true
+    },
+    {
+      "prompt": "can you summarize results from the experiment",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.5865,
+      "correct": true
+    },
+    {
+      "prompt": "what does results from the experiment say",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.6166,
+      "correct": true
+    },
+    {
+      "prompt": "read the bibliography",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.5141,
+      "correct": true
+    },
+    {
+      "prompt": "analyze this research paper now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.8417,
+      "correct": true
+    },
+    {
+      "prompt": "give me the gist of conclusion of the thesis now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.648,
+      "correct": true
+    },
+    {
+      "prompt": "read citations in this paper",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.8153,
+      "correct": true
+    },
+    {
+      "prompt": "read this research paper now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.6045,
+      "correct": true
+    },
+    {
+      "prompt": "explain citations in this paper",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.7142,
+      "correct": true
+    },
+    {
+      "prompt": "check out related work section now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.6463,
+      "correct": true
+    },
+    {
+      "prompt": "read abstract of the article now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.7096,
+      "correct": true
+    },
+    {
+      "prompt": "BREAK DOWN METHODOLOGY OF THIS STUDY",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.5907,
+      "correct": true
+    },
+    {
+      "prompt": "break down results from the experiment now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.5856,
+      "correct": true
+    },
+    {
+      "prompt": "summarize this research paper now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.9307,
+      "correct": true
+    },
+    {
+      "prompt": "give me the gist of this research paper",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.7897,
+      "correct": true
+    },
+    {
+      "prompt": "hey analyze conclusion of the thesis",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.6813,
+      "correct": true
+    },
+    {
+      "prompt": "hey give me the gist of latest ai papers",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.4573,
+      "correct": true
+    },
+    {
+      "prompt": "hey give me the gist of conclusion of the thesis",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.6468,
+      "correct": true
+    },
+    {
+      "prompt": "hey explain related work section",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.6328,
+      "correct": true
+    },
+    {
+      "prompt": "can you summarize the bibliography now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.5105,
+      "correct": true
+    },
+    {
+      "prompt": "WHAT DOES CONCLUSION OF THE THESIS SAY",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.6827,
+      "correct": true
+    },
+    {
+      "prompt": "can you summarize abstract of the article",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.69,
+      "correct": true
+    },
+    {
+      "prompt": "hey explain this research paper",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.7726,
+      "correct": true
+    },
+    {
+      "prompt": "explain abstract of the article",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.833,
+      "correct": true
+    },
+    {
+      "prompt": "hey look over this research paper",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.6623,
+      "correct": true
+    },
+    {
+      "prompt": "ANALYZE THIS RESEARCH PAPER",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.8969,
+      "correct": true
+    },
+    {
+      "prompt": "what does abstract of the article say now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.7687,
+      "correct": true
+    },
+    {
+      "prompt": "please analyze methodology of this study",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.6712,
+      "correct": true
+    },
+    {
+      "prompt": "analyze medical journals on arxiv now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.6502,
+      "correct": true
+    },
+    {
+      "prompt": "read abstract of the article",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.767,
+      "correct": true
+    },
+    {
+      "prompt": "hey can you summarize this research paper",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.8828,
+      "correct": true
+    },
+    {
+      "prompt": "summarize conclusion of the thesis now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.6771,
+      "correct": true
+    },
+    {
+      "prompt": "analyze abstract of the article now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.7574,
+      "correct": true
+    },
+    {
+      "prompt": "please analyze the bibliography now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.5811,
+      "correct": true
+    },
+    {
+      "prompt": "summarize results from the experiment",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.5491,
+      "correct": true
+    },
+    {
+      "prompt": "what does this research paper say now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.6606,
+      "correct": true
+    },
+    {
+      "prompt": "look over citations in this paper",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.8115,
+      "correct": true
+    },
+    {
+      "prompt": "analyze citations in this paper now",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.7922,
+      "correct": true
+    },
+    {
+      "prompt": "hey can you summarize abstract of the article",
+      "expected_intent": "AcademicResearchIntent",
+      "got_intent": "AcademicResearchIntent",
+      "confidence": 0.7443,
+      "correct": true
+    },
+    {
+      "prompt": "do time series forecast",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3235,
+      "correct": false
+    },
+    {
+      "prompt": "start logistic regression now",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.4591,
+      "correct": false
+    },
+    {
+      "prompt": "hey deploy svm classifier",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "confidence": 0.465,
+      "correct": true
+    },
+    {
+      "prompt": "train a xgboost model now",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2799,
+      "correct": false
+    },
+    {
+      "prompt": "hey perform logistic regression",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "confidence": 0.4408,
+      "correct": true
+    },
+    {
+      "prompt": "fit a clustering algorithm now",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3336,
+      "correct": false
+    },
+    {
+      "prompt": "please execute neural network now",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.4634,
+      "correct": false
+    },
+    {
+      "prompt": "hey please execute neural network",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.4675,
+      "correct": false
+    },
+    {
+      "prompt": "i need to run svm classifier",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.4948,
+      "correct": false
+    },
+    {
+      "prompt": "please execute time series forecast",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3848,
+      "correct": false
+    },
+    {
+      "prompt": "please execute svm classifier",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "confidence": 0.5173,
+      "correct": true
+    },
+    {
+      "prompt": "train a svm classifier now",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "confidence": 0.657,
+      "correct": true
+    },
+    {
+      "prompt": "do k-means model",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2488,
+      "correct": false
+    },
+    {
+      "prompt": "hey please execute clustering algorithm",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3911,
+      "correct": false
+    },
+    {
+      "prompt": "hey create a linear regression on the dataset",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "confidence": 0.7234,
+      "correct": true
+    },
+    {
+      "prompt": "fit a logistic regression",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "confidence": 0.4737,
+      "correct": true
+    },
+    {
+      "prompt": "build a xgboost model",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2837,
+      "correct": false
+    },
+    {
+      "prompt": "hey start decision tree",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3802,
+      "correct": false
+    },
+    {
+      "prompt": "hey please execute xgboost model",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.363,
+      "correct": false
+    },
+    {
+      "prompt": "train a k-means model",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3609,
+      "correct": false
+    },
+    {
+      "prompt": "hey run random forest model",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.343,
+      "correct": false
+    },
+    {
+      "prompt": "perform pca analysis now",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "confidence": 0.4096,
+      "correct": true
+    },
+    {
+      "prompt": "do xgboost model now",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3356,
+      "correct": false
+    },
+    {
+      "prompt": "create a svm classifier",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "confidence": 0.6163,
+      "correct": true
+    },
+    {
+      "prompt": "i need to run neural network",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.405,
+      "correct": false
+    },
+    {
+      "prompt": "i need to run pca analysis now",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "confidence": 0.4048,
+      "correct": true
+    },
+    {
+      "prompt": "start random forest model now",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3698,
+      "correct": false
+    },
+    {
+      "prompt": "hey i need to run svm classifier",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "ProjectScaffoldIntent",
+      "confidence": 0.493,
+      "correct": false
+    },
+    {
+      "prompt": "pls execute logistic regression",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.387,
+      "correct": false
+    },
+    {
+      "prompt": "can you train svm classifier now",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "confidence": 0.5703,
+      "correct": true
+    },
+    {
+      "prompt": "RUN RANDOM FOREST MODEL",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3433,
+      "correct": false
+    },
+    {
+      "prompt": "please execute logistic regression now",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.4114,
+      "correct": false
+    },
+    {
+      "prompt": "hey please execute svm classifier",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "confidence": 0.529,
+      "correct": true
+    },
+    {
+      "prompt": "i need to run linear regression on the dataset now",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "confidence": 0.4832,
+      "correct": true
+    },
+    {
+      "prompt": "run neural network",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3839,
+      "correct": false
+    },
+    {
+      "prompt": "create a xgboost model",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3002,
+      "correct": false
+    },
+    {
+      "prompt": "hey fit a random forest model",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3407,
+      "correct": false
+    },
+    {
+      "prompt": "hey run neural network",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3637,
+      "correct": false
+    },
+    {
+      "prompt": "hey fit a linear regression on the dataset",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "DataModelingIntent",
+      "confidence": 0.5832,
+      "correct": true
+    },
+    {
+      "prompt": "start k-means model",
+      "expected_intent": "DataModelingIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3124,
+      "correct": false
+    },
+    {
+      "prompt": "set screen resolution",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.4888,
+      "correct": true
+    },
+    {
+      "prompt": "can you adjust volume now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "MediaControlIntent",
+      "confidence": 0.6853,
+      "correct": false
+    },
+    {
+      "prompt": "turn on volume",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "MediaControlIntent",
+      "confidence": 0.8516,
+      "correct": false
+    },
+    {
+      "prompt": "UPDATE VOLUME",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "MediaControlIntent",
+      "confidence": 0.5722,
+      "correct": false
+    },
+    {
+      "prompt": "empty recycle bin now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.911,
+      "correct": true
+    },
+    {
+      "prompt": "update volume now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "MediaControlIntent",
+      "confidence": 0.6171,
+      "correct": false
+    },
+    {
+      "prompt": "update night light now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.7359,
+      "correct": true
+    },
+    {
+      "prompt": "hey toggle system updates",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.5276,
+      "correct": false
+    },
+    {
+      "prompt": "hey can you adjust night light",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.7139,
+      "correct": true
+    },
+    {
+      "prompt": "update volume",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "MediaControlIntent",
+      "confidence": 0.5722,
+      "correct": false
+    },
+    {
+      "prompt": "look at taskbar",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.5547,
+      "correct": false
+    },
+    {
+      "prompt": "TURN ON BRIGHTNESS",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.8735,
+      "correct": true
+    },
+    {
+      "prompt": "toggle wifi settings now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.5903,
+      "correct": true
+    },
+    {
+      "prompt": "CAN YOU ADJUST VOLUME",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "MediaControlIntent",
+      "confidence": 0.629,
+      "correct": false
+    },
+    {
+      "prompt": "change screen resolution",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.5387,
+      "correct": true
+    },
+    {
+      "prompt": "change airplane mode now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.8278,
+      "correct": true
+    },
+    {
+      "prompt": "look at brightness now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.8264,
+      "correct": true
+    },
+    {
+      "prompt": "hey look at recycle bin",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.7643,
+      "correct": true
+    },
+    {
+      "prompt": "look at wifi settings",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "WebNavigationIntent",
+      "confidence": 0.4213,
+      "correct": false
+    },
+    {
+      "prompt": "hey can you adjust volume",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "MediaControlIntent",
+      "confidence": 0.6854,
+      "correct": false
+    },
+    {
+      "prompt": "set volume",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "MediaControlIntent",
+      "confidence": 0.7676,
+      "correct": false
+    },
+    {
+      "prompt": "hey toggle screen resolution",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.4507,
+      "correct": true
+    },
+    {
+      "prompt": "empty screen resolution now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.4138,
+      "correct": false
+    },
+    {
+      "prompt": "hey set volume",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "MediaControlIntent",
+      "confidence": 0.6111,
+      "correct": false
+    },
+    {
+      "prompt": "hey toggle recycle bin",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.763,
+      "correct": true
+    },
+    {
+      "prompt": "pls check dark mode",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.797,
+      "correct": true
+    },
+    {
+      "prompt": "i need to change system updates",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "ProcessManagementIntent",
+      "confidence": 0.5404,
+      "correct": false
+    },
+    {
+      "prompt": "manage airplane mode",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.8227,
+      "correct": true
+    },
+    {
+      "prompt": "empty taskbar now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.4744,
+      "correct": false
+    },
+    {
+      "prompt": "can you adjust airplane mode now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.8049,
+      "correct": true
+    },
+    {
+      "prompt": "hey toggle night light",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.7489,
+      "correct": true
+    },
+    {
+      "prompt": "hey check recycle bin",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.6783,
+      "correct": true
+    },
+    {
+      "prompt": "check taskbar now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.5061,
+      "correct": false
+    },
+    {
+      "prompt": "hey set bluetooth",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "MediaControlIntent",
+      "confidence": 0.4346,
+      "correct": false
+    },
+    {
+      "prompt": "i need to change wifi settings",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.4527,
+      "correct": false
+    },
+    {
+      "prompt": "set recycle bin now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.8209,
+      "correct": true
+    },
+    {
+      "prompt": "hey set dark mode",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.8389,
+      "correct": true
+    },
+    {
+      "prompt": "SET WIFI SETTINGS",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.4811,
+      "correct": false
+    },
+    {
+      "prompt": "look at wifi settings now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3994,
+      "correct": false
+    },
+    {
+      "prompt": "please check airplane mode now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.6702,
+      "correct": true
+    },
+    {
+      "prompt": "change dark mode",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.926,
+      "correct": true
+    },
+    {
+      "prompt": "i need to change brightness",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.7981,
+      "correct": true
+    },
+    {
+      "prompt": "set night light now",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.7973,
+      "correct": true
+    },
+    {
+      "prompt": "hey toggle dark mode",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.8453,
+      "correct": true
+    },
+    {
+      "prompt": "turn on bluetooth",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "MediaControlIntent",
+      "confidence": 0.4516,
+      "correct": false
+    },
+    {
+      "prompt": "hey manage recycle bin",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.7815,
+      "correct": true
+    },
+    {
+      "prompt": "empty night light",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.6743,
+      "correct": true
+    },
+    {
+      "prompt": "hey toggle airplane mode",
+      "expected_intent": "SysUtilityIntent",
+      "got_intent": "SysUtilityIntent",
+      "confidence": 0.914,
+      "correct": true
+    },
+    {
+      "prompt": "hey can you remind me to team sync",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3488,
+      "correct": false
+    },
+    {
+      "prompt": "alarm for call mom at 5pm now",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.6643,
+      "correct": true
+    },
+    {
+      "prompt": "can you remind me to wake me up at 7 now",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.5067,
+      "correct": true
+    },
+    {
+      "prompt": "i have anniversary dinner now",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3842,
+      "correct": false
+    },
+    {
+      "prompt": "remind me to call mom at 5pm now",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.8696,
+      "correct": true
+    },
+    {
+      "prompt": "hey add pay the bills to my calendar",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.6794,
+      "correct": true
+    },
+    {
+      "prompt": "i have call mom at 5pm",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.7117,
+      "correct": true
+    },
+    {
+      "prompt": "hey book flight check-in",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3999,
+      "correct": false
+    },
+    {
+      "prompt": "remind me about lunch break",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.4697,
+      "correct": true
+    },
+    {
+      "prompt": "hey alarm for lunch break",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.5654,
+      "correct": true
+    },
+    {
+      "prompt": "please schedule pay the bills now",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.5364,
+      "correct": true
+    },
+    {
+      "prompt": "REMIND ME ABOUT LUNCH BREAK",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.4697,
+      "correct": true
+    },
+    {
+      "prompt": "hey don't let me forget anniversary dinner",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3327,
+      "correct": false
+    },
+    {
+      "prompt": "book buy groceries",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.242,
+      "correct": false
+    },
+    {
+      "prompt": "hey i have call mom at 5pm",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.6866,
+      "correct": true
+    },
+    {
+      "prompt": "hey set a reminder for team sync",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.444,
+      "correct": true
+    },
+    {
+      "prompt": "book buy groceries now",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.2486,
+      "correct": false
+    },
+    {
+      "prompt": "remind me about wake me up at 7",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.4997,
+      "correct": true
+    },
+    {
+      "prompt": "add wake me up at 7 to my calendar",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.5991,
+      "correct": true
+    },
+    {
+      "prompt": "hey set a reminder for workout at 6",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.5622,
+      "correct": true
+    },
+    {
+      "prompt": "hey remind me to workout at 6",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.4699,
+      "correct": true
+    },
+    {
+      "prompt": "CAN YOU REMIND ME TO DOCTOR APPOINTMENT",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.5699,
+      "correct": true
+    },
+    {
+      "prompt": "set a reminder for doctor appointment now",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.667,
+      "correct": true
+    },
+    {
+      "prompt": "hey add doctor appointment to my calendar",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.6824,
+      "correct": true
+    },
+    {
+      "prompt": "hey please schedule flight check-in",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.4318,
+      "correct": true
+    },
+    {
+      "prompt": "hey put wake me up at 7 on the schedule",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.5245,
+      "correct": true
+    },
+    {
+      "prompt": "hey schedule call mom at 5pm",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.6725,
+      "correct": true
+    },
+    {
+      "prompt": "schedule anniversary dinner",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3942,
+      "correct": false
+    },
+    {
+      "prompt": "remind me to team sync now",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3367,
+      "correct": false
+    },
+    {
+      "prompt": "don't let me forget email boss on monday",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.477,
+      "correct": true
+    },
+    {
+      "prompt": "hey remind me about workout at 6",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.4544,
+      "correct": true
+    },
+    {
+      "prompt": "pls schedule email boss on monday",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.5684,
+      "correct": true
+    },
+    {
+      "prompt": "put doctor appointment on the schedule now",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.7032,
+      "correct": true
+    },
+    {
+      "prompt": "don't let me forget doctor appointment",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.5616,
+      "correct": true
+    },
+    {
+      "prompt": "hey don't let me forget doctor appointment",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.5597,
+      "correct": true
+    },
+    {
+      "prompt": "DON'T LET ME FORGET PAY THE BILLS",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3633,
+      "correct": false
+    },
+    {
+      "prompt": "hey please schedule wake me up at 7",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.549,
+      "correct": true
+    },
+    {
+      "prompt": "put buy groceries on the schedule now",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.5235,
+      "correct": true
+    },
+    {
+      "prompt": "BOOK DOCTOR APPOINTMENT",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "SchedulerIntent",
+      "confidence": 0.5948,
+      "correct": true
+    },
+    {
+      "prompt": "can you remind me to team sync now",
+      "expected_intent": "SchedulerIntent",
+      "got_intent": "UnknownIntent",
+      "confidence": 0.3367,
+      "correct": false
+    },
+    {
+      "prompt": "quickly restore previous windows now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.5731,
+      "correct": true
+    },
+    {
+      "prompt": "please maximize chrome",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.5982,
+      "correct": true
+    },
+    {
+      "prompt": "let's show desktop now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.7973,
+      "correct": false
+    },
+    {
+      "prompt": "do close the active window",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.7207,
+      "correct": true
+    },
+    {
+      "prompt": "just show desktop now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.8092,
+      "correct": false
+    },
+    {
+      "prompt": "just maximize chrome",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.6025,
+      "correct": true
+    },
+    {
+      "prompt": "hey let's tile windows side by side",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.8149,
+      "correct": true
+    },
+    {
+      "prompt": "let's show desktop",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.8612,
+      "correct": false
+    },
+    {
+      "prompt": "quickly close the active window now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.7073,
+      "correct": false
+    },
+    {
+      "prompt": "make it so you bring notepad to front now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.5722,
+      "correct": false
+    },
+    {
+      "prompt": "do minimize all windows now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.935,
+      "correct": true
+    },
+    {
+      "prompt": "i need you to hide everything",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.489,
+      "correct": true
+    },
+    {
+      "prompt": "hey do minimize all windows",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.9122,
+      "correct": false
+    },
+    {
+      "prompt": "could you minimize all windows now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.8912,
+      "correct": true
+    },
+    {
+      "prompt": "pls maximize chrome",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.6297,
+      "correct": true
+    },
+    {
+      "prompt": "i need you to close the active window now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6937,
+      "correct": false
+    },
+    {
+      "prompt": "maximize chrome",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.6188,
+      "correct": true
+    },
+    {
+      "prompt": "hey i need you to move this to monitor 2",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.7109,
+      "correct": true
+    },
+    {
+      "prompt": "hey let's close the active window",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6623,
+      "correct": false
+    },
+    {
+      "prompt": "let's tile windows side by side now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.8577,
+      "correct": true
+    },
+    {
+      "prompt": "move this to monitor 2",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.757,
+      "correct": true
+    },
+    {
+      "prompt": "hey let's move this to monitor 2",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.6085,
+      "correct": true
+    },
+    {
+      "prompt": "could you restore previous windows",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.5573,
+      "correct": true
+    },
+    {
+      "prompt": "i need you to restore previous windows now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.53,
+      "correct": true
+    },
+    {
+      "prompt": "do bring notepad to front",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.5513,
+      "correct": false
+    },
+    {
+      "prompt": "hey hey, move this to monitor 2",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.6741,
+      "correct": true
+    },
+    {
+      "prompt": "just close the active window",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.6946,
+      "correct": false
+    },
+    {
+      "prompt": "hey could you snap this window to the left",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.9021,
+      "correct": true
+    },
+    {
+      "prompt": "go ahead and maximize chrome now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.5806,
+      "correct": true
+    },
+    {
+      "prompt": "hey, hide everything now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "FileDeletionIntent",
+      "confidence": 0.4498,
+      "correct": false
+    },
+    {
+      "prompt": "could you bring notepad to front",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.5574,
+      "correct": false
+    },
+    {
+      "prompt": "could you move this to monitor 2",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.7137,
+      "correct": true
+    },
+    {
+      "prompt": "close the active window now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.7245,
+      "correct": false
+    },
+    {
+      "prompt": "do bring notepad to front now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.597,
+      "correct": false
+    },
+    {
+      "prompt": "show desktop now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.8983,
+      "correct": false
+    },
+    {
+      "prompt": "snap this window to the left now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.977,
+      "correct": true
+    },
+    {
+      "prompt": "could you tile windows side by side now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.9022,
+      "correct": true
+    },
+    {
+      "prompt": "hey, restore previous windows now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.5783,
+      "correct": true
+    },
+    {
+      "prompt": "hey can you hide everything",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.5059,
+      "correct": true
+    },
+    {
+      "prompt": "let's minimize all windows",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.9234,
+      "correct": true
+    },
+    {
+      "prompt": "go ahead and move this to monitor 2 now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.6859,
+      "correct": true
+    },
+    {
+      "prompt": "close the active window",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.739,
+      "correct": false
+    },
+    {
+      "prompt": "hey do bring notepad to front",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "ApplicationLaunchIntent",
+      "confidence": 0.6007,
+      "correct": false
+    },
+    {
+      "prompt": "make it so you show desktop",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "GeneralizedOSIntent",
+      "confidence": 0.8793,
+      "correct": false
+    },
+    {
+      "prompt": "just restore previous windows now",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.5602,
+      "correct": true
+    },
+    {
+      "prompt": "please snap this window to the left",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.9544,
+      "correct": true
+    },
+    {
+      "prompt": "hide everything",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.5746,
+      "correct": true
+    },
+    {
+      "prompt": "could you minimize all windows",
+      "expected_intent": "WindowManagementIntent",
+      "got_intent": "WindowManagementIntent",
+      "confidence": 0.9315,
+      "correct": true
+    }
+  ],
+  "dataset_path": "D:\\college\\Major Project\\SentinAL-v9-reunited\\eval\\intent_dataset.json",
+  "dataset_sha256_16": "d1624ef9b96f59f5",
+  "dataset_total_entries": 704
+}

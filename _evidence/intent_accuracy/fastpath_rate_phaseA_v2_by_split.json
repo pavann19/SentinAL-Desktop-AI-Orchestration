@@ -1,0 +1,42 @@
+{
+  "note": "Fast-path resolution rate = fraction of queries router.route() resolves WITHOUT triggering the LLM fallback (mirrors agentic_core/processor.py's real trigger: intent=='UnknownIntent' OR is_ambiguous). Reported per-split because the classifier saw the train split during fitting, so an exhaustive full-dataset number would be inflated by training-data memorization.",
+  "dataset_sha256_16": "38d8d3eeeab930ae",
+  "results": {
+    "train": {
+      "split": "train",
+      "total": 2102,
+      "fast_path_resolved": 2061,
+      "fast_path_rate": 0.9805,
+      "llm_fallback_rate": 0.0195,
+      "unknown_intent_demoted": 1,
+      "ambiguous_tiebreak": 40
+    },
+    "val": {
+      "split": "val",
+      "total": 450,
+      "fast_path_resolved": 423,
+      "fast_path_rate": 0.94,
+      "llm_fallback_rate": 0.06,
+      "unknown_intent_demoted": 4,
+      "ambiguous_tiebreak": 23
+    },
+    "test": {
+      "split": "test",
+      "total": 451,
+      "fast_path_resolved": 425,
+      "fast_path_rate": 0.9424,
+      "llm_fallback_rate": 0.0576,
+      "unknown_intent_demoted": 5,
+      "ambiguous_tiebreak": 21
+    },
+    "ood": {
+      "split": "ood",
+      "total": 150,
+      "fast_path_resolved": 127,
+      "fast_path_rate": 0.8467,
+      "llm_fallback_rate": 0.1533,
+      "unknown_intent_demoted": 10,
+      "ambiguous_tiebreak": 13
+    }
+  }
+}

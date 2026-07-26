@@ -1,0 +1,105 @@
+{
+  "failed": 1,
+  "generated_at": "2026-07-11T03:08:35.622141+00:00",
+  "passed": 3,
+  "results": [
+    {
+      "id": "info-python",
+      "latency_ms": 23982.287700000597,
+      "passed": false,
+      "prompt": "find information about Python documentation",
+      "raw": {
+        "execution": "Error",
+        "input": "find information about Python documentation",
+        "response": "",
+        "steps": [
+          {
+            "confidence": 0.3921,
+            "intent": "UnknownIntent",
+            "prompt": "find information about python documentation",
+            "speech_response": "Copy that.",
+            "target": "",
+            "value": "The model did not return a valid JSON format."
+          }
+        ],
+        "validation": "Error"
+      },
+      "reasons": [
+        "validation expected 'Approved', got 'Error'",
+        "execution expected 'Success', got 'Error'",
+        "intent 'InformationRetrievalIntent' not found in steps"
+      ]
+    },
+    {
+      "id": "multi-info-summary",
+      "latency_ms": 7609.425100003136,
+      "passed": true,
+      "prompt": "search for France population and then explain its capital",
+      "raw": {
+        "execution": "Success",
+        "input": "search for France population and then explain its capital",
+        "response": "The capital of France is Paris, with a population of The current population of France is approximately 66.7 million as of April 2026, with a population density of 122 people per square kilometer and an urban population percentage of 82.96%. France's population is equivalent to 0.80% of the total world population, ranking the country 23rd in the list of countries by population, Shall I elaborate, Boss?.",
+        "steps": [
+          {
+            "intent": "InformationRetrievalIntent",
+            "speech_response": "Researching France's population now.",
+            "target": "France population"
+          },
+          {
+            "intent": "ConversationalIntent",
+            "message": "The capital of France is Paris, with a population of {{LAST_RESULT}}.",
+            "speech_response": "Explaining France's capital."
+          }
+        ],
+        "validation": "Approved"
+      },
+      "reasons": []
+    },
+    {
+      "id": "filedel-nonexistent",
+      "latency_ms": 1292.771399999765,
+      "passed": true,
+      "prompt": "delete the file at C:\\temp\\does_not_exist_xyz_sentinal_eval.txt",
+      "raw": {
+        "execution": "Success",
+        "input": "delete the file at C:\\temp\\does_not_exist_xyz_sentinal_eval.txt",
+        "response": "Pipeline successfully completed (1 steps).",
+        "steps": [
+          {
+            "confidence": 0.6743,
+            "intent": "FileDeletionIntent",
+            "prompt": "delete the file at c:\\temp\\does_not_exist_xyz_sentinal_eval.txt",
+            "speech_response": "Copy that.",
+            "target": "c:\\temp\\does_not_exist_xyz_sentinal_eval.txt"
+          }
+        ],
+        "validation": "Approved"
+      },
+      "reasons": []
+    },
+    {
+      "id": "info-python-docs",
+      "latency_ms": 5880.753600002208,
+      "passed": true,
+      "prompt": "look up details about the python requests library",
+      "raw": {
+        "execution": "Success",
+        "input": "look up details about the python requests library",
+        "response": "The Python `requests` library is a powerful tool for sending HTTP requests and interacting with web resources, allowing users to send `GET` and `POST` requests, handle responses, and parse data in various formats. This library provides a user-friendly interface for working with web data, making it an essential component of many Python applications, Shall I elaborate, Boss?",
+        "steps": [
+          {
+            "confidence": 0.3012,
+            "intent": "InformationRetrievalIntent",
+            "prompt": "look up details about the python requests library",
+            "speech_response": "Copy that.",
+            "target": "python requests library"
+          }
+        ],
+        "validation": "Approved"
+      },
+      "reasons": []
+    }
+  ],
+  "success_rate": 0.75,
+  "total": 4
+}

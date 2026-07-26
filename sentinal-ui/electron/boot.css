@@ -1,0 +1,173 @@
+:root {
+    --cyan: #00f2ff;
+    --cyan-glow: rgba(0, 242, 255, 0.5);
+    --bg-black: #020202;
+    --error-red: #ff4d4d;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-black);
+    color: var(--cyan);
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+    user-select: none;
+}
+
+#boot-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at center, #0a192f 0%, var(--bg-black) 70%);
+}
+
+/* ── HUD RINGS ─────────────────────────────────────────────────── */
+.neural-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid var(--cyan-glow);
+    border-top-color: var(--cyan);
+    animation: rotate linear infinite;
+}
+
+.outer {
+    width: 300px;
+    height: 300px;
+    animation-duration: 4s;
+}
+
+.middle {
+    width: 200px;
+    height: 200px;
+    animation-duration: 3s;
+    animation-direction: reverse;
+    border-style: dashed;
+}
+
+.inner {
+    width: 100px;
+    height: 100px;
+    animation-duration: 2s;
+    border-width: 4px;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ── CONTENT ───────────────────────────────────────────────────── */
+.boot-content {
+    z-index: 10;
+    text-align: center;
+    margin-top: 400px;
+}
+
+.glitch-text {
+    font-size: 2.5rem;
+    letter-spacing: 0.5rem;
+    margin: 0;
+    text-shadow: 0 0 10px var(--cyan-glow);
+    position: relative;
+}
+
+.status-box {
+    margin-top: 20px;
+    width: 300px;
+}
+
+.status-line {
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.label { opacity: 0.6; }
+.value { font-weight: bold; text-transform: uppercase; }
+.value.error { color: var(--error-red); }
+
+.loading-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(0, 242, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    width: 0%;
+    height: 100%;
+    background: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan);
+    transition: width 0.3s ease;
+}
+
+/* ── ERROR DISPLAY ─────────────────────────────────────────────── */
+#retry-box {
+    margin-top: 20px;
+    animation: fadeIn 0.5s ease;
+}
+
+.hidden { display: none; }
+
+.error-msg {
+    color: var(--error-red);
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+#retry-btn {
+    background: transparent;
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 1px;
+    transition: all 0.2s ease;
+}
+
+#retry-btn:hover {
+    background: var(--cyan);
+    color: var(--bg-black);
+    box-shadow: 0 0 15px var(--cyan);
+}
+
+/* ── DECORATIONS ───────────────────────────────────────────────── */
+.bg-grid {
+    position: absolute;
+    inset: 0;
+    background-image: 
+        linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+    z-index: 1;
+}
+
+.scanline {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to bottom,
+        transparent 50%,
+        rgba(0, 0, 0, 0.1) 51%,
+        transparent 100%
+    );
+    background-size: 100% 4px;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0.3;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

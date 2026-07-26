@@ -1,0 +1,757 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+/* ═══════════════════════════════════════════════════
+   JARVIS AI OS — REFINED DESIGN SYSTEM
+   Clean, minimal, premium aesthetic
+   ═══════════════════════════════════════════════════ */
+
+:root {
+  --stark-cyan: #00f3ff;
+  --stark-cyan-glow: rgba(0, 243, 255, 0.6);
+  --stark-cyan-dim: rgba(0, 243, 255, 0.15);
+  --stark-gold: #ffb000;
+  --stark-red: #ff003c;
+  --stark-green: #00ffaa;
+  --bg-black: #020202;
+  --font-display: 'Rajdhani', sans-serif;
+  --font-data: 'Fira Code', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-display);
+  background: var(--bg-black);
+  color: var(--stark-cyan);
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════════════════════
+   ROOT
+   ══════════════════════════════════════════════════ */
+.jarvis-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg-black);
+  color: var(--stark-cyan);
+  font-family: var(--font-display);
+  user-select: none;
+  cursor: crosshair;
+  transition: color 0.5s ease;
+}
+
+/* ══════════════════════════════════════════════════
+   SECURITY MODE
+   ══════════════════════════════════════════════════ */
+.security-mode {
+  --stark-cyan: #ff003c;
+  --stark-cyan-glow: rgba(255, 0, 60, 0.6);
+  --stark-cyan-dim: rgba(255, 0, 60, 0.15);
+}
+
+/* ══════════════════════════════════════════════════
+   STANDBY HINT — "Say Hey Jarvis" prompt
+   ══════════════════════════════════════════════════ */
+.standby-hint {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: standby-fade-in 1.5s ease forwards;
+}
+
+.standby-text {
+  font-family: var(--font-data);
+  font-size: 0.95rem;
+  font-weight: 300;
+  letter-spacing: 1.5px;
+  color: var(--stark-cyan);
+  opacity: 0.5;
+  text-shadow: 0 0 12px var(--stark-cyan-dim);
+  animation: standby-pulse 4s ease-in-out infinite;
+}
+
+.standby-sub {
+  font-family: var(--font-data);
+  font-size: 0.65rem;
+  font-weight: 300;
+  letter-spacing: 1px;
+  color: var(--stark-cyan);
+  opacity: 0.2;
+}
+
+@keyframes standby-pulse {
+
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 0.65;
+  }
+}
+
+@keyframes standby-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   IDLE MODE — reduced brightness
+   ══════════════════════════════════════════════════ */
+.idle-mode #bg-canvas {
+  filter: brightness(0.35);
+}
+
+.idle-mode .hud-layer {
+  opacity: 0.5;
+}
+
+.idle-hud {
+  opacity: 0.5;
+  transition: opacity 2s;
+}
+
+/* ══════════════════════════════════════════════════
+   PROCESSING MODE — focus on core + task
+   ══════════════════════════════════════════════════ */
+.processing #bg-canvas {
+  filter: brightness(0.5) blur(1.5px);
+  transition: filter 0.8s ease;
+}
+
+.processing .hud-corner {
+  opacity: 0.4;
+  filter: blur(0.5px);
+  transition: all 0.8s ease;
+}
+
+.processing .hud-corner.bottom-right {
+  opacity: 0.8;
+  filter: none;
+}
+
+.processing .active-task-panel {
+  box-shadow: 0 0 30px var(--stark-cyan-dim);
+  transform: translateX(-50%) scale(1.01);
+  transition: all 0.5s ease;
+}
+
+/* ══════════════════════════════════════════════════
+   FLASH OVERLAY
+   ══════════════════════════════════════════════════ */
+.flash-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease-out;
+}
+
+/* ══════════════════════════════════════════════════
+   HUD LAYER
+   ══════════════════════════════════════════════════ */
+.hud-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+  transition: opacity 2s;
+}
+
+/* ══════════════════════════════════════════════════
+   CROSSHAIRS — very subtle
+   ══════════════════════════════════════════════════ */
+.crosshair {
+  position: absolute;
+  background: rgba(0, 243, 255, 0.06);
+  pointer-events: none;
+  transition: background 0.5s;
+}
+
+.crosshair.v {
+  width: 1px;
+  height: 100vh;
+  left: 50%;
+  top: 0;
+}
+
+.crosshair.h {
+  height: 1px;
+  width: 100vw;
+  top: 50%;
+  left: 0;
+}
+
+.security-mode .crosshair {
+  background: rgba(255, 0, 60, 0.06);
+}
+
+/* ══════════════════════════════════════════════════
+   CORE CONTAINER
+   ══════════════════════════════════════════════════ */
+.core-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ══════════════════════════════════════════════════
+   STRICT CORE RING SYSTEM
+   Layer 1: Static Dotted Circle (Inner)
+   Layer 2: Static Dotted Circle (Middle)
+   Layer 3: Rotating Arcs (Outer - Handled in Canvas)
+   ══════════════════════════════════════════════════ */
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--stark-cyan-dim);
+  transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* (Legacy static ring classes removed — layers consolidated into Canvas) */
+
+/* Fiery state (boot sequence) */
+.ring-fiery {
+  border-color: var(--stark-gold) !important;
+  box-shadow: 0 0 30px var(--stark-red), inset 0 0 30px var(--stark-gold) !important;
+  opacity: 1 !important;
+}
+
+/* High load state */
+.ring.high-load {
+  animation: spin-right 5s linear infinite, vibrate 0.1s infinite !important;
+  border-color: var(--stark-gold);
+  box-shadow: 0 0 15px var(--stark-gold);
+}
+
+/* ══════════════════════════════════════════════════
+   CORE TEXT — centered, subtle glow
+   ══════════════════════════════════════════════════ */
+.core-text {
+  position: absolute;
+  font-size: 1.4rem;
+  letter-spacing: 12px;
+  text-shadow: 0 0 8px var(--stark-cyan-dim);
+  animation: glitch 6s infinite;
+  /* Slower glitch = more premium */
+  transition: color 0.5s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.core-text-jarvis {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow:
+    0 0 15px rgba(0, 243, 255, 0.3),
+    0 0 40px rgba(0, 243, 255, 0.08);
+  animation: corePulse 4s ease-in-out infinite;
+}
+
+.security-mode .core-text-jarvis {
+  text-shadow:
+    0 0 15px rgba(255, 0, 60, 0.3),
+    0 0 40px rgba(255, 0, 60, 0.08);
+}
+
+/* ══════════════════════════════════════════════════
+   HUD PANELS — Light, premium glassmorphism
+   ══════════════════════════════════════════════════ */
+.hud-corner {
+  position: absolute;
+  width: 320px;
+  padding: 1.5rem 1.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out, filter 0.8s ease;
+  pointer-events: auto;
+}
+
+.hud-corner.sys-awake {
+  opacity: 1 !important;
+}
+
+.top-left {
+  top: 0;
+  left: 0;
+}
+
+.top-right {
+  top: 0;
+  right: 0;
+  text-align: right;
+}
+
+.bottom-left {
+  bottom: 0;
+  left: 0;
+}
+
+.bottom-right {
+  bottom: 0;
+  right: 0;
+}
+
+.hud-panel {
+  position: relative;
+  padding: 1.2rem 1.3rem;
+  background: rgba(0, 4, 12, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 243, 255, 0.06);
+  border-radius: 3px;
+  transition: all 0.5s ease;
+}
+
+.hud-panel:hover {
+  background: rgba(0, 6, 18, 0.55);
+  border-color: rgba(0, 243, 255, 0.12);
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.03);
+}
+
+.security-mode .hud-panel {
+  border-color: rgba(255, 0, 60, 0.08);
+}
+
+.security-mode .hud-panel:hover {
+  border-color: rgba(255, 0, 60, 0.15);
+  box-shadow: 0 0 20px rgba(255, 0, 60, 0.04);
+}
+
+/* ── Panel title ── */
+.hud-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--stark-cyan);
+  text-shadow: 0 0 6px rgba(0, 243, 255, 0.2);
+  border-bottom: 1px solid rgba(0, 243, 255, 0.08);
+  padding-bottom: 0.7rem;
+  margin-bottom: 1.1rem;
+  transition: all 0.5s ease;
+}
+
+.security-mode .hud-title {
+  color: var(--stark-red);
+  text-shadow: 0 0 6px rgba(255, 0, 60, 0.2);
+  border-bottom-color: rgba(255, 0, 60, 0.08);
+}
+
+/* ══════════════════════════════════════════════════
+   CORNER BRACKETS — thinner, subtler
+   ══════════════════════════════════════════════════ */
+.bracket {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--stark-cyan);
+  border-style: solid;
+  opacity: 0.3;
+  transition: opacity 0.5s, border-color 0.5s;
+}
+
+.hud-panel:hover .bracket {
+  opacity: 0.6;
+}
+
+.bracket-tl {
+  top: 0;
+  left: 0;
+  border-width: 1px 0 0 1px;
+}
+
+.bracket-tr {
+  top: 0;
+  right: 0;
+  border-width: 1px 1px 0 0;
+}
+
+.bracket-bl {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 1px 1px;
+}
+
+.bracket-br {
+  bottom: 0;
+  right: 0;
+  border-width: 0 1px 1px 0;
+}
+
+.security-mode .bracket {
+  border-color: var(--stark-red);
+}
+
+/* ══════════════════════════════════════════════════
+   DATA ROWS — improved spacing + hierarchy
+   ══════════════════════════════════════════════════ */
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-data);
+  font-size: 0.8rem;
+  margin-bottom: 0.6rem;
+  transition: color 0.2s;
+  line-height: 1.5;
+}
+
+.data-label {
+  opacity: 0.45;
+  letter-spacing: 0.5px;
+}
+
+.data-value {
+  font-weight: 500;
+  text-shadow: 0 0 4px rgba(0, 243, 255, 0.2);
+  transition: text-shadow 0.5s ease;
+}
+
+/* ══════════════════════════════════════════════════
+   LINEAR BARS
+   ══════════════════════════════════════════════════ */
+.linear-bar {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  margin-top: 4px;
+  position: relative;
+}
+
+.linear-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--stark-cyan);
+  box-shadow: 0 0 8px var(--stark-cyan);
+  transition: width 0.3s ease, background 0.5s, box-shadow 0.5s;
+}
+
+/* ══════════════════════════════════════════════════
+   DATAVALUE — Arrival Animation
+   ══════════════════════════════════════════════════ */
+.dv-arrive {
+  animation: dv-fade-in 0.5s ease forwards;
+}
+
+/* Stale Telemetry States */
+.stale-value {
+  opacity: 0.45 !important;
+  filter: grayscale(0.5);
+  transition: opacity 1s ease;
+  color: var(--stark-gold) !important;
+}
+
+/* Connection Transition States */
+.conn-connecting {
+  animation: conn-pulse 1.5s infinite ease-in-out;
+  color: var(--stark-gold) !important;
+}
+
+.conn-offline {
+  color: var(--stark-red) !important;
+  text-shadow: 0 0 10px var(--stark-red) !important;
+}
+
+.conn-live {
+  color: var(--stark-green) !important;
+  text-shadow: 0 0 10px var(--stark-green) !important;
+}
+
+@keyframes conn-pulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.98);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes dv-fade-in {
+  0% {
+    opacity: 0.2;
+    text-shadow: 0 0 12px var(--stark-cyan-glow);
+    transform: translateY(2px);
+  }
+
+  40% {
+    opacity: 1;
+    text-shadow: 0 0 8px var(--stark-cyan-glow);
+  }
+
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 4px rgba(0, 243, 255, 0.2);
+    transform: translateY(0);
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   COMMAND MODE — Invisible System CLI
+   ══════════════════════════════════════════════════ */
+
+/* Subtle dim overlay when command mode is active */
+.cmd-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 90;
+  transition: opacity 0.3s ease;
+  pointer-events: auto;
+}
+
+/* Floating command line */
+.cmd-line {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 100;
+  pointer-events: auto;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* The "›" prefix glyph */
+.cmd-prefix {
+  font-family: var(--font-data);
+  font-size: 1.4rem;
+  font-weight: 300;
+  color: var(--stark-cyan);
+  opacity: 0.6;
+  text-shadow: 0 0 8px var(--stark-cyan-dim);
+  user-select: none;
+}
+
+/* The actual text input — completely invisible chrome */
+.cmd-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: var(--font-data);
+  font-size: 1.05rem;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+  width: 420px;
+  caret-color: var(--stark-cyan);
+  text-shadow: 0 0 6px rgba(0, 243, 255, 0.15);
+}
+
+.cmd-input::placeholder {
+  color: rgba(0, 243, 255, 0.15);
+}
+
+/* Blinking caret enhancement */
+@keyframes cmd-caret-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   ACTIVE TASK PANEL
+   ══════════════════════════════════════════════════ */
+.active-task-panel {
+  position: absolute;
+  bottom: 170px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  background: rgba(0, 3, 10, 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--stark-cyan);
+  padding: 14px;
+  z-index: 20;
+  pointer-events: none;
+  transition: box-shadow 0.5s ease, transform 0.5s;
+}
+
+/* ══════════════════════════════════════════════════
+   NOTIFICATIONS
+   ══════════════════════════════════════════════════ */
+.notify-container {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════
+   KEYFRAMES
+   ══════════════════════════════════════════════════ */
+@keyframes spin-right {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-left {
+  100% {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes glitch {
+
+  0%,
+  97%,
+  99%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  98% {
+    opacity: 0.6;
+    transform: scale(1.05) translate(1px, -1px);
+    text-shadow: -1px 0 var(--stark-red), 1px 0 var(--stark-cyan);
+  }
+}
+
+@keyframes corePulse {
+
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-down {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes wave {
+  0% {
+    height: 3px;
+  }
+
+  100% {
+    height: 12px;
+  }
+}
+
+@keyframes vibrate {
+  0% {
+    transform: translate(1px, 1px);
+  }
+
+  25% {
+    transform: translate(-1px, -1px);
+  }
+
+  50% {
+    transform: translate(-1px, 1px);
+  }
+
+  75% {
+    transform: translate(1px, -1px);
+  }
+
+  100% {
+    transform: translate(1px, 1px);
+  }
+}
+
+@keyframes flashBoot {
+  0% {
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   SCROLLBAR
+   ══════════════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 2px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 243, 255, 0.15);
+  border-radius: 2px;
+}
