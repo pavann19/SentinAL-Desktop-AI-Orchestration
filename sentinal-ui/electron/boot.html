@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinAL OS — Initializing</title>
+    <link rel="stylesheet" href="boot.css">
+</head>
+<body>
+    <div id="boot-container">
+        <div class="neural-ring outer"></div>
+        <div class="neural-ring middle"></div>
+        <div class="neural-ring inner"></div>
+        
+        <div class="boot-content">
+            <h1 class="glitch-text" data-text="SENTINAL OS">SENTINAL OS</h1>
+            <div class="status-box">
+                <div class="status-line">
+                    <span class="label">NEURAL ENGINE:</span>
+                    <span id="status-text" class="value">Establishing Link...</span>
+                </div>
+                <div class="loading-bar">
+                    <div id="progress" class="progress-fill"></div>
+                </div>
+            </div>
+            <div id="retry-box" class="hidden">
+                <p class="error-msg">SYSTEM FAULT: Services Unresponsive</p>
+                <button id="retry-btn">RETRY MISSION</button>
+            </div>
+        </div>
+
+        <div class="bg-grid"></div>
+        <div class="scanline"></div>
+    </div>
+
+    <script>
+        const statusText = document.getElementById('status-text');
+        const progress = document.getElementById('progress');
+        const retryBox = document.getElementById('retry-box');
+        const retryBtn = document.getElementById('retry-btn');
+
+        // Listen for status updates from Electron main process
+        window.addEventListener('message', (event) => {
+            const { type, message, progress: pct, error } = event.data;
+            
+            if (type === 'status') {
+                statusText.innerText = message;
+                progress.style.width = pct + '%';
+            }
+            
+            if (error) {
+                statusText.innerText = 'FAULT DETECTED';
+                statusText.classList.add('error');
+                retryBox.classList.remove('hidden');
+            }
+        });
+
+        retryBtn.addEventListener('click', () => {
+            if (window.electronAPI && window.electronAPI.retryBoot) {
+                window.electronAPI.retryBoot();
+            }
+            retryBox.classList.add('hidden');
+            statusText.classList.remove('error');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+{
+  "request_id": "03aee3a4-44f4-43e6-9d77-e0198fc5c065",
+  "trace_id": "42172e3f0d54226985f55fc0e9f0ac54",
+  "root": {
+    "name": "pipeline.process_command",
+    "span_id": "9b6fa1720da76c56",
+    "parent_span_id": null,
+    "start_time": 1783683532395577800,
+    "end_time": 1783683532496847900,
+    "duration_ms": 101.2701,
+    "status": "OK",
+    "attributes": {
+      "prompt_len": 5
+    },
+    "children": [
+      {
+        "name": "extract_intent",
+        "span_id": "71d32f9fe65df63a",
+        "parent_span_id": "9b6fa1720da76c56",
+        "start_time": 1783683532395661300,
+        "end_time": 1783683532395705500,
+        "duration_ms": 0.0442,
+        "status": "OK",
+        "attributes": {
+          "prompt_len": 5
+        },
+        "children": []
+      },
+      {
+        "name": "validate_steps",
+        "span_id": "6c1dce50d3397acf",
+        "parent_span_id": "9b6fa1720da76c56",
+        "start_time": 1783683532395781900,
+        "end_time": 1783683532395909800,
+        "duration_ms": 0.1279,
+        "status": "OK",
+        "attributes": {
+          "step_count": 1
+        },
+        "children": []
+      },
+      {
+        "name": "execute_pipeline",
+        "span_id": "181cbf1fe288e899",
+        "parent_span_id": "9b6fa1720da76c56",
+        "start_time": 1783683532395968100,
+        "end_time": 1783683532496799900,
+        "duration_ms": 100.8318,
+        "status": "OK",
+        "attributes": {
+          "step_count": 1
+        },
+        "children": []
+      }
+    ]
+  }
+}

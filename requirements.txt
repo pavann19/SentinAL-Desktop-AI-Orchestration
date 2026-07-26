@@ -1,0 +1,55 @@
+# SentinAL v9.0 — Production Requirements
+# Fix 2.1: Pinned versions, removed dead packages (pyaudio, SpeechRecognition,
+#           streamlit, textual, librosa), removed duplicate python-dotenv.
+#           Added cachetools for LRU cache (tts_service.py Fix 2.2).
+
+# ── Web Framework ─────────────────────────────────────────────────────────────
+fastapi>=0.111.0,<1.0.0
+uvicorn[standard]>=0.29.0,<1.0.0
+pydantic>=2.7.0,<3.0.0
+starlette>=0.37.0,<1.0.0
+
+# ── AI / LLM ──────────────────────────────────────────────────────────────────
+langchain>=0.2.0,<0.3.0
+langchain-core>=0.2.0,<0.3.0
+langchain-ollama>=0.1.0,<0.2.0
+langchain-groq>=0.1.0,<0.2.0
+langgraph>=0.1.0,<0.2.0
+
+# ── Embeddings & Semantic Router ──────────────────────────────────────────────
+sentence-transformers>=3.0.0,<4.0.0
+scikit-learn>=1.5.0,<2.0.0
+
+# ── STT / Voice Pipeline ──────────────────────────────────────────────────────
+faster-whisper>=1.0.0,<2.0.0
+sounddevice>=0.4.7,<1.0.0
+soundfile>=0.12.1,<1.0.0
+numpy>=1.26.0,<2.0.0
+scipy>=1.13.0,<2.0.0
+
+# ── TTS / Audio Output ────────────────────────────────────────────────────────
+kokoro-onnx>=0.4.0
+onnxruntime>=1.18.0,<2.0.0
+
+# ── Utilities & Cache ─────────────────────────────────────────────────────────
+python-dotenv>=1.0.0,<2.0.0
+cachetools>=5.3.0,<6.0.0          # Fix 2.2: LRU cache for tts_service
+psutil>=5.9.0,<7.0.0
+pyautogui>=0.9.54,<1.0.0
+pillow>=10.3.0,<11.0.0
+opentelemetry-api>=1.25.0,<2.0.0
+opentelemetry-sdk>=1.25.0,<2.0.0
+
+# ── Search ────────────────────────────────────────────────────────────────────
+tavily-python>=0.3.0,<1.0.0
+
+# ── Wake Word ─────────────────────────────────────────────────────────────────
+pvporcupine>=3.0.0,<4.0.0
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=8.0.0,<9.0.0
+
+# ── Optional Vision (only if using vision_module.py) ─────────────────────────
+# torch>=2.2.0,<3.0.0             # Large — uncomment only if needed
+# transformers>=4.40.0,<5.0.0     # Large — uncomment only if needed
+# accelerate>=0.29.0,<1.0.0       # Large — uncomment only if needed

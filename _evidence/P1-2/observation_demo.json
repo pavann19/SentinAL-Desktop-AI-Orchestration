@@ -1,0 +1,21 @@
+{
+    "tier_1_process_observation": {
+        "verified": true,
+        "tier_used": "process",
+        "confidence": 1.0,
+        "latency_ms": 737.5771999359131,
+        "detail": "process 'explorer.exe' found (pid 13444)"
+    },
+    "tier_2_window_observation": {
+        "verified": false,
+        "tier_used": "window",
+        "confidence": 1.0,
+        "latency_ms": 0.10752677917480469,
+        "detail": "window containing 'doesnotexist123' not found"
+    },
+    "state_diff_test": {
+        "new_processes": [],
+        "ended_processes": [],
+        "elapsed_ms": 539.67822265625
+    }
+}

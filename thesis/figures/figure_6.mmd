@@ -1,0 +1,12 @@
+graph TD
+    A[interfaces/voice] -->|STT transcript| B[agentic_core/processor]
+    B -->|raw query| C[agentic_core/router]
+    C -->|intent + target| D[system_services/privacy_router]
+    D -->|route decision| B
+    B -->|validated steps| E[agentic_core/validator]
+    E -->|approved steps| F[agentic_core/executor]
+    F -->|dispatch| G[capabilities/]
+    G -->|result| H[capabilities/system/postcondition_observer]
+    H -->|success/fail| F
+    F -->|trace data| I[agentic_core/tracing]
+    J[config/constants] -->|policies| E
