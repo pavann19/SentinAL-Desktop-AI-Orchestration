@@ -65,14 +65,18 @@ jobs:
           cache: pip
 
       - name: Install dependencies
+        # Installs from requirements.txt (the actual pinned dependency set, also
+        # used locally) rather than a hand-maintained duplicate list. The
+        # duplicate list had drifted and was missing opentelemetry-api/-sdk and
+        # pyautogui - both required just to IMPORT agentic_core.executor and
+        # agentic_core.tracing, so 8 test modules failed at collection, not at
+        # runtime. requirements.txt is the single source of truth; only
+        # test-only tooling not in it (pytest-cov, pytest-asyncio, anyio) is
+        # added separately.
         run: |
           pip install --upgrade pip
-          pip install pytest pytest-cov pytest-asyncio anyio
-          pip install langchain langchain-core langchain-ollama langchain-groq
-          pip install sentence-transformers scikit-learn numpy
-          pip install fastapi uvicorn starlette pydantic
-          pip install python-dotenv psutil
-          pip install tavily-python
+          pip install -r requirements.txt
+          pip install pytest-cov pytest-asyncio anyio
 
       - name: Run unit + integration tests (excludes stress)
         # Single line, not multi-line with `^` continuations: windows-latest runs
@@ -113,10 +117,14 @@ jobs:
           cache: pip
 
       - name: Install dependencies
+        # See the "test" job's Install dependencies step: same rationale
+        # (requirements.txt over a hand-maintained, drift-prone duplicate list).
+        # test_security_fuzz.py imports agentic_core.executor, which needs
+        # pyautogui and opentelemetry to even import.
         run: |
-          pip install pytest pytest-asyncio
-          pip install langchain langchain-core langchain-ollama python-dotenv
-          pip install sentence-transformers scikit-learn numpy
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-asyncio
 
       - name: Run security fuzz tests (zero tolerance — must all pass)
         run: pytest tests/test_security_fuzz.py -v --tb=short
@@ -137,10 +145,11 @@ jobs:
           cache: pip
 
       - name: Install dependencies
+        # See the "test" job's Install dependencies step for rationale.
         run: |
-          pip install pytest pytest-asyncio pytest-timeout
-          pip install langchain langchain-core langchain-ollama python-dotenv
-          pip install sentence-transformers scikit-learn numpy
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-asyncio pytest-timeout
 
       - name: Run stress and concurrency tests
         run: pytest tests/test_stress.py -v --tb=short --timeout=60
@@ -160,10 +169,14 @@ jobs:
           cache: pip
 
       - name: Install dependencies
+        # See the "test" job's Install dependencies step: same rationale.
+        # test_api_wrapper.py and test_pipeline_integration.py both import
+        # capabilities.system.api_wrapper, which needs pyautogui and
+        # opentelemetry (via agentic_core.executor/tracing) to even import.
         run: |
-          pip install pytest pytest-asyncio
-          pip install langchain langchain-core langchain-ollama python-dotenv
-          pip install sentence-transformers scikit-learn numpy psutil
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-asyncio
 
       - name: Run pipeline integration tests
         run: pytest tests/test_pipeline_integration.py tests/test_api_wrapper.py -v --tb=short
