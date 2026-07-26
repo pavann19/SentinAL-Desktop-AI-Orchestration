@@ -10,11 +10,19 @@ pydantic>=2.7.0,<3.0.0
 starlette>=0.37.0,<1.0.0
 
 # ── AI / LLM ──────────────────────────────────────────────────────────────────
-langchain>=0.2.0,<0.3.0
-langchain-core>=0.2.0,<0.3.0
-langchain-ollama>=0.1.0,<0.2.0
-langchain-groq>=0.1.0,<0.2.0
-langgraph>=0.1.0,<0.2.0
+# Raised from a stale 0.x pin (found via the same clean-install process that
+# caught the numpy conflict below): langchain 0.2.x requires numpy<2 on every
+# Python version, unconditionally conflicting with kokoro-onnx's numpy>=2.0.2 -
+# there is no numpy version satisfying both, on any Python version. The actual
+# working local environment has been on langchain 1.x for a long time (this
+# file's 0.x pin had been silently unenforced, same root cause as the numpy
+# pin); raised to match what is already verified working (full suite: 444
+# passed) rather than downgrading a working environment to match a stale file.
+langchain>=1.0.0,<2.0.0
+langchain-core>=1.0.0,<2.0.0
+langchain-ollama>=1.0.0,<2.0.0
+langchain-groq>=1.0.0,<2.0.0
+langgraph>=1.0.0,<2.0.0
 
 # ── Embeddings & Semantic Router ──────────────────────────────────────────────
 sentence-transformers>=3.0.0,<4.0.0
