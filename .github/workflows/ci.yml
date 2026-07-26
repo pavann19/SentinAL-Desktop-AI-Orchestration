@@ -136,16 +136,24 @@ jobs:
         # and same reason for shell: bash + set -e (PowerShell multi-line run
         # blocks don't fail-fast on a mid-block command failure).
         # test_security_fuzz.py imports agentic_core.executor, which needs
-        # pyautogui and opentelemetry to even import.
+        # pyautogui and opentelemetry to even import. pytest-cov is required
+        # here too even though this job doesn't care about coverage: pytest.ini
+        # unconditionally adds --cov=... to every pytest invocation via addopts,
+        # so pytest itself refuses to start ("unrecognized arguments: --cov=...")
+        # if pytest-cov isn't installed, regardless of which tests are run.
         shell: bash
         run: |
           set -euo pipefail
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest-asyncio
+          pip install pytest-asyncio pytest-cov
 
       - name: Run security fuzz tests (zero tolerance — must all pass)
-        run: pytest tests/test_security_fuzz.py -v --tb=short
+        # --no-cov: this job intentionally runs one test file, whose coverage
+        # of the whole codebase can never reach .coveragerc's fail_under=70 -
+        # that threshold is the "test" job's job. Without --no-cov, this step
+        # would fail on the coverage gate even when every actual test passes.
+        run: pytest tests/test_security_fuzz.py -v --tb=short --no-cov
 
   # ── Job 4: Stress Tests ───────────────────────────────────────────────────
   stress:
@@ -166,15 +174,20 @@ jobs:
         # See the "test" job's Install dependencies step for rationale
         # (requirements.txt as source of truth, shell: bash + set -e to fail
         # fast instead of PowerShell silently ignoring a mid-block failure).
+        # pytest-cov: see the "security" job's comment - pytest.ini's addopts
+        # forces --cov=... on every invocation, so pytest won't even start
+        # without it installed, regardless of whether coverage is wanted here.
         shell: bash
         run: |
           set -euo pipefail
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest-asyncio pytest-timeout
+          pip install pytest-asyncio pytest-timeout pytest-cov
 
       - name: Run stress and concurrency tests
-        run: pytest tests/test_stress.py -v --tb=short --timeout=60
+        # --no-cov: see the "security" job's comment - a single test file's
+        # coverage of the whole codebase can never meet the global 70% gate.
+        run: pytest tests/test_stress.py -v --tb=short --timeout=60 --no-cov
 
   # ── Job 5: Pipeline Integration Tests ─────────────────────────────────────
   integration:
@@ -197,15 +210,20 @@ jobs:
         # test_api_wrapper.py and test_pipeline_integration.py both import
         # capabilities.system.api_wrapper, which needs pyautogui and
         # opentelemetry (via agentic_core.executor/tracing) to even import.
+        # pytest-cov: see the "security" job's comment - pytest.ini's addopts
+        # forces --cov=... on every invocation, so pytest won't even start
+        # without it installed, regardless of whether coverage is wanted here.
         shell: bash
         run: |
           set -euo pipefail
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest-asyncio
+          pip install pytest-asyncio pytest-cov
 
       - name: Run pipeline integration tests
-        run: pytest tests/test_pipeline_integration.py tests/test_api_wrapper.py -v --tb=short
+        # --no-cov: see the "security" job's comment - two test files' coverage
+        # of the whole codebase can never meet the global 70% gate.
+        run: pytest tests/test_pipeline_integration.py tests/test_api_wrapper.py -v --tb=short --no-cov
 
   # ── Job 6: Final Gate — All Tests Must Pass ───────────────────────────────
   gate:
