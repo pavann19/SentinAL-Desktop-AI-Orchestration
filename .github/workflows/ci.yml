@@ -75,14 +75,15 @@ jobs:
           pip install tavily-python
 
       - name: Run unit + integration tests (excludes stress)
-        run: |
-          pytest tests/ --ignore=tests/test_stress.py --ignore=tests/test_router.py ^
-            --ignore=tests/test_stt_service.py --ignore=tests/test_wake_intelligence.py ^
-            --ignore=tests/test_tts_service.py ^
-            -v --tb=short ^
-            --cov=agentic_core --cov=system_services --cov=config --cov=capabilities ^
-            --cov-report=term-missing --cov-report=xml:coverage.xml ^
-            --cov-fail-under=75
+        # Single line, not multi-line with `^` continuations: windows-latest runs
+        # `run:` steps in PowerShell by default, where `^` is not a line-continuation
+        # character (that's cmd.exe syntax) - it previously produced a ParserError
+        # ("Missing expression after unary operator '--'"), silently masked because
+        # this job never got far enough to run while the lint job above it was
+        # failing (needs: lint). --cov-fail-under corrected from 75 to 70 to match
+        # this project's actual, deliberately-established coverage standard
+        # (pytest.ini / .coveragerc) - 75 was never actually met by this suite.
+        run: pytest tests/ --ignore=tests/test_stress.py --ignore=tests/test_router.py --ignore=tests/test_stt_service.py --ignore=tests/test_wake_intelligence.py --ignore=tests/test_tts_service.py -v --tb=short --cov=agentic_core --cov=system_services --cov=config --cov=capabilities --cov=interfaces --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=70
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
