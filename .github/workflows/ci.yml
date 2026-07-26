@@ -73,7 +73,21 @@ jobs:
         # runtime. requirements.txt is the single source of truth; only
         # test-only tooling not in it (pytest-cov, pytest-asyncio, anyio) is
         # added separately.
+        #
+        # shell: bash + `set -euo pipefail`, not the windows-latest PowerShell
+        # default: a multi-line PowerShell `run:` block does NOT stop when a
+        # native command (like `pip install`) fails partway through - only the
+        # LAST command's exit code determines the step's pass/fail. That silently
+        # masked exactly this install failing (this exact fix's first version
+        # reported "succeeded" while none of requirements.txt's packages had
+        # actually installed, since the trailing `pip install pytest-cov ...`
+        # command succeeded on its own and PowerShell never checked the middle
+        # command). `set -e` makes bash abort immediately on any failing command
+        # instead, so a real install failure surfaces here, not three jobs and
+        # a confusing collection error later.
+        shell: bash
         run: |
+          set -euo pipefail
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest-cov pytest-asyncio anyio
@@ -118,10 +132,14 @@ jobs:
 
       - name: Install dependencies
         # See the "test" job's Install dependencies step: same rationale
-        # (requirements.txt over a hand-maintained, drift-prone duplicate list).
+        # (requirements.txt over a hand-maintained, drift-prone duplicate list)
+        # and same reason for shell: bash + set -e (PowerShell multi-line run
+        # blocks don't fail-fast on a mid-block command failure).
         # test_security_fuzz.py imports agentic_core.executor, which needs
         # pyautogui and opentelemetry to even import.
+        shell: bash
         run: |
+          set -euo pipefail
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest-asyncio
@@ -145,8 +163,12 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        # See the "test" job's Install dependencies step for rationale.
+        # See the "test" job's Install dependencies step for rationale
+        # (requirements.txt as source of truth, shell: bash + set -e to fail
+        # fast instead of PowerShell silently ignoring a mid-block failure).
+        shell: bash
         run: |
+          set -euo pipefail
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest-asyncio pytest-timeout
@@ -169,11 +191,15 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        # See the "test" job's Install dependencies step: same rationale.
+        # See the "test" job's Install dependencies step: same rationale
+        # (requirements.txt as source of truth, shell: bash + set -e to fail
+        # fast instead of PowerShell silently ignoring a mid-block failure).
         # test_api_wrapper.py and test_pipeline_integration.py both import
         # capabilities.system.api_wrapper, which needs pyautogui and
         # opentelemetry (via agentic_core.executor/tracing) to even import.
+        shell: bash
         run: |
+          set -euo pipefail
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest-asyncio
