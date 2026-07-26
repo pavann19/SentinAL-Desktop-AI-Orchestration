@@ -1,6 +1,6 @@
-import numpy as np
 import warnings
-import functools
+
+import numpy as np
 
 # Suppress huggingface warnings about symlinks
 warnings.filterwarnings("ignore", module="huggingface_hub")
@@ -604,8 +604,9 @@ class SemanticRouter:
             self.model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
             
             # Phase A: Load trained classifier head
-            import joblib
             from pathlib import Path
+
+            import joblib
             classifier_path = Path(__file__).resolve().parents[1] / "_evidence" / "finetuning" / "classifier_v1.joblib"
             if classifier_path.exists():
                 self.classifier = joblib.load(classifier_path)

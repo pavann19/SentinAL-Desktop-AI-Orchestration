@@ -1,6 +1,5 @@
-import os
-import ctypes
 import subprocess
+
 
 def handle_sys_utility(target: str) -> str:
     """

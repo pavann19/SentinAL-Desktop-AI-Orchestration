@@ -7,13 +7,13 @@
 #   - kill_process() ONLY kills non-system processes (validates against SOFT_SENSITIVE_TARGETS)
 #   - All results returned as structured dicts for LLM summarization
 
-import subprocess
 import csv
 import io
-import re
 import logging
+import re
+import subprocess
 
-from config.constants import SOFT_SENSITIVE_TARGETS, SENSITIVE_TARGETS
+from config.constants import SENSITIVE_TARGETS, SOFT_SENSITIVE_TARGETS
 
 _logger = logging.getLogger("ProcessManager")
 
@@ -37,7 +37,8 @@ def list_processes(name_filter: str = "") -> list[dict]:
     try:
         result = subprocess.run(
             ["tasklist", "/fo", "csv", "/nh"],
-            capture_output=True, text=True, timeout=10
+            capture_output=True, text=True, timeout=10,
+            check=False,  # returncode checked explicitly below, not via exception
         )
         if result.returncode != 0:
             _logger.error(f"tasklist failed: {result.stderr.strip()}")
@@ -107,7 +108,8 @@ def kill_process(target: str) -> str:
     try:
         result = subprocess.run(
             ["taskkill", filter_flag, target.strip(), "/F"],
-            capture_output=True, text=True, timeout=10
+            capture_output=True, text=True, timeout=10,
+            check=False,  # returncode checked explicitly below, not via exception
         )
         if result.returncode == 0:
             msg = f"Process '{target}' terminated successfully."

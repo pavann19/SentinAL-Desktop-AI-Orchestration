@@ -2,7 +2,7 @@
 # Unified LLM Configuration & Failover Management for SentinAL.
 
 import os
-import json
+
 from dotenv import load_dotenv
 
 # Load environment variables at module level
@@ -62,7 +62,7 @@ class BrainConfig:
                     future.result(timeout=2.0)  # 2 second connectivity test
                 return cloud_llm
             except concurrent.futures.TimeoutError:
-                print(f"[RELIABILITY] Cloud LLM ping timed out. Falling back to local.")
+                print("[RELIABILITY] Cloud LLM ping timed out. Falling back to local.")
             except Exception as e:
                 print(f"[RELIABILITY] Cloud LLM ping failed ({e}). Falling back to local.")
 

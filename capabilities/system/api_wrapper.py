@@ -6,9 +6,8 @@
 #         instead of execute_pipeline() directly — see comment at that call site.
 
 import asyncio
-import json
 import os
-from typing import Dict, Any
+from typing import Any
 
 from agentic_core.tracing import traced_step
 
@@ -44,14 +43,14 @@ def _derive_expected_state(step: dict) -> dict | None:
     return {"process_name": basename}
 
 
-async def process_command(prompt: str) -> Dict[str, Any]:
+async def process_command(prompt: str) -> dict[str, Any]:
     """
     Async pipeline entry point. Wraps the synchronous executor in a thread
     so it does not block the ASGI event loop (Fix 3.12).
     """
+    from agentic_core.executor import execute_pipeline_observed
     from agentic_core.processor import extract_intent
     from agentic_core.validator import validate_steps
-    from agentic_core.executor import execute_pipeline_observed
 
     # 1. Initialize output structure
     output = {
@@ -131,6 +130,6 @@ async def process_command(prompt: str) -> Dict[str, Any]:
     except Exception as e:
         output["validation"] = "Error"
         output["execution"] = "Error"
-        output["response"] = f"Pipeline Integration Error: {str(e)}"
+        output["response"] = f"Pipeline Integration Error: {e!s}"
 
     return output

@@ -1,6 +1,6 @@
+import logging
 import os
 import re
-import logging
 
 from config.paths import LOGS_DIR  # Resolves to AppData\SentinAL\logs in prod
 
@@ -13,7 +13,13 @@ if not security_logger.handlers:
     security_logger.addHandler(_handler)
 
 # ── Import Centralized OS Policies ────────────────────────────────────────────
-from config.constants import ALLOWLIST_INTENTS, BLOCKED_KEYS, SENSITIVE_TARGETS, SENSITIVE_CMD_WORDS, SOFT_SENSITIVE_TARGETS
+from config.constants import (
+    ALLOWLIST_INTENTS,
+    BLOCKED_KEYS,
+    SENSITIVE_CMD_WORDS,
+    SENSITIVE_TARGETS,
+    SOFT_SENSITIVE_TARGETS,
+)
 
 
 def validate_sandbox(target_path: str) -> bool:
@@ -230,10 +236,9 @@ def validate_steps(steps: list) -> tuple[bool, str, bool]:
                                 False)
 
         # 7. FileDeletion sandbox check on target path
-        if intent == "FileDeletionIntent":
-            if not validate_sandbox(target):
-                return (False,
-                        f"[Security Error] Denied Step {i+1}: Sandbox violation on deletion.",
-                        False)
+        if intent == "FileDeletionIntent" and not validate_sandbox(target):
+            return (False,
+                    f"[Security Error] Denied Step {i+1}: Sandbox violation on deletion.",
+                    False)
 
     return True, "Approved", total_requires_confirmation

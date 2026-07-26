@@ -1,7 +1,7 @@
 import os
 import re
 import time
-import logging
+
 from dotenv import load_dotenv
 
 # Neural layer research tool.
@@ -84,11 +84,11 @@ def get_live_research(query: str, max_results: int = _MAX_RESULTS) -> dict:
             last_error = str(e)
             err_lower  = last_error.lower()
             # Only retry on transient errors (rate-limit / timeout / connection)
-            if "429" in last_error or "timeout" in err_lower or "connection" in err_lower:
-                if attempt < 2:
-                    print(f"[RELIABILITY] Tavily transient error (attempt {attempt}): {e}. Retrying...")
-                    time.sleep(1.0)
-                    continue
+            is_transient = "429" in last_error or "timeout" in err_lower or "connection" in err_lower
+            if is_transient and attempt < 2:
+                print(f"[RELIABILITY] Tavily transient error (attempt {attempt}): {e}. Retrying...")
+                time.sleep(1.0)
+                continue
             # Non-retriable errors — break immediately
             break
 

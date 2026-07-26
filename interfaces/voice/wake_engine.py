@@ -13,6 +13,7 @@
 import random
 import time
 from datetime import datetime
+from typing import ClassVar
 
 
 class WakeResponseEngine:
@@ -24,7 +25,7 @@ class WakeResponseEngine:
 
     # ── Response Templates ────────────────────────────────────────────────────
 
-    TEMPLATES = {
+    TEMPLATES: ClassVar[dict[str, list[str]]] = {
         "morning": [
             "Good morning, Boss.",
             "Morning. Systems fully online.",
@@ -109,7 +110,9 @@ class WakeResponseEngine:
         if system_load == "STRAINED":
             return random.choice(cls.TEMPLATES["terse"])
 
-        now = datetime.now()
+        # Naive/local (ruff DTZ005): picks a "morning"/"afternoon"/"evening"
+        # greeting — must be the user's local hour, not UTC.
+        now = datetime.now()  # noqa: DTZ005
         hour = now.hour
         is_weekend = now.weekday() >= 5
         

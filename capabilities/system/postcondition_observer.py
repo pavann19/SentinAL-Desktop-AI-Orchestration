@@ -1,10 +1,9 @@
 import time
-from dataclasses import dataclass, field
-from typing import Optional, Literal
+from dataclasses import dataclass
+from typing import Literal
 
-import capabilities.system.process_manager as process_manager
-import capabilities.system.gui_resolver as gui_resolver
-import capabilities.system.vision_module as vision_module
+from capabilities.system import gui_resolver, process_manager, vision_module
+
 
 @dataclass
 class Observation:

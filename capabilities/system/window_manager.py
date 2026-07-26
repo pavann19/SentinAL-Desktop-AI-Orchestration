@@ -1,6 +1,8 @@
 import os
-import pyautogui
 from datetime import datetime
+
+import pyautogui
+
 
 def handle_window_management(target: str, prompt: str) -> str:
     """
@@ -32,7 +34,9 @@ def handle_window_management(target: str, prompt: str) -> str:
     try:
         if action == "screenshot":
             desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
-            filename = f"SentinAL_Screenshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+            # Naive/local (ruff DTZ005): used only to build a locally-unique
+            # filename, never compared or stored — local time is fine.
+            filename = f"SentinAL_Screenshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"  # noqa: DTZ005
             full_path = os.path.join(desktop_path, filename)
             pyautogui.screenshot(full_path)
             return f"I have taken a screenshot and physically saved it to your desktop as {filename}."

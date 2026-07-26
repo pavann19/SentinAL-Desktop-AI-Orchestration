@@ -7,11 +7,10 @@
 #   - Runs in a subprocess with real-time streaming output (15 min timeout)
 #   - Auto-creates the target directory and opens VS Code when done
 
-import subprocess
+import logging
 import os
 import shutil
-import logging
-import time
+import subprocess
 
 _logger = logging.getLogger("Scaffolding")
 
@@ -86,6 +85,7 @@ def scaffold_project(framework: str, project_name: str, location: str = "") -> s
             capture_output=True,
             text=True,
             timeout=_SCAFFOLD_TIMEOUT,
+            check=False,  # returncode checked explicitly below, not via exception
         )
 
         if result.returncode == 0:
@@ -107,8 +107,8 @@ def scaffold_project(framework: str, project_name: str, location: str = "") -> s
         return f"ERROR: Scaffolding '{framework}' timed out after {_SCAFFOLD_TIMEOUT // 60} minutes."
     except FileNotFoundError:
         return (
-            f"ERROR: 'npx' or 'python' not found in PATH. "
-            f"Please install Node.js or Python and ensure they are in your system PATH."
+            "ERROR: 'npx' or 'python' not found in PATH. "
+            "Please install Node.js or Python and ensure they are in your system PATH."
         )
     except Exception as e:
         _logger.error(f"scaffold_project error: {e}")
@@ -116,4 +116,4 @@ def scaffold_project(framework: str, project_name: str, location: str = "") -> s
 
 
 # ── Missing import fix ────────────────────────────────────────────────────────
-import re  # noqa: E402 — placed after SCAFFOLD_RECIPES for clarity
+import re

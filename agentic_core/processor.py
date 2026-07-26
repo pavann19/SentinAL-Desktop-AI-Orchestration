@@ -7,14 +7,15 @@ import logging
 import os
 import re
 
-from config.settings import BrainConfig
-from config.prompts import EXTRACTION_SYSTEM_PROMPT as SYSTEM_PROMPT  # Fix 3.6: externalized
 from agentic_core.capability_registry import registry
 from agentic_core.memory_hook import MemoryManager
 from config.constants import ALLOWLIST_INTENTS
 
 # ── Structured Logger (Fix 5.2) ─────────────────────────────────────────────
 from config.paths import LOGS_DIR  # Resolves to AppData\SentinAL\logs in prod
+from config.prompts import EXTRACTION_SYSTEM_PROMPT as SYSTEM_PROMPT  # Fix 3.6: externalized
+from config.settings import BrainConfig
+
 _logger = logging.getLogger("Processor")
 _logger.setLevel(logging.INFO)
 if not _logger.handlers:
@@ -39,7 +40,9 @@ def deterministic_fast_path(prompt: str) -> list | None:
 
     if any(x in p for x in ["what time", "current time", "tell me the time"]):
         from datetime import datetime
-        now = datetime.now().strftime("%I:%M %p")
+        # Intentionally naive/local (ruff DTZ005): spoken back as "the time is
+        # X" — must be the user's local time, not UTC. Display-only.
+        now = datetime.now().strftime("%I:%M %p")  # noqa: DTZ005
         return [{"intent": "ConversationalIntent", "message": f"The time is {now}.", "speech_response": f"It is {now}."}]
 
     app_map = {"chrome": "chrome", "notepad": "notepad", "calculator": "calc", "calc": "calc"}
@@ -270,7 +273,7 @@ def extract_intent(prompt: str) -> list:
         # Triggered when 2+ developer keywords are detected in the prompt.
         from capabilities.developer.codeact_engine import is_developer_task
         if is_developer_task(prompt):
-            print(f"[AUDIT] CodeAct: Developer workflow detected. Bypassing Intent pipeline.")
+            print("[AUDIT] CodeAct: Developer workflow detected. Bypassing Intent pipeline.")
             return [{
                 "intent": "CodeActIntent",
                 "prompt": prompt,
@@ -285,7 +288,7 @@ def extract_intent(prompt: str) -> list:
         # If we have multiple steps, or the prompt is complex, we use a single reasoning call
         # to ensure data-chaining (like {{LAST_RESULT}}) is planned correctly.
         if len(queries) > 1 or any(x in prompt.lower() for x in ["then", "and then", "after that"]):
-            print(f"[AUDIT] Complex multi-step detected. Engaging Global Reasoning Orchestrator.")
+            print("[AUDIT] Complex multi-step detected. Engaging Global Reasoning Orchestrator.")
             llm_plan = _get_routing_llm("Global Reasoning")
             # We use the full prompt here, not the split queries, so the LLM sees the data-chaining intent.
             plan_prompt = f"{SYSTEM_PROMPT}\n\nPlan a full execution sequence for this request: '{prompt}'. You must return a valid JSON array of intents. If a step depends on a previous result, use '{{{{LAST_RESULT}}}}' in its parameters. Reference the allowed intents list provided in your system instructions."
@@ -296,7 +299,7 @@ def extract_intent(prompt: str) -> list:
                     print(f"[AUDIT] Global Plan generated: {len(plan)} steps.")
                     return plan
                 else:
-                    print(f"[RELIABILITY ERROR] Global Reasoning failed to return valid JSON array. Falling back to sequential extraction.")
+                    print("[RELIABILITY ERROR] Global Reasoning failed to return valid JSON array. Falling back to sequential extraction.")
             except Exception as e:
                 print(f"[SRE] Global Reasoning failed: {e}. Falling back to sequential extraction.")
 
@@ -475,7 +478,7 @@ def extract_intent(prompt: str) -> list:
                         actions_val = parsed
                         print(f"[AUDIT] Extracted OS Actions: {len(actions_val)}")
                     else:
-                        print(f"[RELIABILITY ERROR] OS Action extraction returned invalid structure.")
+                        print("[RELIABILITY ERROR] OS Action extraction returned invalid structure.")
                         matched_intent = "UnknownIntent"
                 except Exception as e:
                     print(f"[SRE] OS Action extraction failed: {e}")
@@ -521,5 +524,5 @@ def extract_intent(prompt: str) -> list:
         return [{
             "intent": "UnknownIntent", 
             "target": "Intent Parsing Failed", 
-            "value": f"The model did not return a valid format. Details: {str(e)}"
+            "value": f"The model did not return a valid format. Details: {e!s}"
         }]

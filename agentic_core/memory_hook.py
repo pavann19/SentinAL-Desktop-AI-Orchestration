@@ -2,8 +2,8 @@
 # Dynamic Intent Memory & URL Cache for SentinAL.
 # Uses SQLite to persist learned user preferences and platform route templates.
 
-import sqlite3
 import os
+import sqlite3
 import threading
 
 from config.paths import DATA_DIR
@@ -116,8 +116,8 @@ class MemoryManager:
 
     # ── Interaction History Methods ────────────────────────────────────────────
 
-    def log_interaction(self, timestamp: str, intent: str, target: str = None,
-                        result: str = None, platform: str = None):
+    def log_interaction(self, timestamp: str, intent: str, target: str | None = None,
+                        result: str | None = None, platform: str | None = None):
         """
         Logs a completed intent execution to the interaction history table.
 
@@ -153,7 +153,7 @@ class MemoryManager:
             )
             return self.cursor.fetchall()
 
-    def get_context_for_prompt(self, intent_filter: str = None, limit: int = 5) -> str:
+    def get_context_for_prompt(self, intent_filter: str | None = None, limit: int = 5) -> str:
         """
         Retrieves recent history and formats it as a string for LLM injection.
         

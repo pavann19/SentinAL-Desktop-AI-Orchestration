@@ -1,7 +1,6 @@
+import logging
 import os
 import re
-import time
-import logging
 
 # ── Logging Setup ─────────────────────────────────────────────────────────────
 from config.paths import LOGS_DIR  # Resolves to AppData\SentinAL\logs in prod

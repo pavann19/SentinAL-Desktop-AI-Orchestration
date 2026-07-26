@@ -1,8 +1,8 @@
 # capability_registry.py
 # SQLite-backed Registry for OS Capabilities, Apps, and Web Routes.
 
-import sqlite3
 import os
+import sqlite3
 import threading
 
 from config.paths import DATA_DIR

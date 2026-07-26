@@ -1,6 +1,6 @@
+import concurrent.futures
 import os
 import re
-import concurrent.futures
 
 # Known LLM refusal/hallucination patterns to detect and discard
 _REFUSAL_PATTERNS = [
@@ -30,7 +30,7 @@ class TranscriptionCorrector:
     """
     def __init__(self):
         from config.settings import BrainConfig
-        print(f"[STT Corrector] Initializing neural polish layer via BrainConfig")
+        print("[STT Corrector] Initializing neural polish layer via BrainConfig")
         try:
             self.llm = BrainConfig.get_correction_llm()
         except Exception as e:
@@ -69,7 +69,7 @@ RULES:
             return raw_text
 
         try:
-            from langchain_core.messages import SystemMessage, HumanMessage
+            from langchain_core.messages import HumanMessage, SystemMessage
             messages = [
                 SystemMessage(content=self.system_prompt),
                 HumanMessage(content=f"INPUT: {raw_text}\nOUTPUT:")
@@ -91,12 +91,12 @@ RULES:
 
             # Safety: reject refusal or hallucination
             if not corrected or _REFUSAL_RE.match(corrected):
-                print(f"[STT Corrector] Refusal/hallucination detected — using original transcript.")
+                print("[STT Corrector] Refusal/hallucination detected — using original transcript.")
                 return raw_text
 
             # Safety: reject massive expansions (LLM answered the question instead of polishing)
             if len(corrected) > len(raw_text) * 3:
-                print(f"[STT Corrector] Suspicious expansion detected — using original transcript.")
+                print("[STT Corrector] Suspicious expansion detected — using original transcript.")
                 return raw_text
 
             return corrected

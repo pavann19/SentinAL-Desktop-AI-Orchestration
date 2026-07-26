@@ -178,3 +178,46 @@ class TestDependencyInstallIntentDispatch:
         steps = [{"intent": "DependencyInstallIntent", "manager": "yarn", "packages": "lodash"}]
         result = execute_pipeline(steps)
         assert "Unknown package manager" in result
+
+
+class TestCodeActIntentDispatch:
+    """
+    Regression coverage for a real bug found via `ruff` (F821 undefined-name):
+    the CodeActIntent branch referenced a never-defined `SESSION_MEMORY`, so
+    every successful CodeAct execution raised NameError immediately after
+    launching its script, was silently caught by the retry loop, and retried
+    up to 3 times — each retry re-invoking the LLM and re-launching a real
+    PowerShell window — before the pipeline ultimately reported failure to
+    the user despite the script having actually run.
+    """
+
+    @patch("capabilities.developer.codeact_engine.generate_and_run")
+    @patch("config.settings.BrainConfig.get_cloud_llm")
+    def test_successful_codeact_reports_success_not_failure(self, mock_get_llm, mock_run):
+        mock_get_llm.return_value = object()  # any truthy LLM handle
+        mock_run.return_value = "I've opened a terminal window and started executing your request."
+        steps = [{"intent": "CodeActIntent", "prompt": "set up a flask project"}]
+
+        result = execute_pipeline(steps)
+
+        assert "opened a terminal window" in result
+        assert "ERROR" not in result
+
+    @patch("capabilities.developer.codeact_engine.generate_and_run")
+    @patch("config.settings.BrainConfig.get_cloud_llm")
+    def test_successful_codeact_does_not_retry(self, mock_get_llm, mock_run):
+        """A successful step must not be re-attempted — each retry launches a
+        real script window, so retrying a success would open duplicates."""
+        mock_get_llm.return_value = object()
+        mock_run.return_value = "done"
+        steps = [{"intent": "CodeActIntent", "prompt": "set up a flask project"}]
+
+        execute_pipeline(steps)
+
+        mock_run.assert_called_once()
+
+    def test_missing_prompt_returns_error(self):
+        steps = [{"intent": "CodeActIntent", "prompt": ""}]
+        result = execute_pipeline(steps)
+        assert result.startswith("ERROR")
+        assert "missing prompt" in result

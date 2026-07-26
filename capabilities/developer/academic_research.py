@@ -1,4 +1,3 @@
-import os
 
 def handle_academic_research(target: str, prompt: str) -> str:
     """

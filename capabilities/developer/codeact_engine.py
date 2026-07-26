@@ -12,11 +12,11 @@
 # workflow tasks, giving the agent unlimited flexibility.
 # ═══════════════════════════════════════════════════════════════════
 
+import logging
 import os
 import re
 import subprocess
 import tempfile
-import logging
 import time
 
 _logger = logging.getLogger("CodeActEngine")
@@ -144,7 +144,7 @@ def generate_and_run(prompt: str, llm) -> str:
     is_safe, reason = _validate_script(script)
     if not is_safe:
         _logger.warning(f"[CodeAct] SECURITY BLOCK: {reason}")
-        return f"CodeAct: Security block — generated script contains a forbidden operation. Aborting."
+        return "CodeAct: Security block — generated script contains a forbidden operation. Aborting."
 
     # ── Step 3: Save to temp file ──────────────────────────────────────────────
     try:
@@ -184,11 +184,11 @@ def generate_and_run(prompt: str, llm) -> str:
         )
 
         time.sleep(1.5)  # Let the window open before Jarvis speaks
-        print(f"[CodeAct] Visible terminal launched successfully.")
+        print("[CodeAct] Visible terminal launched successfully.")
 
         return (
-            f"I've opened a terminal window and started executing your request. "
-            f"You can watch every step happen in real time in the PowerShell window."
+            "I've opened a terminal window and started executing your request. "
+            "You can watch every step happen in real time in the PowerShell window."
         )
 
     except Exception as e:

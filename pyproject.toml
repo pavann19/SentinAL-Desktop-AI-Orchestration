@@ -95,8 +95,8 @@ packages = [
     "interfaces.ui_bridge",
 ]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
+# Pytest config lives in pytest.ini (includes coverage settings pytest.ini_options
+# would duplicate incompletely) — not repeated here to avoid the two drifting apart.
 
 [tool.ruff]
 line-length = 120
