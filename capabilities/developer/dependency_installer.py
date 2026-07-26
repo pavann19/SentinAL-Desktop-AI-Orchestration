@@ -8,10 +8,10 @@
 #   - npm: runs in a user-specified cwd (defaults to CWD)
 #   - Output is streamed and capped at 2000 chars for LLM summarization
 
-import subprocess
+import logging
 import os
 import re
-import logging
+import subprocess
 
 _logger = logging.getLogger("DependencyInstaller")
 
@@ -95,7 +95,7 @@ def npm_install(packages: str = "", dev: bool = False, cwd: str = "") -> str:
     return _run_install(cmd, label=f"npm install {packages}", cwd=work_dir)
 
 
-def _run_install(cmd: list[str], label: str, cwd: str = None) -> str:
+def _run_install(cmd: list[str], label: str, cwd: str | None = None) -> str:
     """
     Internal: runs an install command in a VISIBLE terminal window.
     The user can watch the install progress scroll by in real-time.

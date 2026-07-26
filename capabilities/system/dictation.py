@@ -1,6 +1,7 @@
-import os
-import pyautogui
 import time
+
+import pyautogui
+
 
 def handle_dictation(target: str, prompt: str) -> str:
     """
@@ -38,6 +39,6 @@ def handle_dictation(target: str, prompt: str) -> str:
         # Brief pause to ensure the user's focus is on the right window
         time.sleep(1)
         pyautogui.write(payload, interval=0.01)
-        return f"I have typed your dictation payload."
+        return "I have typed your dictation payload."
     except Exception as e:
         return f"Failed to simulate typing: {e}"

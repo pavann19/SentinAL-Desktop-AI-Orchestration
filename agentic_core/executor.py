@@ -9,27 +9,29 @@
 #   Fix 2.10 — Hardcoded time.sleep(0.5) and sleep(2.0) replaced with env-configurable values
 #   Fix 5.1 — Structured logging via logging module instead of print()
 
-import subprocess
-import urllib.parse
-import os
-import time
 import logging
-import webbrowser
-import pyautogui
+import os
 import re
+import subprocess
+import time
+import urllib.parse
+import webbrowser
+
+import pyautogui
 
 from agentic_core.memory_hook import MemoryManager
-from config.constants import SENSITIVE_TARGETS
 from agentic_core.validator import validate_sandbox
+from capabilities.developer.dependency_installer import npm_install, pip_install
+from capabilities.developer.scaffolding import scaffold_project
+from capabilities.system.gui_resolver import resolve_element
 
 # Phase 3 capability modules
-from capabilities.system.process_manager import list_processes, kill_process
-from capabilities.system.gui_resolver import resolve_element
-from capabilities.developer.scaffolding import scaffold_project
-from capabilities.developer.dependency_installer import pip_install, npm_install
+from capabilities.system.process_manager import kill_process, list_processes
+from config.constants import SENSITIVE_TARGETS
 
 # ── Structured Logger (Fix 5.1) ───────────────────────────────────────────────
 from config.paths import LOGS_DIR  # Resolves to AppData\SentinAL\logs in prod
+
 _logger = logging.getLogger("Executor")
 _logger.setLevel(logging.INFO)
 if not _logger.handlers:
@@ -133,7 +135,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
         last_error = None
         for attempt in range(3):
             if cancel_event and cancel_event.is_set():
-                print(f"[RELIABILITY] ABORTING Executor: Cancellation signal detected.")
+                print("[RELIABILITY] ABORTING Executor: Cancellation signal detected.")
                 return "Mission interrupted by system."
 
             # ── Fix 1.6: VARIABLE INJECTION ──
@@ -173,8 +175,17 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                     result_msg = generate_and_run(prompt_val, llm)
                     
                     master_stdout_buffer += f"CodeAct Execution:\n{result_msg}\n"
-                    SESSION_MEMORY["step_results"][str(index)] = result_msg
-                    continue
+                    # Fix (ruff F821): `SESSION_MEMORY` was referenced here but never
+                    # defined anywhere in this module — every CodeActIntent step raised
+                    # NameError immediately after successfully launching its script,
+                    # was caught by the broad except below, and retried up to 3 times
+                    # (each retry re-invoking the LLM and re-launching a real PowerShell
+                    # window) before ultimately reporting failure to the user despite
+                    # having actually run. Record the result the same way every other
+                    # intent does (`blackboard`, used for {{LAST_RESULT}} injection —
+                    # Fix 1.6) instead, and fall through to the loop's normal
+                    # step_success=True/break so a real success is reported as one.
+                    step_result = result_msg
 
                 # ── 0.5. NEW SKILLS EXPANSION (Part 1, 2, 3) ────────────────────────
                 elif intent == "AcademicResearchIntent":
@@ -260,7 +271,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
 
                 # ── 3. InformationRetrievalIntent ──────────────────────────────────
                 elif intent == "InformationRetrievalIntent":
-                    print(f"[Executor] InformationRetrievalIntent - Processing Web Research.")
+                    print("[Executor] InformationRetrievalIntent - Processing Web Research.")
 
                     # --- CLOUD LEAK PATCH: Security Governance ---
                     from system_services.privacy_router import privacy_guard
@@ -269,9 +280,10 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                         print("[Executor] " + step_result)
                         continue
 
-                    from capabilities.web.search_engine import get_live_research
-                    from agentic_core.processor import _get_routing_llm
                     from datetime import datetime
+
+                    from agentic_core.processor import _get_routing_llm
+                    from capabilities.web.search_engine import get_live_research
 
                     try:
                         search_data = get_live_research(target)
@@ -283,7 +295,11 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                     else:
                         context = search_data.get("context", "")
 
-                    today = datetime.now().strftime("%A, %B %d, %Y")
+                    # Intentionally naive/local (ruff DTZ005): this date is spoken back
+                    # to the user ("Date: Tuesday..."), so it must be their local time,
+                    # not UTC — adding tz=timezone.utc would tell the user the wrong day
+                    # near midnight in most timezones. Display-only, never stored/compared.
+                    today = datetime.now().strftime("%A, %B %d, %Y")  # noqa: DTZ005
                     strict_rule = " CRITICAL RULE: You are a tactical AI. Your initial response MUST be a 2-sentence high-level summary. End your summary with the exact phrase: 'Shall I elaborate, Boss?'. Do NOT output the full details unless the user's prompt explicitly contains the word 'continue', 'elaborate', or 'yes'."
                     rag_prompt = f"Date: {today}. Query: {target}. Context: {context}. Brief the user concisely.{strict_rule}"
 
@@ -294,7 +310,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                     except Exception as e:
                         step_result = f"Failed to synthesize research: {e}"
 
-                    print(f"[Executor] Research Complete.")
+                    print("[Executor] Research Complete.")
 
                 # ── 4. GeneralizedOSIntent ────────────────────────────────────
                 elif intent == "GeneralizedOSIntent":
@@ -341,7 +357,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                 _sanitize_shell_cmd(safe_target)
                             except ValueError as sec_err:
                                 _logger.error(str(sec_err))
-                                return f"ERROR Step {index+1}: {str(sec_err)}"
+                                return f"ERROR Step {index+1}: {sec_err!s}"
 
                             current_cwd = os.getcwd()
 
@@ -437,7 +453,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                             # Protect ASGI Threadpool: Maximum 15 second lock per command.
                                             step_stdout, step_stderr = process.communicate(timeout=15)
                                         except subprocess.TimeoutExpired:
-                                            print(f"      [Progress] Command exceeded 15s. Detaching to background.")
+                                            print("      [Progress] Command exceeded 15s. Detaching to background.")
                                             success = True
                                             master_stdout_buffer += "Command detached and running in background."
                                             break
@@ -451,7 +467,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                             # If the user just created a folder with mkdir/md,
                                             # pop open Explorer at that location so they can see it.
                                             cmd_lower = cmd.strip().lower()
-                                            is_mkdir = cmd_lower.startswith('mkdir') or cmd_lower.startswith('md ')
+                                            is_mkdir = cmd_lower.startswith(('mkdir', 'md '))
                                             if is_mkdir:
                                                 try:
                                                     # Extract the path from the command
@@ -463,8 +479,10 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                                             shell=True, start_new_session=True
                                                         )
                                                         print(f"      [Visual] Opened Explorer at: {folder_arg}")
-                                                except Exception:
-                                                    pass  # Auto-open is best-effort; never block execution
+                                                except Exception as e:
+                                                    # Auto-open is best-effort; never block execution on it,
+                                                    # but log rather than silently swallow (ruff S110).
+                                                    _logger.debug(f"Auto-open Explorer for '{folder_arg if 'folder_arg' in locals() else cmd}' failed (non-fatal): {e}")
                                         else:
                                             step_stderr = step_stderr or ""
                                             print(f"      [Error] Command failed (Code {process.returncode}): {step_stderr.strip()}")
@@ -500,7 +518,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                     return "Task failed after multiple attempts. Aborting sequence."
 
                         elif action_type == "gui":
-                            print(f"    [GUI] Routing to GUI Automation Engine...")
+                            print("    [GUI] Routing to GUI Automation Engine...")
                             action_label = payload  # e.g. 'click', 'type', 'scroll'
                             gui_target   = value
 
@@ -607,7 +625,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                 # ── 6. ConversationalIntent ─────────────────────────────────────────
                 elif intent == "ConversationalIntent":
                     message = step.get("message", "I'm here and ready to assist you.")
-                    print(f"[Executor] ConversationalIntent — logging AI message.")
+                    print("[Executor] ConversationalIntent — logging AI message.")
                     step_result = message
 
                 elif intent == "UnknownIntent":
@@ -683,7 +701,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                 last_error = f"ERROR Step {index+1}: Terminal command '{target}' timed out."
                 continue
             except Exception as e:
-                last_error = f"ERROR Step {index+1}: Exception applying '{intent}' on '{target}' — {str(e)}"
+                last_error = f"ERROR Step {index+1}: Exception applying '{intent}' on '{target}' — {e!s}"
                 print(f"[SRE] Step {index+1} failed, attempt {attempt+1}/3... Error: {e}")
                 time.sleep(1)
                 continue
@@ -901,7 +919,7 @@ def execute_gui_command(intent: dict) -> str:
                 pyautogui.write(target, interval=0.05)
                 return f"Text typed successfully: '{target}'"
             except Exception as e:
-                return f"ERROR: Typing failed — window not focused or input rejected: {str(e)}"
+                return f"ERROR: Typing failed — window not focused or input rejected: {e!s}"
 
         elif action == "press" or action == "hotkey":
             if not target:
@@ -928,6 +946,6 @@ def execute_gui_command(intent: dict) -> str:
             return f"Scrolled {'up' if direction > 0 else 'down'} at current position"
 
     except Exception as e:
-        return f"GUI action failed: {str(e)}"
+        return f"GUI action failed: {e!s}"
 
     return f"Unrecognized GUI action: '{action}'"

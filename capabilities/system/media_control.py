@@ -1,5 +1,5 @@
-import os
 import pyautogui
+
 
 def handle_media_control(target: str, prompt: str) -> str:
     """

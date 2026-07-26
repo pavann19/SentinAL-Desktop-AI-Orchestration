@@ -34,21 +34,24 @@
 #   - Hold-time extension after fresh speech (prevents sentence clipping)
 #   - Self-healing stream: if a live device dies mid-session, re-scores hardware
 
+import asyncio
+import json
 import os
 import queue
 import threading
-import numpy as np
-import asyncio
-import json
-from websockets.legacy.client import connect as ws_connect
-from websockets.exceptions import ConnectionClosedOK
 from collections import deque
+from typing import ClassVar
+
+import numpy as np
 import sounddevice as sd
+from websockets.exceptions import ConnectionClosedOK
+from websockets.legacy.client import connect as ws_connect
 
 # ── Optional high-quality resampler ──────────────────────────────────────────
 try:
-    from scipy.signal import resample_poly
     from math import gcd
+
+    from scipy.signal import resample_poly
     _SCIPY_AVAILABLE = True
 except ImportError:
     _SCIPY_AVAILABLE = False
@@ -103,7 +106,6 @@ def start_listening(on_transcript, on_wake=None, on_interrupt=None):
 
 
 def stop_listening():
-    global _stt_instance
     with _stt_lock:
         if _stt_instance:
             _stt_instance.stop()
@@ -119,7 +121,7 @@ class DeviceSelector:
     V4.0: Probe is now thread-safe and asyncio-compatible. The blocking
     sd.sleep() is moved to a thread via asyncio.to_thread().
     """
-    BLACKLIST_KEYWORDS = ['stereo mix', 'what u hear', 'loopback',
+    BLACKLIST_KEYWORDS: ClassVar[list[str]] = ['stereo mix', 'what u hear', 'loopback',
                           'pc speaker', 'output with hap', 'virtual']
 
     def score_devices(self) -> list[dict]:
@@ -440,10 +442,16 @@ class STTService:
 
             def _run_calibration():
                 """Blocking calibration — runs in executor thread."""
+                # ruff(B023) flags calib_frames/dev_sr/dev_idx as loop variables
+                # captured by closure — a real risk in a `for` loop with deferred
+                # execution, but a false positive here: this is a `while` loop and
+                # _run_calibration is defined AND fully executed (via the blocking
+                # `await asyncio.to_thread(...)` below) within the same iteration
+                # before the loop advances, so these can never hold a stale value.
                 def calib_cb(indata, frames, time, status):
-                    calib_frames.append(indata[:, 0].copy())
-                with sd.InputStream(samplerate=dev_sr, channels=1, blocksize=frame_len,
-                                    dtype='float32', device=dev_idx, callback=calib_cb):
+                    calib_frames.append(indata[:, 0].copy())  # noqa: B023
+                with sd.InputStream(samplerate=dev_sr, channels=1, blocksize=frame_len,  # noqa: B023
+                                    dtype='float32', device=dev_idx, callback=calib_cb):  # noqa: B023
                     threading.Event().wait(timeout=1.0)   # Block thread for 1000ms
 
             try:
@@ -736,7 +744,7 @@ class STTService:
             decision = wake_intelligence.process(transcript, hardware_fired=False)
 
             if decision.is_interrupt:
-                print(f"[WIL] Interrupt before wake — ignoring.")
+                print("[WIL] Interrupt before wake — ignoring.")
                 await self._close_deepgram_session()
                 return
 
