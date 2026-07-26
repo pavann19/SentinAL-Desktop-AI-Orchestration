@@ -11,10 +11,10 @@
 import os
 import re
 import time
-import numpy as np
+
 import sounddevice as sd
-from kokoro_onnx import Kokoro
 from cachetools import LRUCache
+from kokoro_onnx import Kokoro
 
 # ── Configuration ────────────────────────────────────────────────────────────
 MODEL_PATH  = os.path.join(os.getcwd(), "data", "models", "kokoro-v1.0.onnx")
@@ -24,6 +24,7 @@ VOICE_NAME  = 'af_heart'
 
 # ── Singleton & Cache ─────────────────────────────────────────────────────────
 import threading
+
 _tts_instance = None
 _tts_init_lock = threading.Lock()  # FIX 5: Prevents race-condition re-init from asyncio.to_thread
 
@@ -49,7 +50,6 @@ def speak(text: str, speed: float = 1.0, cancel_event=None,
 
 def stop():
     """Immediately halts any active TTS playback."""
-    global _tts_instance
     if _tts_instance is not None:
         _tts_instance.stop()
 

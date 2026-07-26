@@ -15,7 +15,6 @@
 
 import re
 from dataclasses import dataclass, field
-from typing import Optional
 
 # ── Identity Configuration ────────────────────────────────────────────────────
 # The core identity anchor. All phrase variants must resolve to this.
@@ -85,7 +84,7 @@ class WakeDecision:
     confidence: float                      # 0.0-1.0 detection confidence
     method: str                            # How was it detected: "hardware", "exact", "fuzzy", "phonetic"
     raw_transcript: str                    # Original text from STT
-    clean_command: Optional[str] = None    # Command with wake phrase stripped (None if pure activation)
+    clean_command: str | None = None    # Command with wake phrase stripped (None if pure activation)
     is_interrupt: bool = False             # Was an interrupt word detected?
     is_embedded: bool = False              # Was the command embedded in the wake phrase sentence?
     notes: list[str] = field(default_factory=list)  # Debug trace for logging
@@ -182,8 +181,7 @@ class WakeIntelligenceEngine:
                 dist = self._levenshtein(word, alias)
                 if dist <= threshold:
                     conf = 1.0 - (dist / max(len(alias), len(word)))
-                    if conf > best_conf:
-                        best_conf = conf
+                    best_conf = max(best_conf, conf)
 
         if best_conf > 0.0:
             # Position Penalty: Index 0 gets 1.0x, Index 1 gets 0.95x, Index 2 gets 0.85x
@@ -196,7 +194,7 @@ class WakeIntelligenceEngine:
 
     # ── Command Extraction ────────────────────────────────────────────────────
 
-    def _extract_command(self, normalized: str) -> Optional[str]:
+    def _extract_command(self, normalized: str) -> str | None:
         """
         Strips the wake phrase from the transcript, handles multi-wake collisions,
         and aggressively cleans connective phrasing.

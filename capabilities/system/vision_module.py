@@ -1,11 +1,11 @@
-import os
-import concurrent.futures
-import pyautogui
 import base64
+import concurrent.futures
 import io
-from PIL import Image
-from langchain_ollama import ChatOllama
+import os
+
+import pyautogui
 from langchain_core.messages import HumanMessage
+from langchain_ollama import ChatOllama
 
 # Fix 3.4: Vision model is now configurable via env var
 VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "llama3.2-vision")

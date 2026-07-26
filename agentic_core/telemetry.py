@@ -15,7 +15,10 @@ def log_event(user_input: str, intent: dict, validation: str, execution: str):
         os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
         
         entry = {
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            # Naive/local (ruff DTZ005): a single-machine local log, meant to be
+            # read against the user's own system clock — not aggregated across
+            # timezones, so UTC would only make it harder to correlate.
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),  # noqa: DTZ005
             "input": user_input,
             "intent": intent,
             "validation": validation,

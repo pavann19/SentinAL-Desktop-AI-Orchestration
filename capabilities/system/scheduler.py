@@ -1,11 +1,9 @@
-import os
 
 def handle_scheduler(target: str, prompt: str) -> str:
     """
     Handles local reminders, task lists, and advanced planning 
     (from holiday itineraries to defense analytics).
     """
-    target_lower = target.lower() if target else ""
     prompt_lower = prompt.lower() if prompt else ""
     
     if "holiday" in prompt_lower or "itinerary" in prompt_lower or "trip" in prompt_lower:

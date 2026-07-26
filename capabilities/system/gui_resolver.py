@@ -10,10 +10,9 @@
 #
 # Returns (x, y) pixel coordinates or None on failure.
 
-import os
 import logging
+import os
 import time
-from typing import Optional
 
 import pyautogui
 
@@ -21,7 +20,7 @@ _logger = logging.getLogger("GUIResolver")
 
 
 # ── Tier 1: Image-Based Matching ─────────────────────────────────────────────
-def find_by_image(image_path: str, confidence: float = 0.85) -> Optional[tuple[int, int]]:
+def find_by_image(image_path: str, confidence: float = 0.85) -> tuple[int, int] | None:
     """
     Locates an on-screen element by matching a template image.
     Requires opencv-python (pip install opencv-python).
@@ -51,7 +50,7 @@ def find_by_image(image_path: str, confidence: float = 0.85) -> Optional[tuple[i
 
 
 # ── Tier 2: Window Title Matching ────────────────────────────────────────────
-def find_window_center(title_substring: str) -> Optional[tuple[int, int]]:
+def find_window_center(title_substring: str) -> tuple[int, int] | None:
     """
     Finds a window by title substring and returns its center coordinates.
     Focuses the window and waits for it to activate.
@@ -73,8 +72,10 @@ def find_window_center(title_substring: str) -> Optional[tuple[int, int]]:
         try:
             win.activate()
             time.sleep(0.3)
-        except Exception:
-            pass  # Window may already be active
+        except Exception as e:
+            # Window may already be active; non-fatal, but log rather than
+            # silently swallow (ruff S110).
+            _logger.debug(f"win.activate() failed for '{title_substring}' (non-fatal): {e}")
 
         cx = win.left + win.width // 2
         cy = win.top + win.height // 2
@@ -90,7 +91,7 @@ def find_window_center(title_substring: str) -> Optional[tuple[int, int]]:
 
 
 # ── Tier 3: Accessibility API (pywinauto) ────────────────────────────────────
-def find_control_by_label(app_title: str, control_label: str) -> Optional[tuple[int, int]]:
+def find_control_by_label(app_title: str, control_label: str) -> tuple[int, int] | None:
     """
     Uses the Windows Accessibility API to find a UI control by its label/name.
     More reliable than image matching for standard Windows controls.
@@ -104,7 +105,6 @@ def find_control_by_label(app_title: str, control_label: str) -> Optional[tuple[
     """
     try:
         from pywinauto import Application, findwindows
-        from pywinauto.keyboard import send_keys
 
         wins = findwindows.find_windows(title_re=f".*{re.escape(app_title)}.*")
         if not wins:
@@ -131,7 +131,11 @@ def find_control_by_label(app_title: str, control_label: str) -> Optional[tuple[
                         cy = (rect.top + rect.bottom) // 2
                         _logger.info(f"find_control_by_label (fuzzy): found at ({cx},{cy})")
                         return cx, cy
-                except Exception:
+                except Exception as e:
+                    # A single descendant control being unreadable shouldn't abort
+                    # the whole fuzzy search; non-fatal, but log rather than
+                    # silently swallow (ruff S112).
+                    _logger.debug(f"find_control_by_label fuzzy-match: skipping unreadable control: {e}")
                     continue
         return None
 
@@ -144,7 +148,7 @@ def find_control_by_label(app_title: str, control_label: str) -> Optional[tuple[
 
 
 # ── Tier 4: VLM Screenshot Fallback ──────────────────────────────────────────
-def find_by_description(description: str) -> Optional[tuple[int, int]]:
+def find_by_description(description: str) -> tuple[int, int] | None:
     """
     Uses the Vision-Language Model to analyze the screen and estimate
     the location of a UI element by natural language description.
@@ -179,7 +183,8 @@ def find_by_description(description: str) -> Optional[tuple[int, int]]:
             {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{screenshot_b64}"}},
         ])
 
-        import json, concurrent.futures
+        import concurrent.futures
+        import json
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
             future = pool.submit(llm.invoke, [msg])
             try:
@@ -213,7 +218,7 @@ def resolve_element(
     image_path: str = "",
     app_title: str = "",
     confidence: float = 0.85,
-) -> Optional[tuple[int, int]]:
+) -> tuple[int, int] | None:
     """
     Main entry point — tries each resolution tier in order and returns
     the first successful result.
@@ -261,4 +266,4 @@ def resolve_element(
     return None
 
 
-import re  # noqa: E402
+import re
