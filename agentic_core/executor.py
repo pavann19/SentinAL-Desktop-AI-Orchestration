@@ -16,6 +16,7 @@ import subprocess
 import time
 import urllib.parse
 import webbrowser
+from datetime import datetime
 
 import pyautogui
 
@@ -279,8 +280,6 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                         step_result = "Security Block: I cannot perform web searches containing private system paths or sensitive data."
                         print("[Executor] " + step_result)
                         continue
-
-                    from datetime import datetime
 
                     from agentic_core.processor import _get_routing_llm
                     from capabilities.web.search_engine import get_live_research
@@ -628,6 +627,38 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                     print("[Executor] ConversationalIntent — logging AI message.")
                     step_result = message
 
+                # ── 6.5. ContinuationIntent ──────────────────────────────────────────
+                # Fix: this intent was reachable via the router (see the router.py
+                # classifier-blind-spot fix) but had no dispatch branch at all here,
+                # falling through to "Unrecognized Enterprise Intent" - a hard error
+                # on every "continue"/"go on"/"tell me more" request. It relies on
+                # memory.log_interaction() below (also previously never called
+                # anywhere) to have something to continue FROM; the
+                # InformationRetrievalIntent prompt above was already written
+                # assuming this existed ("Do NOT output the full details unless the
+                # user's prompt explicitly contains 'continue'...").
+                elif intent == "ContinuationIntent":
+                    print("[Executor] ContinuationIntent — retrieving prior context.")
+                    prior_context = memory.get_context_for_prompt(limit=1)
+
+                    if not prior_context:
+                        step_result = "There's nothing recent for me to continue — what would you like me to do?"
+                    else:
+                        from agentic_core.processor import _get_routing_llm
+                        continuation_prompt = (
+                            f"{prior_context}\n\n"
+                            "The user just asked you to continue, elaborate, or say more about "
+                            "your most recent response above. Expand on it naturally and "
+                            "conversationally - do not repeat it verbatim, and do not ask what "
+                            "they mean; you already know from the context above."
+                        )
+                        llm = _get_routing_llm("Continuation")
+                        try:
+                            response = llm.invoke([("human", continuation_prompt)])
+                            step_result = response.content.strip()
+                        except Exception as e:
+                            step_result = f"I couldn't continue on that — {e}"
+
                 elif intent == "UnknownIntent":
                     return f"ERROR Step {index+1}: The intent layer could not understand the request."
 
@@ -695,6 +726,29 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                 # Record result for Blackboard if successful
                 if step_result:
                     blackboard.append(step_result)
+
+                    # Fix: memory.get_context_for_prompt() has been read by
+                    # processor.py (InformationRetrievalIntent/GeneralizedOSIntent
+                    # target extraction) and now by ContinuationIntent above, but
+                    # nothing ever called log_interaction() to populate the table
+                    # those reads query - interaction_history was permanently
+                    # empty, so every "contextual memory injection" silently had
+                    # no context to inject. Skip logging ContinuationIntent itself
+                    # so a chain of "continue" requests doesn't bury the actual
+                    # prior interaction it should keep referring back to.
+                    if intent != "ContinuationIntent":
+                        try:
+                            memory.log_interaction(
+                                timestamp=datetime.now().isoformat(),  # noqa: DTZ005 (local log, see other DTZ005 notes in this file)
+                                intent=intent,
+                                target=target,
+                                result=str(step_result)[:200],
+                                platform=step.get("value", ""),
+                            )
+                        except Exception as e:
+                            # Best-effort: a logging failure must never break the
+                            # actual pipeline result the user is waiting on.
+                            _logger.debug(f"log_interaction failed (non-fatal): {e}")
 
 
             except subprocess.TimeoutExpired:
