@@ -221,3 +221,99 @@ class TestCodeActIntentDispatch:
         result = execute_pipeline(steps)
         assert result.startswith("ERROR")
         assert "missing prompt" in result
+
+
+class TestContinuationIntentDispatch:
+    """
+    Regression coverage for a real bug: ContinuationIntent was reachable via
+    the router (see the router.py classifier-blind-spot fix earlier this
+    session) but had NO dispatch branch in execute_pipeline() at all - every
+    "continue"/"go on"/"tell me more" request fell through to "Unrecognized
+    Enterprise Intent" and hard-errored, regardless of what came before it.
+    """
+
+    @patch("agentic_core.executor.memory")
+    def test_no_prior_context_returns_graceful_message_not_error(self, mock_memory):
+        mock_memory.get_context_for_prompt.return_value = ""
+        steps = [{"intent": "ContinuationIntent"}]
+
+        result = execute_pipeline(steps)
+
+        assert "ERROR" not in result
+        assert "nothing recent" in result.lower()
+
+    @patch("agentic_core.processor._get_routing_llm")
+    @patch("agentic_core.executor.memory")
+    def test_prior_context_is_passed_to_llm_for_continuation(self, mock_memory, mock_get_llm):
+        mock_memory.get_context_for_prompt.return_value = (
+            "[PAST INTERACTION CONTEXT]\n- InformationRetrievalIntent: capital of france -> Result: Paris."
+        )
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(content="Paris has been the capital since 508 CE.")
+        mock_get_llm.return_value = mock_llm
+        steps = [{"intent": "ContinuationIntent"}]
+
+        result = execute_pipeline(steps)
+
+        assert "ERROR" not in result
+        assert "508 CE" in result
+        # The prior interaction must actually reach the LLM prompt, not just exist.
+        prompt_sent = mock_llm.invoke.call_args[0][0][0][1]
+        assert "Paris" in prompt_sent
+
+    @patch("agentic_core.executor.memory")
+    def test_llm_failure_reported_gracefully_not_as_pipeline_error(self, mock_memory):
+        mock_memory.get_context_for_prompt.return_value = "[PAST INTERACTION CONTEXT]\n- x: y -> Result: z."
+        steps = [{"intent": "ContinuationIntent"}]
+
+        with patch("agentic_core.processor._get_routing_llm") as mock_get_llm:
+            mock_get_llm.return_value.invoke.side_effect = RuntimeError("LLM timeout")
+            result = execute_pipeline(steps)
+
+        assert "couldn't continue" in result.lower()
+
+
+class TestInteractionLogging:
+    """
+    Regression coverage for a real bug: memory.get_context_for_prompt() has
+    been READ by processor.py (target extraction for InformationRetrievalIntent
+    and GeneralizedOSIntent) and now by ContinuationIntent, but nothing ever
+    called memory.log_interaction() to populate the table those reads query -
+    interaction_history was permanently empty, so "contextual memory
+    injection" always silently had no context to inject, for every intent.
+    """
+
+    @patch("agentic_core.executor.memory")
+    @patch("webbrowser.open")
+    def test_successful_step_logs_to_interaction_history(self, mock_open, mock_memory):
+        steps = [{"intent": "WebNavigationIntent", "target": "youtube", "speech_response": "Navigating."}]
+
+        execute_pipeline(steps)
+
+        mock_memory.log_interaction.assert_called_once()
+        call_kwargs = mock_memory.log_interaction.call_args.kwargs
+        assert call_kwargs["intent"] == "WebNavigationIntent"
+        assert call_kwargs["target"] == "youtube"
+
+    @patch("agentic_core.executor.memory")
+    def test_continuation_intent_itself_is_not_logged(self, mock_memory):
+        """A chain of 'continue' requests must not bury the actual prior
+        interaction it should keep referring back to."""
+        mock_memory.get_context_for_prompt.return_value = ""
+        steps = [{"intent": "ContinuationIntent"}]
+
+        execute_pipeline(steps)
+
+        mock_memory.log_interaction.assert_not_called()
+
+    @patch("agentic_core.executor.memory")
+    @patch("webbrowser.open")
+    def test_logging_failure_does_not_break_pipeline_result(self, mock_open, mock_memory):
+        """Logging is best-effort; a broken DB write must never take down an
+        otherwise-successful user-facing result."""
+        mock_memory.log_interaction.side_effect = RuntimeError("disk full")
+        steps = [{"intent": "WebNavigationIntent", "target": "youtube", "speech_response": "Navigating."}]
+
+        result = execute_pipeline(steps)
+
+        assert "ERROR" not in result
