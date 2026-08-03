@@ -56,8 +56,11 @@ SYSTEM_CONFIG = {
 }
 
 import secrets
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Header, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from starlette.websockets import WebSocketState
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
@@ -199,6 +202,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="SentinAL API Server v2.4", lifespan=lifespan)
 
+# ── Rate Limiting ──────────────────────────────────────────────────────────
+# In-memory, per-client-IP limiter (no Redis needed — this is a single-machine
+# deployment; the whole point of a distributed backend would be moot here).
+# Rationale: the bearer-token auth on /api/command stops *unauthenticated*
+# abuse, but a valid token doesn't protect against a runaway client loop, a
+# buggy retry, or a script hammering the endpoint — each call can trigger a
+# real OS action and/or an LLM request, both with real cost/side effects.
+# 429 Too Many Requests is returned once the limit is exceeded, handled by
+# slowapi's default handler.
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Fix 1.3: CORS locked to localhost only (was open to all origins)
 _UI_PORT = int(os.getenv("SENTINAL_UI_PORT", "5173"))
@@ -288,8 +303,9 @@ class CommandRequest(BaseModel):
 # 3. REST Endpoint: Command Processing
 # ─────────────────────────────────────────────────────────────────────────────
 @app.post("/api/command", dependencies=[Depends(require_api_token)])
-async def handle_command(req: CommandRequest):
-    """// REST Execution Endpoint (Legacy Interface) — requires bearer token"""
+@limiter.limit("30/minute")
+async def handle_command(req: CommandRequest, request: Request):
+    """// REST Execution Endpoint (Legacy Interface) — requires bearer token, rate-limited"""
     try:
         from capabilities.system.api_wrapper import process_command
         result = await process_command(req.prompt)  # process_command is now async (Fix 3.12)
@@ -298,8 +314,9 @@ async def handle_command(req: CommandRequest):
         return {"input": req.prompt, "steps": [], "validation": "Error", "execution": "Error", "response": str(e)}
 
 @app.get("/api/logs", dependencies=[Depends(require_api_token)])
-async def get_logs():
-    """// Diagnostic Log Retrieval — requires bearer token"""
+@limiter.limit("60/minute")
+async def get_logs(request: Request):
+    """// Diagnostic Log Retrieval — requires bearer token, rate-limited"""
     return _read_last_10_logs()
 
 def _read_last_10_logs():
