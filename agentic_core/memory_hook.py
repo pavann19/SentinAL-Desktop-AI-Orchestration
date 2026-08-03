@@ -92,7 +92,7 @@ class MemoryManager:
             self.conn.commit()
         print(f"[SRE] URL template saved: '{platform}' -> '{url_template}'")
 
-    def get_url_template(self, platform: str) -> str:
+    def get_url_template(self, platform: str) -> str | None:
         """
         Retrieves the URL template for a given platform from the cache.
 
@@ -166,12 +166,12 @@ class MemoryManager:
             str: Formatted context block. Returns empty string if no history found.
         """
         query = "SELECT intent, target, result FROM interaction_history"
-        params = []
-        
+        params: list[str | int] = []
+
         if intent_filter:
             query += " WHERE intent = ?"
             params.append(intent_filter)
-            
+
         query += " ORDER BY id DESC LIMIT ?"
         params.append(limit)
         
@@ -199,7 +199,7 @@ class MemoryManager:
             
         return full_context
 
-    def get_cached_path(self, folder_name: str) -> str:
+    def get_cached_path(self, folder_name: str) -> str | None:
         """
         Retrieves a cached absolute path for a folder name (Fix 2.9).
         Returns None if not cached or if the cached path no longer exists.
