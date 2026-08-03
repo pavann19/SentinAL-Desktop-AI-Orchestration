@@ -31,8 +31,11 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
       - name: Install linting tools
-        run: pip install ruff mypy
+        run: python -m pip install ruff mypy
 
       - name: Run ruff (fast linter)
         # BLE001 (blind `except Exception`) is intentionally ignored: this codebase's
