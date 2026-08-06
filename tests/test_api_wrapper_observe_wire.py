@@ -38,9 +38,25 @@ def test_derive_expected_state_forward_slash_path():
     assert _derive_expected_state(step) == {"process_name": "thing.exe"}
 
 
-def test_derive_expected_state_non_launch_intent_returns_none():
-    step = {"intent": "WebNavigationIntent", "target": "youtube.com"}
+def test_derive_expected_state_unverifiable_intent_returns_none():
+    """Intents with no system-queryable postcondition still return None.
+
+    Updated in S1: this previously used WebNavigationIntent, which was correct
+    when ApplicationLaunchIntent was the only wired intent. WebNavigationIntent
+    is now deliberately wired (window title + settle timeout), so the assertion
+    moved to an intent that genuinely has nothing to check — a conversational
+    reply's success is a semantic judgement, not a system query. See
+    tests/test_postcondition_coverage.py for the full per-intent matrix.
+    """
+    step = {"intent": "ConversationalIntent", "target": "hello"}
     assert _derive_expected_state(step) is None
+
+
+def test_derive_expected_state_web_navigation_is_now_wired():
+    """Guards the S1 behaviour change the test above used to assert against."""
+    derived = _derive_expected_state({"intent": "WebNavigationIntent", "target": "youtube.com"})
+    assert derived is not None
+    assert derived["window_title"] == "youtube"
 
 
 def test_derive_expected_state_missing_target_returns_none():

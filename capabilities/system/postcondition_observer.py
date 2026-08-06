@@ -14,6 +14,56 @@ class Observation:
     latency_ms: float
     detail: str
 
+# ── Settle/timeout polling ───────────────────────────────────────────────────
+# Default interval between poll attempts. Kept small enough to return promptly
+# once the condition holds, large enough not to spin the CPU on process-list
+# enumeration (the most expensive of the cheap tiers).
+_POLL_INTERVAL_MS = 250
+
+# Tiers that must never be polled. The VLM tier takes a screenshot and runs model
+# inference per call — polling it for several seconds would cost many inferences
+# to answer one question, so it gets exactly one attempt regardless of any
+# settle_timeout_ms the caller passes.
+_NON_POLLABLE_KEYS = frozenset({"vlm_query"})
+
+
+def _settle_timeout_ms(expected: dict) -> float:
+    """Reads the per-expectation settle window. Default 0 = single check, which
+    is byte-for-byte the pre-settle behaviour — polling is strictly opt-in, set
+    by the derivation site that knows the action is timing-sensitive."""
+    try:
+        return max(0.0, float(expected.get("settle_timeout_ms", 0) or 0))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _poll_until_verified(check, timeout_ms: float) -> Observation:
+    """
+    Calls check() repeatedly until it returns a verified Observation or the
+    deadline passes; returns the last Observation either way.
+
+    The asymmetry is deliberate and is the whole point: a verified result returns
+    IMMEDIATELY, so a successful action pays no added latency. Only an unverified
+    result waits — and an unverified result is exactly the case where "not yet"
+    and "never" are worth telling apart, because misreading the former as the
+    latter triggers a whole-pipeline replan and duplicates the side effect.
+    """
+    observation = check()
+    if observation.verified or timeout_ms <= 0:
+        return observation
+
+    deadline = time.time() + (timeout_ms / 1000.0)
+    while time.time() < deadline:
+        remaining = deadline - time.time()
+        time.sleep(min(_POLL_INTERVAL_MS / 1000.0, max(0.0, remaining)))
+        if time.time() >= deadline:
+            break
+        observation = check()
+        if observation.verified:
+            return observation
+    return observation
+
+
 def observe_postcondition(expected: dict) -> Observation:
     """
     expected may contain ANY ONE of these keys (check in this priority order,
@@ -47,6 +97,14 @@ def observe_postcondition(expected: dict) -> Observation:
     """
     if not expected:
         return Observation(verified=False, tier_used="none", confidence=0.0, latency_ms=0.0, detail="no verifiable expectation provided")
+
+    # Settle polling wraps whichever tier fires below. Opt-in per expectation
+    # (default 0 = single check); never applied to the VLM tier, see
+    # _NON_POLLABLE_KEYS.
+    timeout_ms = _settle_timeout_ms(expected)
+    if timeout_ms > 0 and not any(k in expected for k in _NON_POLLABLE_KEYS):
+        settle_free = {k: v for k, v in expected.items() if k != "settle_timeout_ms"}
+        return _poll_until_verified(lambda: observe_postcondition(settle_free), timeout_ms)
 
     try:
         if "process_name" in expected:
@@ -107,11 +165,17 @@ def observe_postcondition(expected: dict) -> Observation:
             window_title = expected["window_title"]
             start_time = time.time()
             try:
-                center = gui_resolver.find_window_center(window_title)
+                # gui_resolver.window_exists(), NOT find_window_center(): the latter
+                # activates the window it finds. Focusing a window is a mutation, and
+                # an observer must not mutate what it observes — doubly so now that
+                # this tier is polled, which would have stolen the user's focus on
+                # every tick of the settle window.
+                found = gui_resolver.window_exists(window_title)
                 latency_ms = (time.time() - start_time) * 1000
-                if center:
-                    return Observation(verified=True, tier_used="window", confidence=1.0, latency_ms=latency_ms, detail=f"window '{window_title}' found at {center}")
-                return Observation(verified=False, tier_used="window", confidence=1.0, latency_ms=latency_ms, detail=f"window containing '{window_title}' not found")
+                return Observation(
+                    verified=found, tier_used="window", confidence=1.0, latency_ms=latency_ms,
+                    detail=f"window containing '{window_title}' {'found' if found else 'not found'}",
+                )
             except Exception as e:
                 return Observation(verified=False, tier_used="window", confidence=0.0, latency_ms=(time.time() - start_time) * 1000, detail=f"error: {e}")
 

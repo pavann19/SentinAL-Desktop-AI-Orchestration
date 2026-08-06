@@ -11,6 +11,44 @@ from typing import Any
 
 from agentic_core.tracing import traced_step
 
+# How long observe_postcondition() may poll before calling a browser navigation
+# failed. Configurable like the executor's other timing knobs (EXECUTOR_STEP_DELAY,
+# GUI_FOCUS_WAIT, EXECUTOR_MAX_REPLANS) so it can be tuned per machine, and set to
+# 0 to disable the browser checks entirely without a code change. A verified result
+# returns immediately, so this is the cost of a FAILURE, not of normal operation.
+_BROWSER_SETTLE_MS = float(os.getenv("OBSERVER_BROWSER_SETTLE_MS", "6000"))
+
+
+def _site_label(target: str) -> str | None:
+    """
+    Reduces a URL or mnemonic to the label a browser window title is likely to
+    contain: "https://www.youtube.com/watch?v=x" -> "youtube", "github" -> "github".
+
+    Deliberately returns the bare second-level label rather than the full host.
+    Window titles are page titles ("YouTube", "GitHub · Where software is built"),
+    which contain the brand but essentially never the full hostname, so matching
+    on "www.youtube.com" would fail on a page that is plainly open.
+    """
+    if not target:
+        return None
+    raw = target.strip()
+
+    host = raw
+    if "//" in host:
+        host = host.split("//", 1)[1]
+    host = host.split("/", 1)[0].split("?", 1)[0].split(":", 1)[0]
+    if not host:
+        return None
+
+    parts = [p for p in host.split(".") if p and p.lower() != "www"]
+    if not parts:
+        return None
+
+    # Drop the TLD only when there is something else to keep, so a bare mnemonic
+    # ("github", "spotify") survives intact while "youtube.com" -> "youtube".
+    label = parts[-2] if len(parts) >= 2 else parts[0]
+    return label.lower() or None
+
 
 def _derive_expected_state(step: dict) -> dict | None:
     """
@@ -26,23 +64,30 @@ def _derive_expected_state(step: dict) -> dict | None:
     path) — one centralized post-processing point is far easier to verify completely
     than chasing every construction site.
 
-    ── Scope: deterministic postconditions only ──────────────────────────────────
-    Only intents whose success can be checked with an immediate, unambiguous system
-    query are wired here. That restriction is deliberate, and it is about blast
-    radius, not caution for its own sake: a failed postcondition triggers a bounded
-    WHOLE-PIPELINE replan in execute_pipeline_observed(), so a postcondition that
-    reports a false mismatch does not merely mislog — it re-runs the pipeline and
-    duplicates its side effects (a second browser tab, a second launch).
+    ── Scope: a mismatch must mean the step genuinely failed ────────────────────
+    A failed postcondition triggers a bounded WHOLE-PIPELINE replan in
+    execute_pipeline_observed(), so a check that reports a false mismatch does not
+    merely mislog — it re-runs the pipeline and duplicates its side effects (a
+    second browser tab, a second launch). A check therefore earns its place here
+    only if "not verified" reliably means "did not happen".
 
-    So a check earns its place here only if a mismatch means the step genuinely
-    failed. os.path.exists() and the process list qualify: they answer immediately
-    and identically on every call. A browser window title does not — after
-    webbrowser.open() the window may simply not have rendered yet, making "not
-    found" indistinguishable from "still loading". WebNavigationIntent and
-    MediaStreamingIntent are therefore left unwired until observe_postcondition()
-    grows a settle/timeout mechanism (poll until deadline before declaring a
-    mismatch); wiring them without it would trade silent failures for spurious
-    duplicate actions, which is a worse bargain.
+    Two classes of check qualify, for different reasons:
+
+    1. Immediate/deterministic — os.path.exists() and the process list answer
+       identically on every call, so a single check is conclusive.
+    2. Timing-sensitive but bounded — a browser window title is NOT conclusive on
+       the first check (after webbrowser.open() the window may not have rendered
+       yet, making "not found" indistinguishable from "still loading"), but it
+       becomes conclusive once observe_postcondition() polls until a deadline.
+       These pass settle_timeout_ms so the observer waits before declaring a
+       mismatch. Verified results still return immediately, so the timeout is paid
+       only when something actually went wrong.
+
+    Known limitation on the browser checks: if a window matching the site is
+    ALREADY open, the check verifies without the new navigation having succeeded.
+    That is a false negative for detection (a failure we miss), which is no worse
+    than the blind execution it replaces — unlike a false positive, which would
+    open a duplicate tab. The asymmetry is why this trade is acceptable.
 
     Uses a bare basename for process checks, no extension guessing:
     observe_postcondition() does a case-insensitive SUBSTRING match
@@ -89,6 +134,19 @@ def _derive_expected_state(step: dict) -> dict | None:
         location = str(step.get("location", "") or "").strip()
         base = location if location else os.getcwd()
         return {"path_exists": os.path.abspath(os.path.join(base, project_name))}
+
+    # ── Browser intents: a window for the site must appear within the settle window ──
+    if intent == "WebNavigationIntent":
+        label = _site_label(target)
+        return {"window_title": label, "settle_timeout_ms": _BROWSER_SETTLE_MS} if label else None
+
+    if intent == "MediaStreamingIntent":
+        # Platform lives in step["value"], defaulting to youtube — mirrors
+        # executor._resolve_url_template(step, default_platform="youtube") so the
+        # observer looks for the site the executor actually opened.
+        platform = str(step.get("value", "") or "youtube").lower().strip()
+        label = _site_label(platform)
+        return {"window_title": label, "settle_timeout_ms": _BROWSER_SETTLE_MS} if label else None
 
     return None
 

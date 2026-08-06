@@ -17,10 +17,14 @@ replan and duplicates the side effect (a second browser tab).
 """
 import os
 import sys
+import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from capabilities.system.api_wrapper import _derive_expected_state
+import pytest
+
+from capabilities.system import postcondition_observer as pco
+from capabilities.system.api_wrapper import _derive_expected_state, _site_label
 from capabilities.system.postcondition_observer import observe_postcondition
 
 
@@ -183,27 +187,149 @@ class TestDeriveExpectedState:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Deliberate omissions — these must stay unwired, and it must be on purpose
+# Settle/timeout polling — what unblocked the browser intents
 # ══════════════════════════════════════════════════════════════════════════════
-class TestTimingSensitiveIntentsStayUnwired:
-    """A false postcondition mismatch triggers a bounded WHOLE-PIPELINE replan,
-    which re-runs the side effect. For browser-opening intents the window may not
-    have rendered when checked, making 'not found' indistinguishable from 'still
-    loading' — so wiring them now would trade silent failures for duplicate tabs.
-    They stay unwired until observe_postcondition() gains a settle/timeout poll.
+class TestSettleTimeout:
+    def test_verified_result_returns_immediately_without_waiting(self, monkeypatch):
+        """The core performance property: success pays no timeout. If this
+        regresses, every successful browser navigation stalls for the full
+        settle window."""
+        monkeypatch.setattr(pco.gui_resolver, "window_exists", lambda t: True)
+        start = time.time()
+        obs = observe_postcondition({"window_title": "GitHub", "settle_timeout_ms": 5000})
+        assert obs.verified is True
+        assert (time.time() - start) < 1.0
 
-    If you are here because you just added that mechanism: these are the tests
-    to update, deliberately, rather than delete."""
+    def test_polls_and_succeeds_once_the_window_appears(self, monkeypatch):
+        """The whole point: 'not yet' must be distinguishable from 'never'."""
+        attempts = {"n": 0}
 
-    def test_web_navigation_not_yet_wired(self):
-        assert _derive_expected_state(
+        def _appears_on_third_check(_title):
+            attempts["n"] += 1
+            return attempts["n"] >= 3
+
+        monkeypatch.setattr(pco.gui_resolver, "window_exists", _appears_on_third_check)
+        obs = observe_postcondition({"window_title": "GitHub", "settle_timeout_ms": 4000})
+        assert obs.verified is True
+        assert attempts["n"] >= 3
+
+    def test_gives_up_after_the_deadline(self, monkeypatch):
+        monkeypatch.setattr(pco.gui_resolver, "window_exists", lambda t: False)
+        start = time.time()
+        obs = observe_postcondition({"window_title": "Nope", "settle_timeout_ms": 700})
+        elapsed = time.time() - start
+        assert obs.verified is False
+        assert 0.5 < elapsed < 4.0
+
+    def test_zero_timeout_is_a_single_check(self, monkeypatch):
+        """Default behaviour must be byte-for-byte the pre-settle behaviour."""
+        attempts = {"n": 0}
+
+        def _count(_title):
+            attempts["n"] += 1
+            return False
+
+        monkeypatch.setattr(pco.gui_resolver, "window_exists", _count)
+        observe_postcondition({"window_title": "Nope", "settle_timeout_ms": 0})
+        assert attempts["n"] == 1
+
+    def test_absent_settle_key_is_a_single_check(self, monkeypatch):
+        attempts = {"n": 0}
+
+        def _count(_title):
+            attempts["n"] += 1
+            return False
+
+        monkeypatch.setattr(pco.gui_resolver, "window_exists", _count)
+        observe_postcondition({"window_title": "Nope"})
+        assert attempts["n"] == 1
+
+    def test_vlm_tier_is_never_polled(self, monkeypatch):
+        """Each VLM check is a screenshot plus model inference. Polling it would
+        spend many inferences to answer one question."""
+        attempts = {"n": 0}
+
+        def _count(_q):
+            attempts["n"] += 1
+            return False
+
+        monkeypatch.setattr(pco.vision_module, "verify_screen_state", _count)
+        observe_postcondition({"vlm_query": "is it open?", "settle_timeout_ms": 2000})
+        assert attempts["n"] == 1
+
+    def test_settle_applies_to_filesystem_tier_too(self, tmp_path, monkeypatch):
+        """Scaffolding writes a directory asynchronously — the tier is generic,
+        not browser-specific."""
+        target = tmp_path / "late-project"
+        attempts = {"n": 0}
+        real_exists = os.path.exists
+
+        def _appears_late(p):
+            attempts["n"] += 1
+            if attempts["n"] >= 3:
+                return real_exists(p) or str(p) == str(target)
+            return False
+
+        monkeypatch.setattr(pco.os.path, "exists", _appears_late)
+        obs = observe_postcondition({"path_exists": str(target), "settle_timeout_ms": 3000})
+        assert obs.verified is True
+
+    def test_malformed_settle_value_degrades_to_single_check(self, monkeypatch):
+        """A garbage timeout must not raise inside the pipeline."""
+        monkeypatch.setattr(pco.gui_resolver, "window_exists", lambda t: False)
+        obs = observe_postcondition({"window_title": "x", "settle_timeout_ms": "not-a-number"})
+        assert obs.verified is False
+        assert obs.tier_used == "window"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Browser intents — now wired, on top of the settle mechanism
+# ══════════════════════════════════════════════════════════════════════════════
+class TestBrowserIntentsAreWired:
+    def test_web_navigation_derives_site_label_with_settle_window(self):
+        derived = _derive_expected_state(
             {"intent": "WebNavigationIntent", "target": "https://github.com"}
-        ) is None
+        )
+        assert derived["window_title"] == "github"
+        assert derived["settle_timeout_ms"] > 0
 
-    def test_media_streaming_not_yet_wired(self):
-        assert _derive_expected_state(
+    def test_media_streaming_defaults_to_youtube(self):
+        derived = _derive_expected_state(
             {"intent": "MediaStreamingIntent", "target": "some song"}
-        ) is None
+        )
+        assert derived["window_title"] == "youtube"
+        assert derived["settle_timeout_ms"] > 0
+
+    def test_media_streaming_honours_explicit_platform(self):
+        """Platform lives in step['value'] — mirrors the executor's
+        _resolve_url_template(step, default_platform='youtube')."""
+        derived = _derive_expected_state(
+            {"intent": "MediaStreamingIntent", "target": "some song", "value": "spotify"}
+        )
+        assert derived["window_title"] == "spotify"
+
+
+class TestSiteLabelExtraction:
+    @pytest.mark.parametrize(("target", "expected"), [
+        ("https://www.youtube.com", "youtube"),
+        ("https://github.com", "github"),
+        ("http://mail.google.com", "google"),
+        ("https://www.youtube.com/watch?v=abc123", "youtube"),
+        ("github", "github"),
+        ("spotify", "spotify"),
+        ("https://open.spotify.com/search/x", "spotify"),
+        ("www.netflix.com", "netflix"),
+        ("https://localhost:3000", "localhost"),
+    ])
+    def test_reduces_target_to_brand_label(self, target, expected):
+        """Window titles are page titles ('GitHub · Where software is built'),
+        which contain the brand but never the full hostname — so matching on
+        'www.github.com' would fail on a page that is plainly open."""
+        assert _site_label(target) == expected
+
+    def test_empty_target_yields_no_label(self):
+        assert _site_label("") is None
+        assert _site_label(None) is None
 
 
 class TestDeriveExpectedStateRobustness:

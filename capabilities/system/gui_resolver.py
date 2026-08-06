@@ -50,10 +50,40 @@ def find_by_image(image_path: str, confidence: float = 0.85) -> tuple[int, int] 
 
 
 # ── Tier 2: Window Title Matching ────────────────────────────────────────────
+def window_exists(title_substring: str) -> bool:
+    """
+    Read-only check for whether any window's title contains title_substring.
+
+    Deliberately separate from find_window_center(): that function ACTIVATES the
+    window it finds (win.activate()), which is correct when the caller is about to
+    click something, but wrong for observation. A postcondition observer must not
+    mutate what it observes — and once observations are polled on an interval,
+    find_window_center() would steal the user's focus every poll tick for the whole
+    settle window. This does the lookup and nothing else.
+
+    Args:
+        title_substring: Case-insensitive fragment of the window title
+
+    Returns:
+        True if at least one matching window exists, False otherwise (including
+        when pygetwindow is unavailable — absence of evidence is reported as
+        "not found" rather than raising, matching the observer's never-raise contract).
+    """
+    try:
+        import pygetwindow as gw
+        return bool(gw.getWindowsWithTitle(title_substring))
+    except Exception as e:
+        _logger.debug(f"window_exists('{title_substring}') failed: {e}")
+        return False
+
+
 def find_window_center(title_substring: str) -> tuple[int, int] | None:
     """
     Finds a window by title substring and returns its center coordinates.
     Focuses the window and waits for it to activate.
+
+    NOTE: this focuses the window as a side effect. For a pure existence check
+    (e.g. postcondition observation), use window_exists() instead.
 
     Args:
         title_substring: Case-insensitive fragment of the window title
