@@ -14,33 +14,83 @@ from agentic_core.tracing import traced_step
 
 def _derive_expected_state(step: dict) -> dict | None:
     """
-    Fix [observe-wire]: derives a postcondition check for ApplicationLaunchIntent
-    steps so execute_pipeline_observed()'s verification (built in P1-1/P1-2/P1-4,
-    but never actually invoked by the live pipeline until this fix — process_command
-    called raw execute_pipeline() directly) can confirm the app ACTUALLY started,
-    not just that execute_pipeline() returned without raising.
+    Fix [observe-wire]: derives a postcondition check so execute_pipeline_observed()'s
+    verification (built in P1-1/P1-2/P1-4, but never actually invoked by the live
+    pipeline until that fix — process_command called raw execute_pipeline() directly)
+    can confirm a step ACTUALLY achieved its effect, not just that execute_pipeline()
+    returned without raising.
 
-    Centralized here rather than in agentic_core/processor.py because
-    ApplicationLaunchIntent steps are constructed in at least 3 separate code
-    paths there (the deterministic app-map fast path, the registry bypass inside
-    the router loop, and the generic LLM-envelope path) — one centralized
-    post-processing point is far easier to verify completely than chasing every
-    construction site.
+    Centralized here rather than in agentic_core/processor.py because steps are
+    constructed in several separate code paths there (the deterministic app-map fast
+    path, the registry bypass inside the router loop, and the generic LLM-envelope
+    path) — one centralized post-processing point is far easier to verify completely
+    than chasing every construction site.
 
-    Uses a bare basename, no extension guessing: postcondition_observer's
+    ── Scope: deterministic postconditions only ──────────────────────────────────
+    Only intents whose success can be checked with an immediate, unambiguous system
+    query are wired here. That restriction is deliberate, and it is about blast
+    radius, not caution for its own sake: a failed postcondition triggers a bounded
+    WHOLE-PIPELINE replan in execute_pipeline_observed(), so a postcondition that
+    reports a false mismatch does not merely mislog — it re-runs the pipeline and
+    duplicates its side effects (a second browser tab, a second launch).
+
+    So a check earns its place here only if a mismatch means the step genuinely
+    failed. os.path.exists() and the process list qualify: they answer immediately
+    and identically on every call. A browser window title does not — after
+    webbrowser.open() the window may simply not have rendered yet, making "not
+    found" indistinguishable from "still loading". WebNavigationIntent and
+    MediaStreamingIntent are therefore left unwired until observe_postcondition()
+    grows a settle/timeout mechanism (poll until deadline before declaring a
+    mismatch); wiring them without it would trade silent failures for spurious
+    duplicate actions, which is a worse bargain.
+
+    Uses a bare basename for process checks, no extension guessing:
     observe_postcondition() does a case-insensitive SUBSTRING match
     (`process_name.lower() in p["name"].lower()`), so "notepad" already matches
     a running "notepad.exe" without needing to know the exact executable name.
     """
-    if not isinstance(step, dict) or step.get("intent") != "ApplicationLaunchIntent":
+    if not isinstance(step, dict):
         return None
-    target = step.get("target", "")
-    if not target:
+
+    intent = step.get("intent")
+    target = str(step.get("target", "") or "").strip()
+
+    # ── ApplicationLaunchIntent: the app's process must now exist ──────────────
+    if intent == "ApplicationLaunchIntent":
+        if not target:
+            return None
+        basename = os.path.basename(target.replace("\\", "/").rstrip("/\\"))
+        return {"process_name": basename} if basename else None
+
+    # ── FileDeletionIntent: the path must now be gone ─────────────────────────
+    # Mirrors the executor's own resolution (abspath, cwd-relative if not
+    # absolute) so the observer checks the exact path the executor acted on,
+    # not a differently-resolved one that would spuriously "verify".
+    if intent == "FileDeletionIntent":
+        if not target:
+            return None
+        full_path = os.path.abspath(target) if os.path.isabs(target) else os.path.abspath(os.path.join(os.getcwd(), target))
+        return {"path_absent": full_path}
+
+    # ── ProcessManagementIntent: only "kill" has a verifiable postcondition ────
+    # "list" is read-only — there is no state change to confirm, and asserting
+    # one would be a fabricated check that could only ever produce noise.
+    if intent == "ProcessManagementIntent":
+        action = str(step.get("action", "list") or "list").lower().strip()
+        if action == "kill" and target:
+            return {"process_absent": target}
         return None
-    basename = os.path.basename(str(target).replace("\\", "/").rstrip("/\\"))
-    if not basename:
-        return None
-    return {"process_name": basename}
+
+    # ── ProjectScaffoldIntent: the project directory must now exist ───────────
+    if intent == "ProjectScaffoldIntent":
+        project_name = str(step.get("project_name", "") or "").strip()
+        if not project_name:
+            return None
+        location = str(step.get("location", "") or "").strip()
+        base = location if location else os.getcwd()
+        return {"path_exists": os.path.abspath(os.path.join(base, project_name))}
+
+    return None
 
 
 async def process_command(prompt: str) -> dict[str, Any]:
