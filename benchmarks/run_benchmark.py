@@ -130,18 +130,24 @@ def _verify_with_settle(task: Task, result: dict) -> bool:
 async def run_task(task: Task) -> TaskResult:
     from capabilities.system.api_wrapper import process_command
 
-    prompt = prompt_for(task)
     started = time.time()
 
+    # setup() BEFORE prompt_for(): the world a prompt refers to must exist
+    # before the prompt is formed. Prompts are resolved at build time now, so
+    # this no longer matters for correctness — but the previous ordering is
+    # exactly what let the file_ops prompts reference a path that setup had not
+    # created yet, so the safe order is made explicit rather than left to luck.
     if task.setup:
         try:
             task.setup()
         except Exception as e:
             return TaskResult(
-                task_id=task.id, category=task.category, prompt=prompt, passed=False,
-                duration_s=0.0,
+                task_id=task.id, category=task.category, prompt=prompt_for(task),
+                passed=False, duration_s=0.0,
                 error=f"setup failed: {e}", failure_reason="setup_error",
             )
+
+    prompt = prompt_for(task)
 
     pipeline: dict = {}
     error = ""

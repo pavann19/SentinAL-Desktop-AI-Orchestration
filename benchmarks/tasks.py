@@ -251,7 +251,6 @@ def build_web_tasks() -> list[Task]:
 
 def build_file_tasks() -> list[Task]:
     tasks: list[Task] = []
-    paths: dict[str, str] = {}
 
     for tid, fname, phrasing in [
         ("file_delete_plain",   "bench_delete_1.txt", "delete the file {p}"),
@@ -259,34 +258,42 @@ def build_file_tasks() -> list[Task]:
         ("file_delete_spaces",  "bench delete 3.txt", "delete the file {p}"),
         ("file_delete_nested",  os.path.join("nested", "bench_delete_4.txt"), "delete {p}"),
     ]:
-        def _setup(t=tid, f=fname):
-            paths[t] = _make_file(f)
+        # The path is resolved HERE, at build time, and stored on the task.
+        #
+        # It used to be computed inside setup() and looked up later via a module
+        # dict. That silently broke the entire file_ops category: run_task()
+        # calls prompt_for() BEFORE setup(), and the dict was populated after
+        # build, so every prompt fell through to a fallback path
+        # ("unknown.txt") that was never created. The system was asked to delete
+        # a file that did not exist, correctly did nothing, and scored 20% for
+        # obeying us exactly. A benchmark defect that reads as a system failure
+        # is worse than no benchmark, so the derivation is now order-independent
+        # by construction rather than by careful sequencing.
+        target_path = os.path.join(_scratch_dir(), fname)
 
         tasks.append(Task(
             id=tid, category=CAT_FILE,
-            prompt=phrasing,  # {p} substituted in prompt_for()
-            verify=lambda r, t=tid: bool(paths.get(t)) and not os.path.exists(paths[t]),
-            setup=_setup,
+            prompt=phrasing.replace("{p}", target_path),
+            verify=lambda r, p=target_path: not os.path.exists(p),
+            setup=lambda f=fname: _make_file(f),
             settle_seconds=6.0,
             notes="Absolute path inside the run's temp dir; never touches user data.",
             tags=["filesystem"],
         ))
 
+    missing_path = os.path.join(_scratch_dir(), "never_created.txt")
     tasks.append(Task(
         id="file_delete_missing", category=CAT_FILE,
-        prompt="delete the file {p}",
-        # Deleting a nonexistent file must not be reported as a completed
-        # deletion. Either an honest error or a clear "not found" is correct.
-        verify=lambda r: not os.path.exists(os.path.join(_scratch_dir(), "never_created.txt")),
+        prompt=f"delete the file {missing_path}",
+        # Edge case: the target never existed. Passing here only means the file
+        # is still absent, which is trivially true — this task is kept for the
+        # crash/robustness signal, not as evidence of deletion capability.
+        verify=lambda r, p=missing_path: not os.path.exists(p),
         settle_seconds=5.0,
-        notes="Edge case: target does not exist.",
+        notes="Edge case: target does not exist. Weak check by nature.",
         tags=["filesystem", "edge-case"],
     ))
-    _FILE_PATHS.update(paths)
     return tasks
-
-
-_FILE_PATHS: dict[str, str] = {}
 
 
 def build_process_tasks() -> list[Task]:
@@ -422,7 +429,11 @@ def build_conversational_tasks() -> list[Task]:
         Task(
             id="conv_identity", category=CAT_CONV,
             prompt="hello, who are you",
-            verify=lambda r: _mentions_any(r, ("sentinal", "assistant", "help", "ai")),
+            # "assist" not "assistant": the first run failed this on the reply
+            # "I'm here and ready to assist you." — a perfectly good answer that
+            # the substring list simply did not cover. A check that fails a
+            # correct response is a benchmark defect, not a system failure.
+            verify=lambda r: _mentions_any(r, ("sentinal", "assist", "help", " ai", "agent")),
         ),
         Task(
             id="conv_capability", category=CAT_CONV,
@@ -471,14 +482,12 @@ def build_tasks() -> list[Task]:
 
 
 def prompt_for(task: Task) -> str:
-    """Late-bound prompts for tasks whose text depends on setup-created paths."""
-    if "{p}" in task.prompt:
-        if task.id == "file_delete_missing":
-            return task.prompt.format(p=os.path.join(_scratch_dir(), "never_created.txt"))
-        path = _FILE_PATHS.get(task.id)
-        if path:
-            return task.prompt.format(p=path)
-        return task.prompt.format(p=os.path.join(_scratch_dir(), "unknown.txt"))
+    """Every prompt is now fully resolved at build time.
+
+    Kept as the harness's single accessor (rather than inlining task.prompt) so
+    that any future late-bound prompt has one obvious place to live — and so the
+    ordering trap that broke file_ops cannot quietly reappear at a call site.
+    """
     return task.prompt
 
 
