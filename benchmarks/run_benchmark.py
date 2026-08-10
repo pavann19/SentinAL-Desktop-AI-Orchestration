@@ -100,7 +100,6 @@ class TaskResult:
     category: str
     prompt: str
     passed: bool
-    expected_to_pass: bool
     duration_s: float
     pipeline_execution: str = ""
     pipeline_response: str = ""
@@ -140,7 +139,7 @@ async def run_task(task: Task) -> TaskResult:
         except Exception as e:
             return TaskResult(
                 task_id=task.id, category=task.category, prompt=prompt, passed=False,
-                expected_to_pass=task.expected_to_pass, duration_s=0.0,
+                duration_s=0.0,
                 error=f"setup failed: {e}", failure_reason="setup_error",
             )
 
@@ -178,7 +177,6 @@ async def run_task(task: Task) -> TaskResult:
 
     return TaskResult(
         task_id=task.id, category=task.category, prompt=prompt, passed=passed,
-        expected_to_pass=task.expected_to_pass,
         duration_s=round(time.time() - started, 2),
         pipeline_execution=str(pipeline.get("execution", "")),
         pipeline_response=str(pipeline.get("response", ""))[:300],
@@ -191,6 +189,24 @@ async def run_task(task: Task) -> TaskResult:
 # ══════════════════════════════════════════════════════════════════════════════
 # Scoring
 # ══════════════════════════════════════════════════════════════════════════════
+def wilson_interval(passed: int, total: int, z: float = 1.96) -> tuple[float, float]:
+    """95% Wilson score interval for a binomial proportion.
+
+    Reported because a bare percentage from a few dozen trials is not a
+    defensible figure: 16/17 and 160/170 are both "94%" but support very
+    different claims. Wilson rather than the normal approximation because the
+    latter misbehaves badly near 0 and 1 — exactly where a good agent's scores
+    sit — and can produce bounds outside [0, 1].
+    """
+    if total == 0:
+        return (0.0, 0.0)
+    p = passed / total
+    denom = 1 + z**2 / total
+    centre = (p + z**2 / (2 * total)) / denom
+    margin = z * ((p * (1 - p) / total + z**2 / (4 * total**2)) ** 0.5) / denom
+    return (max(0.0, centre - margin), min(1.0, centre + margin))
+
+
 def summarize(results: list[TaskResult], repeat: int) -> dict:
     by_task: dict[str, list[TaskResult]] = {}
     for r in results:
@@ -214,13 +230,20 @@ def summarize(results: list[TaskResult], repeat: int) -> dict:
 
     total = len(results)
     passed = sum(r.passed for r in results)
+    lo, hi = wilson_interval(passed, total)
 
     return {
         "overall_rate": round(passed / total, 4) if total else 0.0,
+        "ci95_low": round(lo, 4),
+        "ci95_high": round(hi, 4),
         "passed": passed,
         "total": total,
         "unique_tasks": len(by_task),
         "repeat": repeat,
+        # Tasks that passed EVERY repeat. The honest headline for "what can this
+        # system be relied on to do", since a task that works 2 times in 3 is not
+        # something a user would call working.
+        "fully_reliable_tasks": sum(1 for rate in task_rates.values() if rate == 1.0),
         "by_category": categories,
         "flaky_tasks": flaky,
         # Called out separately because it is the defect class this whole effort
@@ -251,7 +274,11 @@ def print_report(summary: dict, results: list[TaskResult], env: dict) -> None:
 
     print("-" * w)
     print(f"  OVERALL   {summary['passed']}/{summary['total']} "
-          f"= {summary['overall_rate'] * 100:.1f}%")
+          f"= {summary['overall_rate'] * 100:.1f}%"
+          f"   (95% CI {summary['ci95_low'] * 100:.1f}–{summary['ci95_high'] * 100:.1f}%)")
+    if summary["repeat"] > 1:
+        print(f"  RELIABLE  {summary['fully_reliable_tasks']}/{summary['unique_tasks']} "
+              f"tasks passed all {summary['repeat']} runs")
     print("\n  By category:")
     for cat, c in sorted(summary["by_category"].items()):
         print(f"    {cat:<20} {c['passed']:>3}/{c['total']:<3} = {c['rate'] * 100:5.1f}%")
@@ -296,8 +323,7 @@ def main() -> int:
     if args.dry_run:
         print(f"\n{len(tasks)} task(s):\n")
         for t in tasks:
-            flag = "" if t.expected_to_pass else "  (known-unimplemented)"
-            print(f"  [{t.category}] {t.id}{flag}\n      {prompt_for(t)!r}")
+            print(f"  [{t.category}] {t.id}\n      {prompt_for(t)!r}")
         print()
         return 0
 

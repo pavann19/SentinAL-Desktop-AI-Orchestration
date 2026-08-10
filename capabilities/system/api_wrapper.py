@@ -176,7 +176,10 @@ async def process_command(prompt: str) -> dict[str, Any]:
     Async pipeline entry point. Wraps the synchronous executor in a thread
     so it does not block the ASGI event loop (Fix 3.12).
     """
-    from agentic_core.executor import execute_pipeline_observed
+    from agentic_core.executor import (
+        FAILURE_CATEGORY_POSTCONDITION_MISMATCH,
+        execute_pipeline_observed,
+    )
     from agentic_core.processor import extract_intent
     from agentic_core.validator import validate_steps
 
@@ -251,6 +254,38 @@ async def process_command(prompt: str) -> dict[str, Any]:
             if isinstance(execution_result, str) and execution_result.startswith("ERROR"):
                 output["execution"] = "Failed"
                 output["response"] = execution_result
+
+            elif observed["failure_category"] == FAILURE_CATEGORY_POSTCONDITION_MISMATCH:
+                # The postcondition observer checked real system state after the
+                # run (and after any bounded replan) and the expected effect was
+                # NOT there. execute_pipeline() returned a cheerful string anyway
+                # because it only knows whether its own calls raised.
+                #
+                # Found by benchmarks/run_benchmark.py: "i need to do some math,
+                # open the calculator" reported execution="Success" with the
+                # response "I have launched calculator." while no calculator was
+                # running. The observer had already caught it - replanned=True,
+                # failure_category="postcondition_mismatch" - but that verdict
+                # was recorded as metadata and then discarded here, so the user
+                # was still told it worked.
+                #
+                # That is the same defect as the fabricated-success stubs fixed
+                # in 24aad7f, and worse in one respect: the system had already
+                # detected the failure and reported success regardless. Honest
+                # reporting is the entire point of building the observer, so the
+                # observer's verdict has to win over the executor's optimism.
+                #
+                # Safe to fail closed here precisely because _derive_expected_state()
+                # only attaches postconditions whose mismatch reliably means "did
+                # not happen" - deterministic system queries, plus browser checks
+                # that poll a settle window first.
+                output["execution"] = "Failed"
+                output["response"] = (
+                    "I tried, but I couldn't confirm it actually worked — the "
+                    "expected result wasn't there when I checked. Please verify "
+                    "before relying on it."
+                )
+                output["unverified_claim"] = execution_result
             else:
                 output["execution"] = "Success"
                 output["response"] = execution_result
