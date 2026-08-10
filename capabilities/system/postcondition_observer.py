@@ -161,6 +161,41 @@ def observe_postcondition(expected: dict) -> Observation:
             except Exception as e:
                 return Observation(verified=False, tier_used="filesystem", confidence=0.0, latency_ms=(time.time() - start_time) * 1000, detail=f"error: {e}")
 
+        if "glob_recent" in expected:
+            # For actions whose output filename is generated at execution time
+            # (e.g. a screenshot stamped with the current time), so the derivation
+            # site cannot know the exact path in advance. Freshness matters: a
+            # screenshot from last week matching the same pattern must NOT count
+            # as evidence that this step just took one.
+            pattern = expected["glob_recent"]
+            start_time = time.time()
+            try:
+                within_s = float(expected.get("within_seconds", 120) or 120)
+            except (TypeError, ValueError):
+                within_s = 120.0
+            try:
+                import glob as _glob
+
+                now = time.time()
+                fresh = [
+                    p for p in _glob.glob(pattern)
+                    if (now - os.path.getmtime(p)) <= within_s
+                ]
+                latency_ms = (time.time() - start_time) * 1000
+                if fresh:
+                    newest = max(fresh, key=os.path.getmtime)
+                    age = now - os.path.getmtime(newest)
+                    return Observation(
+                        verified=True, tier_used="filesystem", confidence=1.0, latency_ms=latency_ms,
+                        detail=f"found {os.path.basename(newest)} ({age:.1f}s old) matching {pattern}",
+                    )
+                return Observation(
+                    verified=False, tier_used="filesystem", confidence=1.0, latency_ms=latency_ms,
+                    detail=f"no file newer than {within_s:.0f}s matching {pattern}",
+                )
+            except Exception as e:
+                return Observation(verified=False, tier_used="filesystem", confidence=0.0, latency_ms=(time.time() - start_time) * 1000, detail=f"error: {e}")
+
         if "window_title" in expected:
             window_title = expected["window_title"]
             start_time = time.time()

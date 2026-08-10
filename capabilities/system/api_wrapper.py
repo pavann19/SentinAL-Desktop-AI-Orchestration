@@ -148,6 +148,26 @@ def _derive_expected_state(step: dict) -> dict | None:
         label = _site_label(platform)
         return {"window_title": label, "settle_timeout_ms": _BROWSER_SETTLE_MS} if label else None
 
+    # ── WindowManagementIntent: only the screenshot branch is verifiable ───────
+    # The handler picks its action via an LLM classification at EXECUTION time,
+    # so this derivation site cannot generally know what will happen. The one
+    # safe exception is an explicit "screenshot" in the request: that is the same
+    # signal handle_window_management()'s own no-LLM fallback keys on
+    # (action = "screenshot" if "screenshot" in prompt_text.lower()), so deriving
+    # from it cannot disagree with the handler more often than the handler
+    # disagrees with itself. Snap/minimize/maximize leave no durable artifact to
+    # check and are deliberately left alone.
+    if intent == "WindowManagementIntent":
+        request = f"{step.get('prompt', '') or ''} {target}".lower()
+        if "screenshot" not in request:
+            return None
+        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+        return {
+            "glob_recent": os.path.join(desktop, "SentinAL_Screenshot_*.png"),
+            "within_seconds": 120,
+            "settle_timeout_ms": 3000,
+        }
+
     return None
 
 

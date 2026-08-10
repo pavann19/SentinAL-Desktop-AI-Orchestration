@@ -309,6 +309,85 @@ class TestBrowserIntentsAreWired:
         assert derived["window_title"] == "spotify"
 
 
+class TestGlobRecentTier:
+    """For actions whose output filename is generated at execution time, so the
+    derivation site cannot know the exact path in advance."""
+
+    def test_verified_when_a_fresh_match_exists(self, tmp_path):
+        (tmp_path / "SentinAL_Screenshot_20260804_120000.png").write_bytes(b"x")
+        obs = observe_postcondition({
+            "glob_recent": str(tmp_path / "SentinAL_Screenshot_*.png"),
+            "within_seconds": 120,
+        })
+        assert obs.verified is True
+        assert obs.tier_used == "filesystem"
+
+    def test_unverified_when_no_file_matches(self, tmp_path):
+        obs = observe_postcondition({"glob_recent": str(tmp_path / "nothing_*.png")})
+        assert obs.verified is False
+        assert obs.tier_used == "filesystem"
+
+    def test_stale_match_does_not_count(self, tmp_path):
+        """The freshness bound is the whole point: a screenshot from last week
+        matching the same pattern is not evidence this step just took one."""
+        old = tmp_path / "SentinAL_Screenshot_old.png"
+        old.write_bytes(b"x")
+        os.utime(old, (time.time() - 9999, time.time() - 9999))
+        obs = observe_postcondition({
+            "glob_recent": str(tmp_path / "SentinAL_Screenshot_*.png"),
+            "within_seconds": 60,
+        })
+        assert obs.verified is False
+        assert "no file newer" in obs.detail
+
+    def test_picks_the_newest_match_for_reporting(self, tmp_path):
+        (tmp_path / "SentinAL_Screenshot_a.png").write_bytes(b"x")
+        newest = tmp_path / "SentinAL_Screenshot_b.png"
+        newest.write_bytes(b"x")
+        os.utime(newest, None)
+        obs = observe_postcondition({
+            "glob_recent": str(tmp_path / "SentinAL_Screenshot_*.png"),
+            "within_seconds": 120,
+        })
+        assert obs.verified is True
+
+    def test_malformed_within_seconds_degrades_to_default(self, tmp_path):
+        (tmp_path / "SentinAL_Screenshot_x.png").write_bytes(b"x")
+        obs = observe_postcondition({
+            "glob_recent": str(tmp_path / "SentinAL_Screenshot_*.png"),
+            "within_seconds": "not-a-number",
+        })
+        assert obs.verified is True
+
+
+class TestWindowManagementDerivation:
+    def test_screenshot_request_derives_a_glob_check(self):
+        derived = _derive_expected_state(
+            {"intent": "WindowManagementIntent", "prompt": "take a screenshot", "target": ""}
+        )
+        assert derived is not None
+        assert "SentinAL_Screenshot_" in derived["glob_recent"]
+        assert derived["within_seconds"] > 0
+
+    def test_non_screenshot_window_actions_are_not_derived(self):
+        """The handler picks its action via an LLM at execution time, so this
+        site cannot know what will happen. Snap/minimize also leave no durable
+        artifact to check."""
+        for prompt in ("snap this window left", "minimize everything", "maximize"):
+            assert _derive_expected_state(
+                {"intent": "WindowManagementIntent", "prompt": prompt, "target": ""}
+            ) is None
+
+    def test_matches_the_handlers_own_fallback_signal(self):
+        """handle_window_management()'s no-LLM fallback is
+        `action = "screenshot" if "screenshot" in prompt_text.lower()`. Keying on
+        the same signal means this cannot disagree with the handler more often
+        than the handler disagrees with itself."""
+        assert _derive_expected_state(
+            {"intent": "WindowManagementIntent", "prompt": "", "target": "screenshot please"}
+        ) is not None
+
+
 class TestSiteLabelExtraction:
     @pytest.mark.parametrize(("target", "expected"), [
         ("https://www.youtube.com", "youtube"),
