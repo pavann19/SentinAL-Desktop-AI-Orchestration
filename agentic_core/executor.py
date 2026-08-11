@@ -630,11 +630,22 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                         return speech
 
                     if master_stdout_buffer.strip():
-                        from agentic_core.processor import _get_routing_llm
-                        llm = _get_routing_llm("Summarize terminal output")
-                        print("[Executor] Summarizing terminal output...")
-                        prompt = f"You are an AI system taking raw terminal output and summarizing it for a voice TTS engine. The user asked for this data. Summarize the following terminal output in 1 to 2 natural, conversational sentences. Do not use markdown. Output: {master_stdout_buffer.strip()}"
+                        # Fix (found writing coverage for this block): _get_routing_llm()
+                        # itself was OUTSIDE the try/except, only llm.invoke() was guarded.
+                        # The healing block earlier in this same function wraps its
+                        # equivalent _get_routing_llm() call in an outer try (the
+                        # while-loop's own try/except), so a fetch failure there is
+                        # caught and degrades to "Task failed after multiple attempts".
+                        # Here there was no outer guard at all: a fetch failure would
+                        # propagate past this whole intent handler to the per-step retry
+                        # loop, retried 3 times, then surfaced as a raw ERROR string -
+                        # inconsistent with every other LLM-call failure in this function,
+                        # all of which degrade to a spoken explanation instead.
                         try:
+                            from agentic_core.processor import _get_routing_llm
+                            llm = _get_routing_llm("Summarize terminal output")
+                            print("[Executor] Summarizing terminal output...")
+                            prompt = f"You are an AI system taking raw terminal output and summarizing it for a voice TTS engine. The user asked for this data. Summarize the following terminal output in 1 to 2 natural, conversational sentences. Do not use markdown. Output: {master_stdout_buffer.strip()}"
                             summary_response = llm.invoke([("system", prompt)])
                             step_result = summary_response.content.strip()
                         except Exception as e:
