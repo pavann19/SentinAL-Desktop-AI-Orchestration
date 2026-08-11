@@ -1,7 +1,7 @@
 """
 Independent verification tests for capabilities/system/postcondition_observer.py (P1-2).
 
-Written by an independent integrator role, not the original implementer, per
+Written by an independent reviewer, not the original implementer, per
 VERIFICATION_PROTOCOL.md Gate 2. Tests are written against the original design
 spec, mocking the three underlying modules (process_manager, gui_resolver,
 vision_module) so this suite is fast, deterministic, and does not depend on
@@ -56,16 +56,21 @@ def test_process_tier_exception_is_caught_not_raised(monkeypatch):
 
 # ── Tier 2: window_title ──────────────────────────────────────────────────
 
+# NOTE: these patch gui_resolver.window_exists, not find_window_center. The window
+# tier deliberately moved to the read-only probe — find_window_center() activates
+# the window it finds, and an observer must not mutate what it observes (it would
+# also steal focus on every tick once this tier is polled).
+
 def test_window_tier_verified_true_when_window_found(monkeypatch):
-    monkeypatch.setattr(pco.gui_resolver, "find_window_center", lambda title: (500, 300))
+    monkeypatch.setattr(pco.gui_resolver, "window_exists", lambda title: True)
     obs = pco.observe_postcondition({"window_title": "Notepad"})
     assert obs.verified is True
     assert obs.tier_used == "window"
-    assert "500" in obs.detail or "(500, 300)" in obs.detail
+    assert "Notepad" in obs.detail
 
 
 def test_window_tier_verified_false_when_none_returned(monkeypatch):
-    monkeypatch.setattr(pco.gui_resolver, "find_window_center", lambda title: None)
+    monkeypatch.setattr(pco.gui_resolver, "window_exists", lambda title: False)
     obs = pco.observe_postcondition({"window_title": "DoesNotExist"})
     assert obs.verified is False
     assert obs.tier_used == "window"
@@ -74,11 +79,24 @@ def test_window_tier_verified_false_when_none_returned(monkeypatch):
 def test_window_tier_exception_is_caught_not_raised(monkeypatch):
     def _raise(title):
         raise RuntimeError("pygetwindow crashed")
-    monkeypatch.setattr(pco.gui_resolver, "find_window_center", _raise)
+    monkeypatch.setattr(pco.gui_resolver, "window_exists", _raise)
     obs = pco.observe_postcondition({"window_title": "Anything"})
     assert obs.verified is False
     assert obs.tier_used == "window"
     assert obs.confidence == 0.0
+
+
+def test_window_tier_does_not_activate_the_window(monkeypatch):
+    """Regression guard: observation must never focus a window. If this starts
+    failing, the tier has been pointed back at find_window_center()."""
+    called = {"activated": False}
+    monkeypatch.setattr(
+        pco.gui_resolver, "find_window_center",
+        lambda title: called.__setitem__("activated", True) or (1, 1),
+    )
+    monkeypatch.setattr(pco.gui_resolver, "window_exists", lambda title: True)
+    pco.observe_postcondition({"window_title": "Notepad"})
+    assert called["activated"] is False
 
 
 # ── Tier 4: vlm_query ──────────────────────────────────────────────────────
@@ -113,8 +131,8 @@ def test_process_tier_takes_priority_over_window_and_vlm_when_multiple_keys_pres
         lambda name_filter="": calls.__setitem__("process", True) or [{"name": "x.exe", "pid": 1, "mem_kb": "1"}],
     )
     monkeypatch.setattr(
-        pco.gui_resolver, "find_window_center",
-        lambda title: calls.__setitem__("window", True) or (1, 1),
+        pco.gui_resolver, "window_exists",
+        lambda title: calls.__setitem__("window", True) or True,
     )
     monkeypatch.setattr(
         pco.vision_module, "verify_screen_state",

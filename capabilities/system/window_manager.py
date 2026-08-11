@@ -13,16 +13,20 @@ def handle_window_management(target: str, prompt: str) -> str:
     if not prompt_text:
         return "I couldn't understand the window management command."
 
-    from agentic_core.processor import _get_routing_llm
-    llm = _get_routing_llm("Window Action Classification")
-    
-    classification_prompt = (
-        f"You are a Window Management controller. Classify this user command: '{prompt_text}'.\n"
-        "Must output EXACTLY ONE of these strings: 'screenshot', 'snap_left', 'snap_right', 'minimize_all', 'maximize', 'switch_desktop'.\n"
-        "If it doesn't match perfectly, pick the closest one. Output nothing else."
-    )
-    
+    # _get_routing_llm() moved INSIDE the try: a fetch failure (not just an
+    # .invoke() failure) must degrade to the same keyword fallback below,
+    # rather than propagating uncaught out of this function. Same class of
+    # gap found and fixed in executor.py's stdout-summarization block, then
+    # again independently in dictation/media_control/sys_utility while
+    # writing this test file - a systemic pattern, not a one-off.
     try:
+        from agentic_core.processor import _get_routing_llm
+        llm = _get_routing_llm("Window Action Classification")
+        classification_prompt = (
+            f"You are a Window Management controller. Classify this user command: '{prompt_text}'.\n"
+            "Must output EXACTLY ONE of these strings: 'screenshot', 'snap_left', 'snap_right', 'minimize_all', 'maximize', 'switch_desktop'.\n"
+            "If it doesn't match perfectly, pick the closest one. Output nothing else."
+        )
         resp = llm.invoke([("system", classification_prompt)])
         action = resp.content.strip().lower()
     except Exception as e:

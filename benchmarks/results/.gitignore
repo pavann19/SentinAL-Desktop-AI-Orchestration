@@ -1,0 +1,15 @@
+# Benchmark run reports are measurement artifacts, not source.
+#
+# They are deliberately NOT committed by default: a report is only meaningful
+# alongside the exact machine, model, and environment that produced it (see the
+# `environment` block inside each file), so a stray report in the repo invites
+# someone to quote a number that was never reproducible on their setup.
+#
+# To publish a specific run as evidence — for the thesis, a release, or a
+# regression baseline — commit it explicitly and deliberately:
+#
+#     git add -f benchmarks/results/benchmark_<timestamp>.json
+#
+# and reference it by filename wherever the number is cited, so the claim and
+# the run that backs it stay attached.
+*.json

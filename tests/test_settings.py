@@ -18,14 +18,22 @@ class TestBrainConfig:
         MockChatOllama.assert_called_once_with(model="test-model", temperature=0, num_predict=123)
         assert llm == MockChatOllama.return_value
 
+    # clear=True on both: @patch.dict MERGES into os.environ by default rather
+    # than replacing it, so without clear=True these leaked the real
+    # GROQ_API_KEY_2 from the actual .env (loaded once at process start via
+    # load_dotenv()) straight into the test — BrainConfig then legitimately saw
+    # 2 configured keys and returned a _RotatingGroqLLM / a real ChatGroq
+    # instead of the None/single-key result the test expected. Not a flaw in
+    # the rotation feature; a pre-existing test-isolation gap the new env var
+    # was the first thing to actually expose.
     @patch('langchain_groq.ChatGroq')
-    @patch.dict(os.environ, {"GROQ_API_KEY": "fake-key", "GROQ_MODEL": "fake-model"})
+    @patch.dict(os.environ, {"GROQ_API_KEY": "fake-key", "GROQ_MODEL": "fake-model"}, clear=True)
     def test_get_cloud_llm_with_key(self, MockChatGroq):
         llm = BrainConfig.get_cloud_llm(max_tokens=456)
         MockChatGroq.assert_called_once_with(model_name="fake-model", groq_api_key="fake-key", temperature=0, max_tokens=456)
         assert llm == MockChatGroq.return_value
 
-    @patch.dict(os.environ, {"GROQ_API_KEY": ""})
+    @patch.dict(os.environ, {"GROQ_API_KEY": ""}, clear=True)
     def test_get_cloud_llm_without_key_returns_none(self):
         llm = BrainConfig.get_cloud_llm()
         assert llm is None

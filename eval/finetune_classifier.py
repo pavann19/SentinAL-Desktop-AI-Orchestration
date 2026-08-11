@@ -64,14 +64,31 @@ def prepare_splits(data):
     return train_idx, val_idx, test_idx
 
 def get_embeddings(texts, cache_path):
-    if cache_path.exists():
+    """
+    Caches by content, not just path. A cache keyed on path alone goes stale
+    silently the moment the dataset changes size or content: found live when
+    expanding eval/intent_dataset.json (3003 -> 3230 rows) crashed with
+    "inconsistent numbers of samples: [2102, 2261]" - the cached train split
+    was still the OLD dataset's 2102 rows. That crash was the LUCKY outcome.
+    Had the row counts happened to coincide, this would have silently paired
+    embeddings from the wrong sentences with the new labels - corrupted
+    training data with no error at all. The fingerprint (text count + a hash
+    of the joined text) makes a content change always invalidate the cache,
+    regardless of whether the row count happens to match.
+    """
+    import hashlib
+    fingerprint = hashlib.sha256(f"{len(texts)}::{chr(0).join(texts)}".encode()).hexdigest()[:16]
+    fp_path = cache_path.with_suffix(cache_path.suffix + ".fingerprint")
+
+    if cache_path.exists() and fp_path.exists() and fp_path.read_text(encoding="utf-8").strip() == fingerprint:
         print(f"Loading cached embeddings from {cache_path}")
         return np.load(cache_path)
-    
+
     print(f"Encoding {len(texts)} texts for {cache_path}...")
     model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
     embeddings = model.encode(texts, show_progress_bar=True)
     np.save(cache_path, embeddings)
+    fp_path.write_text(fingerprint, encoding="utf-8")
     return embeddings
 
 def per_intent_breakdown(true_labels, pred_labels):

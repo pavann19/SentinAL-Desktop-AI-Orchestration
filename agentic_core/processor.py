@@ -32,6 +32,85 @@ memory = MemoryManager()
 # It is retained as module-level name for LLM calls below, but managed centrally.
 
 
+# ── App-name extraction ──────────────────────────────────────────────────────
+# Matched anywhere in the utterance, not just at the start, and with word
+# boundaries so "running" never matches "run".
+_LAUNCH_VERB_RE = re.compile(
+    r"\b(?:open(?:\s+up)?|launch|start|run|bring\s+up|pull\s+up|fire\s+up|boot(?:\s+up)?)\s+",
+    re.IGNORECASE,
+)
+_LEADING_FILLER_RE = re.compile(r"^(?:the|a|an|my|some)\s+", re.IGNORECASE)
+_TRAILING_FILLER_RE = re.compile(
+    r"\s+(?:for\s+me|please|now|app|application|program|window)$", re.IGNORECASE
+)
+
+
+def extract_app_query(text: str) -> str | None:
+    """
+    Reduces an utterance to the bare application name a lookup can resolve.
+
+        "open calculator"                            -> "calculator"
+        "open the calculator"                        -> "calculator"
+        "bring up calculator"                        -> "calculator"
+        "i need to do some math, open the calculator"-> "calculator"
+        "can you launch notepad for me"              -> "notepad"
+
+    Written because the previous logic required the utterance to START with one
+    of exactly three prefixes and then match the app map EXACTLY. Benchmarking
+    showed "open calculator" passing while "open the calculator", "bring up
+    calculator" and "i need to do some math, open the calculator" all failed —
+    same intent, same app, defeated by an article and two verbs. That was 5 of
+    11 failures in the 40x3 baseline, the single largest cause.
+
+    Returns None when no launch verb is present, so non-launch utterances
+    ("show me the running programs") are left for the router rather than being
+    coerced into an app launch.
+    """
+    if not text:
+        return None
+    match = _LAUNCH_VERB_RE.search(text)
+    if not match:
+        return None
+
+    tail = text[match.end():].strip().lower()
+    # Applied repeatedly so "the calculator app" reduces all the way down.
+    for _ in range(3):
+        before = tail
+        tail = _LEADING_FILLER_RE.sub("", tail)
+        tail = _TRAILING_FILLER_RE.sub("", tail)
+        tail = tail.strip(" .,!?;:'\"")
+        if tail == before:
+            break
+    return tail or None
+
+
+# Utterances that ask what is RUNNING, not to run something. Without this,
+# "show me the running programs" was routed to ApplicationLaunchIntent with an
+# unusable target — the router's own misclassification, caught by the benchmark.
+_PROCESS_LIST_RE = re.compile(
+    r"\b(?:(?:what|which)\s+(?:processes|programs|apps|applications)\s+(?:are\s+)?running"
+    r"|(?:show|list|display)\s+(?:me\s+)?(?:the\s+)?(?:running|open|active)\s+"
+    r"(?:processes|programs|apps|applications|tasks)"
+    r"|(?:list|show)\s+(?:me\s+)?(?:all\s+)?(?:processes|tasks))\b",
+    re.IGNORECASE,
+)
+
+# Per-intent verb/filler prefixes to strip when falling back to the raw
+# utterance after an LLM target-extraction call returns empty. One shared
+# pattern across intents would either under-strip ("delete the file X" left
+# with "the file X" as the target) or over-strip ("open X" losing "the" from
+# a target that legitimately contains it) — each intent's own command grammar
+# needs its own pattern. Only intents in needs_target (agentic_core/processor
+# PHASE 2) need an entry here.
+_FALLBACK_STRIP_PATTERNS = {
+    "MediaStreamingIntent": r'^(?:search for|tell me about|play|find|look up)\s+',
+    "InformationRetrievalIntent": r'^(?:search for|tell me about|play|find|look up)\s+',
+    "WebNavigationIntent": r'^(?:open(?:\s+up)?|go\s+to|navigate\s+to|visit|take\s+me\s+to|pull\s+up|browse\s+to|check\s+out|load(?:\s+up)?)\s+',
+    "FileDeletionIntent": r'^(?:delete|remove|erase|get\s+rid\s+of|trash)\s+(?:the\s+)?(?:file|folder|directory)?\s*',
+    "ApplicationLaunchIntent": r'^(?:open(?:\s+up)?|launch|start|run|bring\s+up|pull\s+up|fire\s+up|boot(?:\s+up)?)\s+',
+}
+
+
 def deterministic_fast_path(prompt: str) -> list | None:
     """
     Layer 1 ultra-fast routing for high-frequency commands. No embeddings or LLM.
@@ -45,12 +124,29 @@ def deterministic_fast_path(prompt: str) -> list | None:
         now = datetime.now().strftime("%I:%M %p")  # noqa: DTZ005
         return [{"intent": "ConversationalIntent", "message": f"The time is {now}.", "speech_response": f"It is {now}."}]
 
+    # Checked BEFORE the app-launch path: "show me the running programs" contains
+    # no launch verb, but the embedding router scored it as an app launch, so a
+    # deterministic rule is the reliable fix for a high-frequency phrasing.
+    if _PROCESS_LIST_RE.search(p):
+        return [{"intent": "ProcessManagementIntent", "action": "list", "target": "",
+                 "speech_response": "Checking what's running."}]
+
     app_map = {"chrome": "chrome", "notepad": "notepad", "calculator": "calc", "calc": "calc"}
-    for prefix in ("open ", "launch ", "start "):
-        if p.startswith(prefix):
-            app_query = p[len(prefix):].strip()
-            if app_query in app_map:
-                return [{"intent": "ApplicationLaunchIntent", "target": app_map[app_query], "speech_response": f"Opening {app_query}."}]
+    app_query = extract_app_query(p)
+    if app_query and app_query in app_map:
+        return [{"intent": "ApplicationLaunchIntent", "target": app_map[app_query],
+                 "speech_response": f"Opening {app_query}."}]
+
+    # Fallback: the ENTIRE utterance is just an app name, no launch verb at all
+    # (benchmark: app_notepad_terse, "notepad" alone, 0/3). extract_app_query()
+    # correctly returns None here since there is no verb to anchor on - that is
+    # the right call for extract_app_query() itself, since a bare noun inside a
+    # longer sentence should NOT be read as a launch (e.g. "I like my notepad").
+    # But as a whole, standalone utterance, a known app name IS the command, so
+    # it is handled here rather than by loosening the general-purpose extractor.
+    if p in app_map:
+        return [{"intent": "ApplicationLaunchIntent", "target": app_map[p],
+                 "speech_response": f"Opening {p}."}]
 
     return None
 
@@ -168,9 +264,18 @@ def split_multistep(query: str) -> list:
     Carries over action verbs for context inheritance.
 
     Fix 3.7: Guards against false splits on compound object phrases.
-    A split is only made when BOTH sides have >= 2 words.
-    Prevents 'search for pizza and calorie info' from splitting into
-    ['search for pizza', 'calorie info'] (second part is meaningless alone).
+    A split is only made when every part has >= 2 words, OR a shorter part
+    names something the capability registry actually knows.
+
+    KNOWN LIMITATION — the docstring here previously claimed this prevents
+    'search for pizza and calorie info' from splitting. It does not, and never
+    did: 'calorie info' is exactly 2 words, so it satisfies the word-count
+    guard and the split happens anyway (verified against the pre-fix code, so
+    this is a long-standing inaccuracy in the comment rather than a regression).
+    The guard only actually stops splits where a part is a SINGLE word that the
+    registry cannot resolve. Correctly rejecting multi-word object phrases needs
+    semantic understanding of whether a fragment is a standalone command, which
+    this deterministic splitter does not attempt.
     """
     query_lower = query.lower().replace(" and then ", " and ")
     pattern = r'\b(?:and|then|after)\b|,'
@@ -182,10 +287,28 @@ def split_multistep(query: str) -> list:
 
     # Fix 3.7: Only keep a split if both resulting parts have >= 2 words
     # Prevents object-phrase splits: 'pizza and calorie info' → wrong
+    #
+    # Refined after benchmarking: the word-count rule alone also rejected
+    # "open notepad and calculator", because "calculator" is one word — so a
+    # genuine two-app request collapsed into a single unsplittable step and one
+    # of the two apps was silently never opened.
+    #
+    # A short part is now rescued when it names something the registry actually
+    # knows (an app or a route). That keeps the original guard intact for
+    # object phrases — "calorie info" resolves to nothing, so that split is
+    # still correctly refused — while allowing the case where the short part is
+    # a real target the leading verb can be inherited onto.
     MIN_WORDS_PER_PART = 2
     if len(parts) > 1:
-        valid_parts = all(len(p.split()) >= MIN_WORDS_PER_PART for p in parts)
-        if not valid_parts:
+        def _is_valid_part(part: str) -> bool:
+            if len(part.split()) >= MIN_WORDS_PER_PART:
+                return True
+            try:
+                return registry.lookup(part) is not None
+            except Exception:
+                return False
+
+        if not all(_is_valid_part(p) for p in parts):
             return [query]  # Treat as a single, unsplit command
 
     ACTION_VERBS = (
@@ -310,18 +433,21 @@ def extract_intent(prompt: str) -> list:
             
             # ── DETERMINISTIC APP_MAP BYPASS ──────────────────────────────────
             # ── DETERMINISTIC REGISTRY BYPASS ──────────────────────────────────
+            # Shares extract_app_query() with deterministic_fast_path() rather
+            # than repeating a prefix list. The duplicated three-prefix logic
+            # here was the second half of the same extraction bug: even when the
+            # fast path was bypassed, "open the calculator" produced the lookup
+            # key "the calculator", which matches nothing in the registry.
             app_match = None
-            step_clean = step_query.strip().lower()
-            for prefix in ["open ", "launch ", "start "]:
-                if step_clean.startswith(prefix):
-                    node_name = step_clean[len(prefix):].strip()
-                    reg_entry = registry.lookup(node_name)
-                    if reg_entry:
-                        entry_type, entry_value = reg_entry
-                        if entry_type == "application":
-                            app_match = entry_value
-                            break
-            
+            node_name = extract_app_query(step_query.strip())
+            if node_name:
+                reg_entry = registry.lookup(node_name)
+                if reg_entry:
+                    entry_type, entry_value = reg_entry
+                    if entry_type == "application":
+                        app_match = entry_value
+
+
             if app_match:
                 print(f"[Registry] DETERMINISTIC BYPASS - Found '{app_match}' for: '{step_query}'")
                 final_pipeline.append({
@@ -454,13 +580,30 @@ def extract_intent(prompt: str) -> list:
                 try:
                     resp = llm_extractor.invoke([("system", extract_prompt)])
                     target_val = resp.content.strip().strip("'\"")
-                    
+
                     # ── RAW PROMPT FALLBACK: If extraction is empty, use the prompt itself ──
-                    if not target_val and matched_intent in ("MediaStreamingIntent", "InformationRetrievalIntent"):
-                        print(f"[RELIABILITY] Target extraction returned empty. Falling back to query: '{step_query}'")
-                        # Strip common prefixes for better fallback
-                        target_val = re.sub(r'^(?:search for|tell me about|play|find|look up)\s+', '', step_query, flags=re.IGNORECASE).strip()
-                    
+                    # Was previously wired for only 2 of the 5 intents in needs_target
+                    # (MediaStreamingIntent, InformationRetrievalIntent). WebNavigationIntent
+                    # and FileDeletionIntent had no fallback at all: an empty extraction left
+                    # target_val == "", which validate_steps() then hard-blocks with
+                    # "requires a target for safety" - not a crash, but a silent, confusing
+                    # failure from the user's perspective ("open github" just refused).
+                    # Found live: a 40-task benchmark run under a weaker local model (Ollama
+                    # llama3.2 instead of Groq's 70B) returned empty extractions for
+                    # WebNavigationIntent/FileDeletionIntent at a rate the stronger cloud
+                    # model rarely hit, so the gap was there all along but mostly hidden by
+                    # a good extractor - exactly the kind of silent-until-conditions-change
+                    # bug the project's postcondition work elsewhere exists to catch.
+                    # Extended to cover every needs_target intent, each with its own
+                    # verb-stripping pattern - "delete the file X" and "open X" need
+                    # different prefixes stripped, so one shared pattern would either
+                    # under-strip one intent or over-strip another.
+                    if not target_val:
+                        strip_pattern = _FALLBACK_STRIP_PATTERNS.get(matched_intent)
+                        if strip_pattern:
+                            print(f"[RELIABILITY] Target extraction returned empty for {matched_intent}. Falling back to query: '{step_query}'")
+                            target_val = re.sub(strip_pattern, '', step_query, flags=re.IGNORECASE).strip()
+
                     print(f"[AUDIT] Extracted Target: '{target_val}'")
                 except Exception as e:
                     print(f"[SRE] Target extraction failed: {e}")

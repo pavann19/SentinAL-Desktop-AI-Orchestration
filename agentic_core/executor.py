@@ -197,7 +197,11 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                     step_result = handle_data_modeling(target, step.get("prompt", ""))
                 elif intent == "SysUtilityIntent":
                     from capabilities.system.sys_utility import handle_sys_utility
-                    step_result = handle_sys_utility(target)
+                    # Prompt passed as a fallback: extraction returned an empty
+                    # target for "switch to light mode", which made this a 0/3
+                    # task in the benchmark. Matches how every comparable
+                    # handler (dictation, media_control, window_manager) is called.
+                    step_result = handle_sys_utility(target, step.get("prompt", ""))
                 elif intent == "SchedulerIntent":
                     from capabilities.system.scheduler import handle_scheduler
                     step_result = handle_scheduler(target, step.get("prompt", ""))
@@ -257,17 +261,59 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                         "netflix": "https://www.netflix.com",
                         "chatgpt": "https://chat.openai.com",
                     }
-                    url = MNEMONIC_MAP.get(target.lower().strip(), target)
+                    # Sites added after the 40x3 benchmark: "open wikipedia" and
+                    # "open stack overflow" silently degraded to a Google search
+                    # and then reported "I have opened the website ...", so the
+                    # user was told the site was open when a search page was.
+                    MNEMONIC_MAP.update({
+                        "wikipedia": "https://www.wikipedia.org",
+                        "stack overflow": "https://stackoverflow.com",
+                        "stackoverflow": "https://stackoverflow.com",
+                        "amazon": "https://www.amazon.com",
+                        "instagram": "https://www.instagram.com",
+                        "facebook": "https://www.facebook.com",
+                        "whatsapp": "https://web.whatsapp.com",
+                        "maps": "https://maps.google.com",
+                        "google maps": "https://maps.google.com",
+                        "drive": "https://drive.google.com",
+                        "google drive": "https://drive.google.com",
+                        "outlook": "https://outlook.live.com",
+                        "claude": "https://claude.ai",
+                        "wikipedia.org": "https://www.wikipedia.org",
+                    })
+
+                    normalized = target.lower().strip()
+                    url = MNEMONIC_MAP.get(normalized, target)
+                    fell_back_to_search = False
+
                     if not url.startswith("http"):
                         if "." in url and " " not in url:
                             url = "https://" + url
                         else:
-                            print(f"[Executor] Target '{url}' is not a known URL or mnemonic. Defaulting to Google Search.")
-                            query = urllib.parse.quote(url)
-                            url = f"https://www.google.com/search?q={query}"
+                            # Last resort: try <name>.com before searching, since
+                            # "open <site>" almost always means a site rather
+                            # than a search for its name.
+                            slug = re.sub(r"[^a-z0-9]", "", normalized)
+                            if slug and len(slug) >= 3:
+                                url = f"https://www.{slug}.com"
+                                print(f"[Executor] '{target}' unknown; trying {url}")
+                            else:
+                                print(f"[Executor] Target '{url}' is not a known URL or mnemonic. Defaulting to Google Search.")
+                                query = urllib.parse.quote(url)
+                                url = f"https://www.google.com/search?q={query}"
+                                fell_back_to_search = True
+
                     print(f"[Executor] Opening URL: {url}")
                     webbrowser.open(url)
-                    step_result = f"I have opened the website {url}."
+                    # An honest response when we searched instead of navigating:
+                    # claiming "I have opened the website" for a search results
+                    # page is the same fabricated-success pattern fixed elsewhere.
+                    if fell_back_to_search:
+                        step_result = (
+                            f"I couldn't resolve '{target}' to a website, so I searched for it instead."
+                        )
+                    else:
+                        step_result = f"I have opened the website {url}."
 
 
                 # ── 3. InformationRetrievalIntent ──────────────────────────────────
@@ -391,8 +437,28 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                         return f"I found the {folder_name} folder, but the operating system blocked me from opening it."
 
                                 # ── STRICT PROCESS ROUTING (GUI vs CLI / VISIBLE vs HIDDEN) ──
-                                gui_triggers = ['notepad', 'code ', 'start ', 'explorer']
-                                is_gui = any(cmd.strip().startswith(t) or f" {t}" in cmd for t in gui_triggers)
+                                # Fix (benchmark: multi_open_then_close, flaky 2/3): the previous
+                                # check was `f" {t}" in cmd`, a substring match anywhere in the
+                                # string. "taskkill /IM notepad.exe /F" contains " notepad" and was
+                                # therefore classified as a GUI LAUNCH — routed through detached
+                                # Popen + sleep(1.0) + continue, which never waits for completion or
+                                # checks a return code. A command meant to CLOSE notepad was handled
+                                # as if it were opening it, so the kill sometimes hadn't finished by
+                                # the time the step reported success.
+                                #
+                                # Now matched on the command's own executable (first token, or the
+                                # token after "start"), not on any trigger word appearing anywhere in
+                                # the command line — so a GUI app name used as an ARGUMENT to another
+                                # command (taskkill, tasklist, findstr) no longer qualifies.
+                                _cmd_tokens = cmd.strip().split()
+                                _first_tok = _cmd_tokens[0].lower() if _cmd_tokens else ""
+                                if _first_tok == "start" and len(_cmd_tokens) > 1:
+                                    _first_tok = _cmd_tokens[1].lower().strip('"')
+                                gui_executables = {
+                                    "notepad", "notepad.exe", "code", "code.exe",
+                                    "explorer", "explorer.exe", "explorer.com",
+                                }
+                                is_gui = _first_tok in gui_executables
 
                                 # ── VISIBLE TERMINAL ROUTING ──────────────────────────────
                                 # Installs and long-running ops get a VISIBLE terminal window
@@ -564,11 +630,22 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                         return speech
 
                     if master_stdout_buffer.strip():
-                        from agentic_core.processor import _get_routing_llm
-                        llm = _get_routing_llm("Summarize terminal output")
-                        print("[Executor] Summarizing terminal output...")
-                        prompt = f"You are an AI system taking raw terminal output and summarizing it for a voice TTS engine. The user asked for this data. Summarize the following terminal output in 1 to 2 natural, conversational sentences. Do not use markdown. Output: {master_stdout_buffer.strip()}"
+                        # Fix (found writing coverage for this block): _get_routing_llm()
+                        # itself was OUTSIDE the try/except, only llm.invoke() was guarded.
+                        # The healing block earlier in this same function wraps its
+                        # equivalent _get_routing_llm() call in an outer try (the
+                        # while-loop's own try/except), so a fetch failure there is
+                        # caught and degrades to "Task failed after multiple attempts".
+                        # Here there was no outer guard at all: a fetch failure would
+                        # propagate past this whole intent handler to the per-step retry
+                        # loop, retried 3 times, then surfaced as a raw ERROR string -
+                        # inconsistent with every other LLM-call failure in this function,
+                        # all of which degrade to a spoken explanation instead.
                         try:
+                            from agentic_core.processor import _get_routing_llm
+                            llm = _get_routing_llm("Summarize terminal output")
+                            print("[Executor] Summarizing terminal output...")
+                            prompt = f"You are an AI system taking raw terminal output and summarizing it for a voice TTS engine. The user asked for this data. Summarize the following terminal output in 1 to 2 natural, conversational sentences. Do not use markdown. Output: {master_stdout_buffer.strip()}"
                             summary_response = llm.invoke([("system", prompt)])
                             step_result = summary_response.content.strip()
                         except Exception as e:
@@ -794,7 +871,7 @@ def _classify_result(result: str, step_observations: list) -> str:
     mismatch, since those are execute_pipeline()'s own authoritative signals —
     a postcondition check on a run that already failed outright is meaningless.
 
-    Fix P1-4.4 (from independent Gate-2 review — same review task as
+    Fix P1-4.4 (found during independent Gate-2 review — same review task as
     P1-4.2/P1-4.3): a malformed "expected_state" (e.g. a bare string or bool
     instead of a dict) makes observe_postcondition() fall through to
     tier_used="none", verified=False — correctly not a crash, but naively
@@ -829,8 +906,8 @@ def _run_and_observe(validated_steps: list, cancel_event) -> tuple:
     before = capture_state_snapshot()
     result = execute_pipeline(validated_steps, cancel_event=cancel_event)
 
-    # Fix P1-4.3 (from an independent Gate-2 review of P1-1 —
-    # see tests/test_executor_observed_review.py): capture_state_snapshot()'s
+    # Fix P1-4.3 (found during independent Gate-2 review of P1-1 —
+    # tests/test_executor_observed_review.py): capture_state_snapshot()'s
     # "after" call and diff_snapshots() both run AFTER execute_pipeline()
     # has already completed (and possibly mutated real system state, e.g.
     # deleted a file or launched an app). If either raised, the previous

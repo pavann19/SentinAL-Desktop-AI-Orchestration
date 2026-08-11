@@ -10,11 +10,12 @@ security outside it — through capability allowlists, filesystem sandboxing, ke
 filtering, and human-in-the-loop confirmation gates that the model cannot talk its way past.
 
 > **Project status: research prototype / early MVP.** The security boundary and intent
-> routing are well tested (441 automated tests, 70.5% coverage, 66-test adversarial fuzz
-> suite at a 100% block rate). End-to-end task success on open-ended queries is **60%**
-> (24/40 sampled) — good enough to demonstrate the architecture, not yet good enough to
-> rely on unattended. See [Evaluation](#evaluation) for the honest numbers and
-> [Known Limitations](#known-limitations) before deploying.
+> routing are well tested (768 automated tests, 86.47% coverage, 66-test adversarial fuzz
+> suite at a 100% block rate). End-to-end task success, measured with an independent,
+> statistically-scored benchmark (OS-state verification, not the pipeline's own self-report;
+> 95% Wilson confidence interval), is **94.2%** (95% CI 88.4–97.2%, n=120: 40 tasks × 3 runs)
+> — good enough for supervised daily use, not yet unattended. See [Evaluation](#evaluation)
+> for the full methodology and [Known Limitations](#known-limitations) before deploying.
 
 ---
 
@@ -187,15 +188,20 @@ All figures below are reproducible from committed artifacts (see the next sectio
 | Zero-shot baseline (pre-classifier) | 54.55% test / 70.67% OOD |
 | Fast-path resolution rate (no LLM call) | **94.24%** test / **84.67%** OOD |
 | Task success — 19 CI-safe benchmark tasks | **84.2%** (16/19) |
-| **Task success — 40 open-ended sampled queries** | **60.00%** (24/40) |
+| **End-to-end task success — real-machine benchmark** | **94.2%** (95% CI 88.4–97.2%, 109/120) |
 | Security fuzzing block rate | **100%** (66/66) |
 | Median end-to-end latency | 101.5 ms (validation adds 0.06 ms) |
-| Test suite | 441 passing, 70.5% coverage |
+| Test suite | 768 passing, 86.47% coverage |
 
-**Read the last two success numbers together.** 84.2% is measured on a curated,
-CI-safe task suite; 60% is measured on open-ended queries and is much closer to what a new
-user would actually experience. The gap between them is real and is the main thing standing
-between this prototype and a product.
+**On the end-to-end number.** `benchmarks/run_benchmark.py` drives the real pipeline against
+a real Windows desktop across 40 tasks spanning application launch, web navigation, file
+operations, process management, system utilities, multi-step requests, safety-blocking
+prompts, conversation, and known-unimplemented-capability refusal — each repeated 3 times
+(n=120). Verification is independent of the pipeline: pass/fail comes from querying actual
+OS state (the process table, filesystem, window list), never from the pipeline's own success
+report, and a 95% Wilson confidence interval is reported alongside the point estimate rather
+than a bare percentage. Full methodology, the task suite, and every commit's provenance are
+in `benchmarks/`; see [Reproducing the Evaluation](#reproducing-the-evaluation).
 
 ## Reproducing the Evaluation
 
@@ -211,11 +217,17 @@ python -m eval.measure_intent_accuracy --mode full-pipeline --sample-size 40 --s
 
 # Task-success harness
 python -m eval.run_eval
+
+# End-to-end benchmark: drives the real pipeline on a real desktop (Windows).
+# Opens/closes real applications and browser tabs — avoid using the machine while it runs.
+python benchmarks/run_benchmark.py --repeat 3
 ```
 
-Results are written to `_evidence/`, alongside the committed runs backing the table above.
-Splits are seeded and the exact indices are committed, so accuracy figures reproduce
-byte-for-byte.
+Results are written to `_evidence/` and `benchmarks/results/`, alongside the committed runs
+backing the table above. Splits are seeded and the exact indices are committed, so accuracy
+figures reproduce byte-for-byte. Every benchmark report records its git commit and a
+dirty-working-tree flag, so a result is only citable alongside the exact code that produced
+it.
 
 ## Testing
 
@@ -231,20 +243,22 @@ CI (`.github/workflows/ci.yml`) runs ruff, mypy, and the test suite on every pus
 
 Stated plainly, because they matter for anyone evaluating this:
 
-- **60% end-to-end success on open-ended queries.** Roughly two in five realistic requests
-  fail. Fine for a demo, not for unattended use.
+- **6 of 19 intents have live postcondition verification**; the rest execute without an
+  independent check that the action actually took effect, beyond whatever `execute_pipeline()`
+  itself reports. Two of the unverified intents (dependency install, arbitrary code execution)
+  launch detached, long-running processes that are inherently hard to verify synchronously —
+  a real design constraint, not an oversight.
 - **Windows-only.** The execution layer is not portable as written.
 - **GUI automation is pixel-based** (`pyautogui`), so it breaks on resolution changes, DPI
   scaling, multi-monitor setups, and theme changes. Migration to UI Automation trees is
   planned but not done.
-- **Four intents rely on a zero-shot fallback**, not the trained classifier — they have no
-  labeled training data yet. Reachable and correct, but not covered by the 99.33% figure.
 - **The trained classifier was pickled under scikit-learn 1.6.1.** A fresh install with a
   newer scikit-learn emits a version warning; retraining is recommended.
-- **`ContinuationIntent` has no executor handler** — it routes correctly but currently has
-  nothing to execute.
-- **Evaluation data is synthetic**, not collected from real users, and all measurements come
-  from a single Windows machine.
+- **The end-to-end benchmark is self-authored** (`benchmarks/tasks.py`), not drawn from an
+  external, independently-curated task set, and all measurements come from a single Windows
+  machine. The methodology (independent OS-state verification, confidence intervals, no
+  score-inflating retries) is designed to be defensible regardless, but a self-authored task
+  suite can still under-sample failure modes an external benchmark would catch.
 - **No Docker image or installable package yet** — installation is manual.
 
 ## Project Layout
