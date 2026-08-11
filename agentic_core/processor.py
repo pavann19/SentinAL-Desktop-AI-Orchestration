@@ -293,15 +293,31 @@ def split_multistep(query: str) -> list:
     # genuine two-app request collapsed into a single unsplittable step and one
     # of the two apps was silently never opened.
     #
-    # A short part is now rescued when it names something the registry actually
-    # knows (an app or a route). That keeps the original guard intact for
-    # object phrases — "calorie info" resolves to nothing, so that split is
-    # still correctly refused — while allowing the case where the short part is
-    # a real target the leading verb can be inherited onto.
+    # A short part is now rescued when it names a known app. That keeps the
+    # original guard intact for object phrases — "calorie info" resolves to
+    # nothing, so that split is still correctly refused — while allowing the
+    # case where the short part is a real target the leading verb can be
+    # inherited onto.
+    #
+    # Checks _DEFAULT_APP_MAP_SEED first (a static dict, always available at
+    # import time), THEN the live capability registry as a best-effort
+    # enhancement for user-learned apps. Found live via CI: the registry-only
+    # version of this check passed on the local dev machine — where hours of
+    # manual testing had already seeded "calculator" into the on-disk SQLite
+    # registry — but failed on a clean CI checkout, because registry.seed_
+    # defaults() only runs inside main.py's FastAPI startup hook. split_
+    # multistep() is a pure function callable from tests, eval scripts, or any
+    # code that imports processor.py without booting the full server, so a
+    # correctness-affecting check must not depend on that hook having already
+    # run. The static dict removes that ordering dependency entirely; the
+    # registry lookup still adds real value for apps the user has taught the
+    # system that aren't in the static seed.
     MIN_WORDS_PER_PART = 2
     if len(parts) > 1:
         def _is_valid_part(part: str) -> bool:
             if len(part.split()) >= MIN_WORDS_PER_PART:
+                return True
+            if part.strip().lower() in _DEFAULT_APP_MAP_SEED:
                 return True
             try:
                 return registry.lookup(part) is not None

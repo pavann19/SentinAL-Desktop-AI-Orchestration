@@ -121,6 +121,22 @@ class TestMultiStepSplitting:
         parts = split_multistep("open notepad and calculator")
         assert len(parts) == 2, f"expected 2 steps, got {parts}"
 
+    def test_split_works_even_when_the_live_registry_is_unavailable(self):
+        """Found live on a clean CI run: this split's rescue originally
+        checked ONLY the live capability_registry singleton, whose
+        seed_defaults() only runs inside main.py's FastAPI startup hook.
+        split_multistep() is a pure function reachable from tests/eval
+        scripts/any import of processor.py without booting the server, so it
+        passed locally (hours of manual testing had already seeded
+        "calculator" into the on-disk SQLite registry) and failed on a fresh
+        checkout with an empty/unseeded registry. Simulates that exact
+        condition — a totally broken registry — and must still split
+        correctly via the static _DEFAULT_APP_MAP_SEED fallback."""
+        from agentic_core.processor import registry
+        with patch.object(registry, "lookup", side_effect=Exception("registry unavailable")):
+            parts = split_multistep("open notepad and calculator")
+        assert len(parts) == 2, f"expected 2 steps even with no registry, got {parts}"
+
     def test_still_refuses_unresolvable_one_word_splits(self):
         """The original guard must survive: a single-word part the registry
         cannot resolve is an object fragment, not a command, so no split."""
