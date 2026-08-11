@@ -197,7 +197,11 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                     step_result = handle_data_modeling(target, step.get("prompt", ""))
                 elif intent == "SysUtilityIntent":
                     from capabilities.system.sys_utility import handle_sys_utility
-                    step_result = handle_sys_utility(target)
+                    # Prompt passed as a fallback: extraction returned an empty
+                    # target for "switch to light mode", which made this a 0/3
+                    # task in the benchmark. Matches how every comparable
+                    # handler (dictation, media_control, window_manager) is called.
+                    step_result = handle_sys_utility(target, step.get("prompt", ""))
                 elif intent == "SchedulerIntent":
                     from capabilities.system.scheduler import handle_scheduler
                     step_result = handle_scheduler(target, step.get("prompt", ""))
@@ -257,17 +261,59 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                         "netflix": "https://www.netflix.com",
                         "chatgpt": "https://chat.openai.com",
                     }
-                    url = MNEMONIC_MAP.get(target.lower().strip(), target)
+                    # Sites added after the 40x3 benchmark: "open wikipedia" and
+                    # "open stack overflow" silently degraded to a Google search
+                    # and then reported "I have opened the website ...", so the
+                    # user was told the site was open when a search page was.
+                    MNEMONIC_MAP.update({
+                        "wikipedia": "https://www.wikipedia.org",
+                        "stack overflow": "https://stackoverflow.com",
+                        "stackoverflow": "https://stackoverflow.com",
+                        "amazon": "https://www.amazon.com",
+                        "instagram": "https://www.instagram.com",
+                        "facebook": "https://www.facebook.com",
+                        "whatsapp": "https://web.whatsapp.com",
+                        "maps": "https://maps.google.com",
+                        "google maps": "https://maps.google.com",
+                        "drive": "https://drive.google.com",
+                        "google drive": "https://drive.google.com",
+                        "outlook": "https://outlook.live.com",
+                        "claude": "https://claude.ai",
+                        "wikipedia.org": "https://www.wikipedia.org",
+                    })
+
+                    normalized = target.lower().strip()
+                    url = MNEMONIC_MAP.get(normalized, target)
+                    fell_back_to_search = False
+
                     if not url.startswith("http"):
                         if "." in url and " " not in url:
                             url = "https://" + url
                         else:
-                            print(f"[Executor] Target '{url}' is not a known URL or mnemonic. Defaulting to Google Search.")
-                            query = urllib.parse.quote(url)
-                            url = f"https://www.google.com/search?q={query}"
+                            # Last resort: try <name>.com before searching, since
+                            # "open <site>" almost always means a site rather
+                            # than a search for its name.
+                            slug = re.sub(r"[^a-z0-9]", "", normalized)
+                            if slug and len(slug) >= 3:
+                                url = f"https://www.{slug}.com"
+                                print(f"[Executor] '{target}' unknown; trying {url}")
+                            else:
+                                print(f"[Executor] Target '{url}' is not a known URL or mnemonic. Defaulting to Google Search.")
+                                query = urllib.parse.quote(url)
+                                url = f"https://www.google.com/search?q={query}"
+                                fell_back_to_search = True
+
                     print(f"[Executor] Opening URL: {url}")
                     webbrowser.open(url)
-                    step_result = f"I have opened the website {url}."
+                    # An honest response when we searched instead of navigating:
+                    # claiming "I have opened the website" for a search results
+                    # page is the same fabricated-success pattern fixed elsewhere.
+                    if fell_back_to_search:
+                        step_result = (
+                            f"I couldn't resolve '{target}' to a website, so I searched for it instead."
+                        )
+                    else:
+                        step_result = f"I have opened the website {url}."
 
 
                 # ── 3. InformationRetrievalIntent ──────────────────────────────────

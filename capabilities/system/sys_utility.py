@@ -1,13 +1,29 @@
 import subprocess
 
 
-def handle_sys_utility(target: str) -> str:
+def handle_sys_utility(target: str, prompt: str = "") -> str:
     """
     Handles system utilities like recycle bin, dark mode, brightness, mic.
     Uses LLM for robust action classification.
+
+    Two fixes from the 40x3 benchmark baseline, where "switch to light mode"
+    scored 0/3:
+
+    1. Falls back to the full prompt when `target` is empty. Extraction returned
+       an empty target for that phrasing, so classification never ran. Every
+       comparable handler (dictation, media_control, window_manager) already
+       does `prompt_text = prompt if prompt else target`; this one did not.
+
+    2. Failure messages are ERROR-prefixed. api_wrapper.process_command() keys
+       execution status on that prefix, so the old bare "I didn't catch the
+       system utility command." was reported to the user as execution="Success"
+       — a failure presented as a success, the same defect class as the
+       fabricated-success stubs fixed in 24aad7f.
     """
-    if not target:
-        return "I didn't catch the system utility command."
+    request = (target or "").strip() or (prompt or "").strip()
+    if not request:
+        return "ERROR: I didn't catch which system setting you wanted to change."
+    target = request
 
     from agentic_core.processor import _get_routing_llm
     llm = _get_routing_llm("System Utility Classification")
@@ -32,7 +48,7 @@ def handle_sys_utility(target: str) -> str:
             subprocess.run(["powershell", "-NoProfile", "-Command", "Clear-RecycleBin -Force"], check=True)
             return "I have physically emptied the recycle bin."
         except Exception as e:
-            return f"Failed to empty recycle bin: {e}"
+            return f"ERROR: Failed to empty recycle bin: {e}"
             
     elif action == "dark_mode":
         try:
@@ -40,7 +56,7 @@ def handle_sys_utility(target: str) -> str:
             subprocess.run(["powershell", "-NoProfile", "-Command", cmd], check=True)
             return "Windows Dark mode has been enabled."
         except Exception:
-            return "Failed to enable dark mode via PowerShell."
+            return "ERROR: Failed to enable dark mode via PowerShell."
             
     elif action == "light_mode":
         try:
@@ -48,15 +64,15 @@ def handle_sys_utility(target: str) -> str:
             subprocess.run(["powershell", "-NoProfile", "-Command", cmd], check=True)
             return "Windows Light mode has been enabled."
         except Exception:
-            return "Failed to enable light mode via PowerShell."
+            return "ERROR: Failed to enable light mode via PowerShell."
             
     elif action == "mute_mic":
         # Requires nircmd or a complex C# bridge, simulating a generic response for Phase 1
-        return "Microphone mute command received. (Requires external dependency for pure python execution)."
+        return "ERROR: Microphone mute isn't implemented — it needs an external dependency. Nothing was changed."
         
     elif action == "brightness_down":
         # Can use WMI, but keeping it simple for now
-        return "Brightness control command received. (Requires WMI permissions)."
+        return "ERROR: Brightness control isn't implemented — it needs WMI permissions. Nothing was changed."
         
     else:
-        return f"I received a system utility command I don't know how to physically execute yet: {action}"
+        return f"ERROR: I don't know how to perform that system action yet: {action}"
