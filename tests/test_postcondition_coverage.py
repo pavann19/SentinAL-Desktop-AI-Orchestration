@@ -118,17 +118,28 @@ class TestTierPriority:
 # _derive_expected_state — which intents are now wired
 # ══════════════════════════════════════════════════════════════════════════════
 class TestDeriveExpectedState:
-    def test_application_launch_unchanged(self):
-        """Pre-existing behaviour must survive the extension byte-for-byte."""
+    def test_application_launch_derives_process_name(self):
+        """Renamed from test_application_launch_unchanged: the behaviour is no
+        longer unchanged. A settle_timeout_ms key was added deliberately (two
+        back-to-back launches raced the postcondition check), so asserting
+        byte-for-byte dict equality was asserting something we intentionally
+        changed. The process_name derivation — the actual contract — is what
+        must stay stable, and that is what is asserted now."""
         assert _derive_expected_state(
             {"intent": "ApplicationLaunchIntent", "target": "notepad"}
-        ) == {"process_name": "notepad"}
+        )["process_name"] == "notepad"
+
+    def test_application_launch_has_settle_window(self):
+        derived = _derive_expected_state(
+            {"intent": "ApplicationLaunchIntent", "target": "notepad"}
+        )
+        assert derived["settle_timeout_ms"] > 0
 
     def test_application_launch_strips_path_to_basename(self):
         derived = _derive_expected_state(
             {"intent": "ApplicationLaunchIntent", "target": r"C:\Windows\System32\notepad.exe"}
         )
-        assert derived == {"process_name": "notepad.exe"}
+        assert derived["process_name"] == "notepad.exe"
 
     def test_file_deletion_expects_path_absent_absolute(self):
         derived = _derive_expected_state(

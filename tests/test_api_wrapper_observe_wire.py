@@ -23,19 +23,32 @@ from capabilities.system.api_wrapper import _derive_expected_state, process_comm
 
 # ── _derive_expected_state() — pure function, no mocking needed ────────────
 
+# These assert the process_name CONTRACT rather than exact dict equality.
+# They previously compared the whole dict, so adding settle_timeout_ms — needed
+# because two back-to-back launches raced the postcondition check — broke all
+# three despite the derived process_name being entirely correct. Asserting the
+# field actually under test keeps them from re-breaking on the next additive key.
+
 def test_derive_expected_state_bare_app_name():
     step = {"intent": "ApplicationLaunchIntent", "target": "notepad"}
-    assert _derive_expected_state(step) == {"process_name": "notepad"}
+    assert _derive_expected_state(step)["process_name"] == "notepad"
 
 
 def test_derive_expected_state_full_windows_path():
     step = {"intent": "ApplicationLaunchIntent", "target": "C:\\Program Files\\App\\app.exe"}
-    assert _derive_expected_state(step) == {"process_name": "app.exe"}
+    assert _derive_expected_state(step)["process_name"] == "app.exe"
 
 
 def test_derive_expected_state_forward_slash_path():
     step = {"intent": "ApplicationLaunchIntent", "target": "C:/apps/thing.exe"}
-    assert _derive_expected_state(step) == {"process_name": "thing.exe"}
+    assert _derive_expected_state(step)["process_name"] == "thing.exe"
+
+
+def test_derive_expected_state_app_launch_has_settle_window():
+    """Guards the fix itself: without a settle window, the second of two
+    back-to-back launches is checked before its process has appeared."""
+    step = {"intent": "ApplicationLaunchIntent", "target": "notepad"}
+    assert _derive_expected_state(step)["settle_timeout_ms"] > 0
 
 
 def test_derive_expected_state_unverifiable_intent_returns_none():
@@ -154,7 +167,7 @@ async def test_execute_pipeline_observed_is_actually_called_not_raw_execute_pipe
 
     mock_observed.assert_called_once()
     called_steps = mock_observed.call_args[0][0]
-    assert called_steps[0]["expected_state"] == {"process_name": "notepad"}
+    assert called_steps[0]["expected_state"]["process_name"] == "notepad"
     assert result["response"] == "I have launched notepad."
     assert result["execution"] == "Success"
 

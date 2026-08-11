@@ -122,6 +122,17 @@ def deterministic_fast_path(prompt: str) -> list | None:
         return [{"intent": "ApplicationLaunchIntent", "target": app_map[app_query],
                  "speech_response": f"Opening {app_query}."}]
 
+    # Fallback: the ENTIRE utterance is just an app name, no launch verb at all
+    # (benchmark: app_notepad_terse, "notepad" alone, 0/3). extract_app_query()
+    # correctly returns None here since there is no verb to anchor on - that is
+    # the right call for extract_app_query() itself, since a bare noun inside a
+    # longer sentence should NOT be read as a launch (e.g. "I like my notepad").
+    # But as a whole, standalone utterance, a known app name IS the command, so
+    # it is handled here rather than by loosening the general-purpose extractor.
+    if p in app_map:
+        return [{"intent": "ApplicationLaunchIntent", "target": app_map[p],
+                 "speech_response": f"Opening {p}."}]
+
     return None
 
 

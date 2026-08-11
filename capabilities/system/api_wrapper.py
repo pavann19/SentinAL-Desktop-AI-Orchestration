@@ -18,6 +18,16 @@ from agentic_core.tracing import traced_step
 # returns immediately, so this is the cost of a FAILURE, not of normal operation.
 _BROWSER_SETTLE_MS = float(os.getenv("OBSERVER_BROWSER_SETTLE_MS", "6000"))
 
+# Same reasoning as the browser settle window, needed for a different failure
+# mode: benchmark task multi_open_two_apps ("open notepad and calculator", two
+# ApplicationLaunchIntent steps back-to-back) failed 0/3 on effect_not_observed.
+# A single launch is normally fast enough to beat a single postcondition check;
+# two launches in quick succession shift that timing enough for the second
+# check to fire before its process has actually appeared. Kept separate from
+# _BROWSER_SETTLE_MS (rather than reusing it) since process startup and page
+# rendering are different costs with no reason to share one tuning knob.
+_APP_LAUNCH_SETTLE_MS = float(os.getenv("OBSERVER_APP_LAUNCH_SETTLE_MS", "5000"))
+
 
 def _site_label(target: str) -> str | None:
     """
@@ -105,7 +115,10 @@ def _derive_expected_state(step: dict) -> dict | None:
         if not target:
             return None
         basename = os.path.basename(target.replace("\\", "/").rstrip("/\\"))
-        return {"process_name": basename} if basename else None
+        return (
+            {"process_name": basename, "settle_timeout_ms": _APP_LAUNCH_SETTLE_MS}
+            if basename else None
+        )
 
     # ── FileDeletionIntent: the path must now be gone ─────────────────────────
     # Mirrors the executor's own resolution (abspath, cwd-relative if not

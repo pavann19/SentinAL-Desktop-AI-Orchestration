@@ -437,8 +437,28 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                         return f"I found the {folder_name} folder, but the operating system blocked me from opening it."
 
                                 # ── STRICT PROCESS ROUTING (GUI vs CLI / VISIBLE vs HIDDEN) ──
-                                gui_triggers = ['notepad', 'code ', 'start ', 'explorer']
-                                is_gui = any(cmd.strip().startswith(t) or f" {t}" in cmd for t in gui_triggers)
+                                # Fix (benchmark: multi_open_then_close, flaky 2/3): the previous
+                                # check was `f" {t}" in cmd`, a substring match anywhere in the
+                                # string. "taskkill /IM notepad.exe /F" contains " notepad" and was
+                                # therefore classified as a GUI LAUNCH — routed through detached
+                                # Popen + sleep(1.0) + continue, which never waits for completion or
+                                # checks a return code. A command meant to CLOSE notepad was handled
+                                # as if it were opening it, so the kill sometimes hadn't finished by
+                                # the time the step reported success.
+                                #
+                                # Now matched on the command's own executable (first token, or the
+                                # token after "start"), not on any trigger word appearing anywhere in
+                                # the command line — so a GUI app name used as an ARGUMENT to another
+                                # command (taskkill, tasklist, findstr) no longer qualifies.
+                                _cmd_tokens = cmd.strip().split()
+                                _first_tok = _cmd_tokens[0].lower() if _cmd_tokens else ""
+                                if _first_tok == "start" and len(_cmd_tokens) > 1:
+                                    _first_tok = _cmd_tokens[1].lower().strip('"')
+                                gui_executables = {
+                                    "notepad", "notepad.exe", "code", "code.exe",
+                                    "explorer", "explorer.exe", "explorer.com",
+                                }
+                                is_gui = _first_tok in gui_executables
 
                                 # ── VISIBLE TERMINAL ROUTING ──────────────────────────────
                                 # Installs and long-running ops get a VISIBLE terminal window
