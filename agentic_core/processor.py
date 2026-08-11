@@ -95,6 +95,21 @@ _PROCESS_LIST_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Per-intent verb/filler prefixes to strip when falling back to the raw
+# utterance after an LLM target-extraction call returns empty. One shared
+# pattern across intents would either under-strip ("delete the file X" left
+# with "the file X" as the target) or over-strip ("open X" losing "the" from
+# a target that legitimately contains it) — each intent's own command grammar
+# needs its own pattern. Only intents in needs_target (agentic_core/processor
+# PHASE 2) need an entry here.
+_FALLBACK_STRIP_PATTERNS = {
+    "MediaStreamingIntent": r'^(?:search for|tell me about|play|find|look up)\s+',
+    "InformationRetrievalIntent": r'^(?:search for|tell me about|play|find|look up)\s+',
+    "WebNavigationIntent": r'^(?:open(?:\s+up)?|go\s+to|navigate\s+to|visit|take\s+me\s+to|pull\s+up|browse\s+to|check\s+out|load(?:\s+up)?)\s+',
+    "FileDeletionIntent": r'^(?:delete|remove|erase|get\s+rid\s+of|trash)\s+(?:the\s+)?(?:file|folder|directory)?\s*',
+    "ApplicationLaunchIntent": r'^(?:open(?:\s+up)?|launch|start|run|bring\s+up|pull\s+up|fire\s+up|boot(?:\s+up)?)\s+',
+}
+
 
 def deterministic_fast_path(prompt: str) -> list | None:
     """
@@ -565,13 +580,30 @@ def extract_intent(prompt: str) -> list:
                 try:
                     resp = llm_extractor.invoke([("system", extract_prompt)])
                     target_val = resp.content.strip().strip("'\"")
-                    
+
                     # ── RAW PROMPT FALLBACK: If extraction is empty, use the prompt itself ──
-                    if not target_val and matched_intent in ("MediaStreamingIntent", "InformationRetrievalIntent"):
-                        print(f"[RELIABILITY] Target extraction returned empty. Falling back to query: '{step_query}'")
-                        # Strip common prefixes for better fallback
-                        target_val = re.sub(r'^(?:search for|tell me about|play|find|look up)\s+', '', step_query, flags=re.IGNORECASE).strip()
-                    
+                    # Was previously wired for only 2 of the 5 intents in needs_target
+                    # (MediaStreamingIntent, InformationRetrievalIntent). WebNavigationIntent
+                    # and FileDeletionIntent had no fallback at all: an empty extraction left
+                    # target_val == "", which validate_steps() then hard-blocks with
+                    # "requires a target for safety" - not a crash, but a silent, confusing
+                    # failure from the user's perspective ("open github" just refused).
+                    # Found live: a 40-task benchmark run under a weaker local model (Ollama
+                    # llama3.2 instead of Groq's 70B) returned empty extractions for
+                    # WebNavigationIntent/FileDeletionIntent at a rate the stronger cloud
+                    # model rarely hit, so the gap was there all along but mostly hidden by
+                    # a good extractor - exactly the kind of silent-until-conditions-change
+                    # bug the project's postcondition work elsewhere exists to catch.
+                    # Extended to cover every needs_target intent, each with its own
+                    # verb-stripping pattern - "delete the file X" and "open X" need
+                    # different prefixes stripped, so one shared pattern would either
+                    # under-strip one intent or over-strip another.
+                    if not target_val:
+                        strip_pattern = _FALLBACK_STRIP_PATTERNS.get(matched_intent)
+                        if strip_pattern:
+                            print(f"[RELIABILITY] Target extraction returned empty for {matched_intent}. Falling back to query: '{step_query}'")
+                            target_val = re.sub(strip_pattern, '', step_query, flags=re.IGNORECASE).strip()
+
                     print(f"[AUDIT] Extracted Target: '{target_val}'")
                 except Exception as e:
                     print(f"[SRE] Target extraction failed: {e}")
