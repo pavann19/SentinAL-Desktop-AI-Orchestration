@@ -25,16 +25,17 @@ def handle_sys_utility(target: str, prompt: str = "") -> str:
         return "ERROR: I didn't catch which system setting you wanted to change."
     target = request
 
-    from agentic_core.processor import _get_routing_llm
-    llm = _get_routing_llm("System Utility Classification")
-    
-    classification_prompt = (
-        f"You are a System Utility controller. Classify this user command: '{target}'.\n"
-        "Must output EXACTLY ONE of these strings: 'recycle_bin', 'dark_mode', 'light_mode', 'mute_mic', 'brightness_down'.\n"
-        "If it doesn't match perfectly, pick the closest one. Output nothing else."
-    )
-    
+    # _get_routing_llm() moved INSIDE the try: see window_manager.py's
+    # identical fix for why a fetch failure must degrade the same way an
+    # .invoke() failure does, not propagate uncaught.
     try:
+        from agentic_core.processor import _get_routing_llm
+        llm = _get_routing_llm("System Utility Classification")
+        classification_prompt = (
+            f"You are a System Utility controller. Classify this user command: '{target}'.\n"
+            "Must output EXACTLY ONE of these strings: 'recycle_bin', 'dark_mode', 'light_mode', 'mute_mic', 'brightness_down'.\n"
+            "If it doesn't match perfectly, pick the closest one. Output nothing else."
+        )
         resp = llm.invoke([("system", classification_prompt)])
         action = resp.content.strip().lower()
     except Exception as e:
