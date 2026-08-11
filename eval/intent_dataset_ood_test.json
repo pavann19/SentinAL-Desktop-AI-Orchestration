@@ -1,602 +1,762 @@
 [
-    {
-        "prompt": "calc",
-        "expected_intent": "ApplicationLaunchIntent"
-    },
-    {
-        "prompt": "exec notepad.exe",
-        "expected_intent": "ApplicationLaunchIntent"
-    },
-    {
-        "prompt": "it would be wonderful if you could start up discord for me",
-        "expected_intent": "ApplicationLaunchIntent"
-    },
-    {
-        "prompt": "i require google chrome to be running",
-        "expected_intent": "ApplicationLaunchIntent"
-    },
-    {
-        "prompt": "initiate the boot sequence for slack",
-        "expected_intent": "ApplicationLaunchIntent"
-    },
-    {
-        "prompt": "get ms word going",
-        "expected_intent": "ApplicationLaunchIntent"
-    },
-    {
-        "prompt": "pop open excel",
-        "expected_intent": "ApplicationLaunchIntent"
-    },
-    {
-        "prompt": "i wanna use paint",
-        "expected_intent": "ApplicationLaunchIntent"
-    },
-    {
-        "prompt": "bring up the command prompt utility",
-        "expected_intent": "ApplicationLaunchIntent"
-    },
-    {
-        "prompt": "fire off the calculator app",
-        "expected_intent": "ApplicationLaunchIntent"
-    },
-    {
-        "prompt": "https://www.github.com",
-        "expected_intent": "WebNavigationIntent"
-    },
-    {
-        "prompt": "route me over to reddit",
-        "expected_intent": "WebNavigationIntent"
-    },
-    {
-        "prompt": "i feel like browsing youtube, take me there",
-        "expected_intent": "WebNavigationIntent"
-    },
-    {
-        "prompt": "load up the wikipedia homepage",
-        "expected_intent": "WebNavigationIntent"
-    },
-    {
-        "prompt": "direct my browser to amazon",
-        "expected_intent": "WebNavigationIntent"
-    },
-    {
-        "prompt": "www.netflix.com",
-        "expected_intent": "WebNavigationIntent"
-    },
-    {
-        "prompt": "could you kindly open a tab for twitter",
-        "expected_intent": "WebNavigationIntent"
-    },
-    {
-        "prompt": "let us proceed to the bbc news website",
-        "expected_intent": "WebNavigationIntent"
-    },
-    {
-        "prompt": "jump into facebook",
-        "expected_intent": "WebNavigationIntent"
-    },
-    {
-        "prompt": "surf on over to stackoverflow",
-        "expected_intent": "WebNavigationIntent"
-    },
-    {
-        "prompt": "temp right now outside",
-        "expected_intent": "InformationRetrievalIntent"
-    },
-    {
-        "prompt": "fetch me data regarding the global warming phenomenon",
-        "expected_intent": "InformationRetrievalIntent"
-    },
-    {
-        "prompt": "who exactly is the ceo of microsoft these days",
-        "expected_intent": "InformationRetrievalIntent"
-    },
-    {
-        "prompt": "i demand to know the distance from the earth to the sun",
-        "expected_intent": "InformationRetrievalIntent"
-    },
-    {
-        "prompt": "can someone tell me what the population of tokyo is",
-        "expected_intent": "InformationRetrievalIntent"
-    },
-    {
-        "prompt": "need info: quantum physics",
-        "expected_intent": "InformationRetrievalIntent"
-    },
-    {
-        "prompt": "search query: current president of france",
-        "expected_intent": "InformationRetrievalIntent"
-    },
-    {
-        "prompt": "i was wondering if you might be able to find the definition of serendipity",
-        "expected_intent": "InformationRetrievalIntent"
-    },
-    {
-        "prompt": "what's the deal with inflation",
-        "expected_intent": "InformationRetrievalIntent"
-    },
-    {
-        "prompt": "give me a rundown on the history of Rome",
-        "expected_intent": "InformationRetrievalIntent"
-    },
-    {
-        "prompt": "music. now.",
-        "expected_intent": "MediaStreamingIntent"
-    },
-    {
-        "prompt": "i need some auditory stimulation, play some classical",
-        "expected_intent": "MediaStreamingIntent"
-    },
-    {
-        "prompt": "could you perhaps put on a podcast about true crime",
-        "expected_intent": "MediaStreamingIntent"
-    },
-    {
-        "prompt": "i want to vibe to some synthwave",
-        "expected_intent": "MediaStreamingIntent"
-    },
-    {
-        "prompt": "make with the tunes",
-        "expected_intent": "MediaStreamingIntent"
-    },
-    {
-        "prompt": "commence audio playback of the latest album by taylor swift",
-        "expected_intent": "MediaStreamingIntent"
-    },
-    {
-        "prompt": "i'm in the mood for a movie trailer",
-        "expected_intent": "MediaStreamingIntent"
-    },
-    {
-        "prompt": "play that one song from interstellar",
-        "expected_intent": "MediaStreamingIntent"
-    },
-    {
-        "prompt": "let the heavy metal roar",
-        "expected_intent": "MediaStreamingIntent"
-    },
-    {
-        "prompt": "start broadcasting the daily news audio",
-        "expected_intent": "MediaStreamingIntent"
-    },
-    {
-        "prompt": "rm -rf old_logs",
-        "expected_intent": "FileDeletionIntent"
-    },
-    {
-        "prompt": "obliterate the temp folder",
-        "expected_intent": "FileDeletionIntent"
-    },
-    {
-        "prompt": "i would greatly appreciate it if you purged the trash",
-        "expected_intent": "FileDeletionIntent"
-    },
-    {
-        "prompt": "send the file named document.docx to the void",
-        "expected_intent": "FileDeletionIntent"
-    },
-    {
-        "prompt": "this image is garbage, dump it",
-        "expected_intent": "FileDeletionIntent"
-    },
-    {
-        "prompt": "nuke the downloads directory",
-        "expected_intent": "FileDeletionIntent"
-    },
-    {
-        "prompt": "make the backup zip disappear",
-        "expected_intent": "FileDeletionIntent"
-    },
-    {
-        "prompt": "destroy all unused assets",
-        "expected_intent": "FileDeletionIntent"
-    },
-    {
-        "prompt": "clear out my junk",
-        "expected_intent": "FileDeletionIntent"
-    },
-    {
-        "prompt": "i want this folder gone permanently",
-        "expected_intent": "FileDeletionIntent"
-    },
-    {
-        "prompt": "yo",
-        "expected_intent": "ConversationalIntent"
-    },
-    {
-        "prompt": "sup",
-        "expected_intent": "ConversationalIntent"
-    },
-    {
-        "prompt": "good evening, artificial intelligence",
-        "expected_intent": "ConversationalIntent"
-    },
-    {
-        "prompt": "i find myself quite bored, do you have any jokes",
-        "expected_intent": "ConversationalIntent"
-    },
-    {
-        "prompt": "what is the meaning of your existence",
-        "expected_intent": "ConversationalIntent"
-    },
-    {
-        "prompt": "i am grateful for your assistance",
-        "expected_intent": "ConversationalIntent"
-    },
-    {
-        "prompt": "farewell",
-        "expected_intent": "ConversationalIntent"
-    },
-    {
-        "prompt": "you are quite intelligent",
-        "expected_intent": "ConversationalIntent"
-    },
-    {
-        "prompt": "are you listening to me",
-        "expected_intent": "ConversationalIntent"
-    },
-    {
-        "prompt": "let us converse about life",
-        "expected_intent": "ConversationalIntent"
-    },
-    {
-        "prompt": "kill -9",
-        "expected_intent": "ProcessManagementIntent"
-    },
-    {
-        "prompt": "taskkill chrome",
-        "expected_intent": "ProcessManagementIntent"
-    },
-    {
-        "prompt": "i respectfully request that you terminate the background updater",
-        "expected_intent": "ProcessManagementIntent"
-    },
-    {
-        "prompt": "show me a list of all active cpu processes",
-        "expected_intent": "ProcessManagementIntent"
-    },
-    {
-        "prompt": "what is eating all my ram",
-        "expected_intent": "ProcessManagementIntent"
-    },
-    {
-        "prompt": "stop the java service",
-        "expected_intent": "ProcessManagementIntent"
-    },
-    {
-        "prompt": "close this frozen program immediately",
-        "expected_intent": "ProcessManagementIntent"
-    },
-    {
-        "prompt": "end the task for notepad",
-        "expected_intent": "ProcessManagementIntent"
-    },
-    {
-        "prompt": "which applications are running right now",
-        "expected_intent": "ProcessManagementIntent"
-    },
-    {
-        "prompt": "force quit this",
-        "expected_intent": "ProcessManagementIntent"
-    },
-    {
-        "prompt": "init react",
-        "expected_intent": "ProjectScaffoldIntent"
-    },
-    {
-        "prompt": "new django project",
-        "expected_intent": "ProjectScaffoldIntent"
-    },
-    {
-        "prompt": "i would like to bootstrap a brand new typescript frontend",
-        "expected_intent": "ProjectScaffoldIntent"
-    },
-    {
-        "prompt": "scaffold an express server",
-        "expected_intent": "ProjectScaffoldIntent"
-    },
-    {
-        "prompt": "generate a boilerplate for a flask api",
-        "expected_intent": "ProjectScaffoldIntent"
-    },
-    {
-        "prompt": "create an empty git repo with a readme",
-        "expected_intent": "ProjectScaffoldIntent"
-    },
-    {
-        "prompt": "set up a monorepo structure using turbo",
-        "expected_intent": "ProjectScaffoldIntent"
-    },
-    {
-        "prompt": "start a spring boot app",
-        "expected_intent": "ProjectScaffoldIntent"
-    },
-    {
-        "prompt": "spin up a vue template",
-        "expected_intent": "ProjectScaffoldIntent"
-    },
-    {
-        "prompt": "i need a new c++ cmake skeleton",
-        "expected_intent": "ProjectScaffoldIntent"
-    },
-    {
-        "prompt": "pip install pandas",
-        "expected_intent": "DependencyInstallIntent"
-    },
-    {
-        "prompt": "npm i lodash",
-        "expected_intent": "DependencyInstallIntent"
-    },
-    {
-        "prompt": "it is imperative that we add the tensorflow library to our environment",
-        "expected_intent": "DependencyInstallIntent"
-    },
-    {
-        "prompt": "fetch the requests module",
-        "expected_intent": "DependencyInstallIntent"
-    },
-    {
-        "prompt": "grab the latest version of react",
-        "expected_intent": "DependencyInstallIntent"
-    },
-    {
-        "prompt": "yarn add tailwindcss",
-        "expected_intent": "DependencyInstallIntent"
-    },
-    {
-        "prompt": "install the project requirements",
-        "expected_intent": "DependencyInstallIntent"
-    },
-    {
-        "prompt": "put axios in the dependencies",
-        "expected_intent": "DependencyInstallIntent"
-    },
-    {
-        "prompt": "require sqlalchemy",
-        "expected_intent": "DependencyInstallIntent"
-    },
-    {
-        "prompt": "download beautifulsoup",
-        "expected_intent": "DependencyInstallIntent"
-    },
-    {
-        "prompt": "write me a bash script",
-        "expected_intent": "CodeActIntent"
-    },
-    {
-        "prompt": "i need python code to parse a csv",
-        "expected_intent": "CodeActIntent"
-    },
-    {
-        "prompt": "can you draft a powershell script to monitor memory",
-        "expected_intent": "CodeActIntent"
-    },
-    {
-        "prompt": "generate a regex for phone numbers",
-        "expected_intent": "CodeActIntent"
-    },
-    {
-        "prompt": "code a function to reverse a linked list",
-        "expected_intent": "CodeActIntent"
-    },
-    {
-        "prompt": "implement a sorting algorithm in c++",
-        "expected_intent": "CodeActIntent"
-    },
-    {
-        "prompt": "build a tool that scrapes images from a webpage",
-        "expected_intent": "CodeActIntent"
-    },
-    {
-        "prompt": "create a dockerfile for a node app",
-        "expected_intent": "CodeActIntent"
-    },
-    {
-        "prompt": "write a macro to format this excel sheet",
-        "expected_intent": "CodeActIntent"
-    },
-    {
-        "prompt": "program a bot that sends automated emails",
-        "expected_intent": "CodeActIntent"
-    },
-    {
-        "prompt": "give me the tldr of this manuscript",
-        "expected_intent": "AcademicResearchIntent"
-    },
-    {
-        "prompt": "i beg of you to analyze this thesis",
-        "expected_intent": "AcademicResearchIntent"
-    },
-    {
-        "prompt": "extract the methodology from the attached pdf",
-        "expected_intent": "AcademicResearchIntent"
-    },
-    {
-        "prompt": "what are the main takeaways from this literature review",
-        "expected_intent": "AcademicResearchIntent"
-    },
-    {
-        "prompt": "summarize the abstract of the study",
-        "expected_intent": "AcademicResearchIntent"
-    },
-    {
-        "prompt": "i need a critique of this experimental design",
-        "expected_intent": "AcademicResearchIntent"
-    },
-    {
-        "prompt": "what dataset was utilized by the authors here",
-        "expected_intent": "AcademicResearchIntent"
-    },
-    {
-        "prompt": "fetch related works on this academic topic",
-        "expected_intent": "AcademicResearchIntent"
-    },
-    {
-        "prompt": "read this paper and explain the results",
-        "expected_intent": "AcademicResearchIntent"
-    },
-    {
-        "prompt": "cross reference these two academic articles",
-        "expected_intent": "AcademicResearchIntent"
-    },
-    {
-        "prompt": "do stats",
-        "expected_intent": "DataModelingIntent"
-    },
-    {
-        "prompt": "i need you to train a deep learning classifier on this csv",
-        "expected_intent": "DataModelingIntent"
-    },
-    {
-        "prompt": "would you kindly perform a principal component analysis",
-        "expected_intent": "DataModelingIntent"
-    },
-    {
-        "prompt": "fit a support vector machine model",
-        "expected_intent": "DataModelingIntent"
-    },
-    {
-        "prompt": "generate a linear regression trend line",
-        "expected_intent": "DataModelingIntent"
-    },
-    {
-        "prompt": "i want to see a clustering of this dataframe",
-        "expected_intent": "DataModelingIntent"
-    },
-    {
-        "prompt": "run a time series prediction",
-        "expected_intent": "DataModelingIntent"
-    },
-    {
-        "prompt": "detect anomalies in this dataset",
-        "expected_intent": "DataModelingIntent"
-    },
-    {
-        "prompt": "clean up the missing values and plot a heatmap",
-        "expected_intent": "DataModelingIntent"
-    },
-    {
-        "prompt": "evaluate the random forest's performance",
-        "expected_intent": "DataModelingIntent"
-    },
-    {
-        "prompt": "vol down",
-        "expected_intent": "SysUtilityIntent"
-    },
-    {
-        "prompt": "i'm blind, brightness down",
-        "expected_intent": "SysUtilityIntent"
-    },
-    {
-        "prompt": "if you would be so kind, please enable the dark mode interface",
-        "expected_intent": "SysUtilityIntent"
-    },
-    {
-        "prompt": "mute the system audio immediately",
-        "expected_intent": "SysUtilityIntent"
-    },
-    {
-        "prompt": "turn on the airplane mode feature",
-        "expected_intent": "SysUtilityIntent"
-    },
-    {
-        "prompt": "is the firewall active",
-        "expected_intent": "SysUtilityIntent"
-    },
-    {
-        "prompt": "toggle my bluetooth connection",
-        "expected_intent": "SysUtilityIntent"
-    },
-    {
-        "prompt": "i need battery saver mode on",
-        "expected_intent": "SysUtilityIntent"
-    },
-    {
-        "prompt": "flip the switch for night light",
-        "expected_intent": "SysUtilityIntent"
-    },
-    {
-        "prompt": "kill the wifi",
-        "expected_intent": "SysUtilityIntent"
-    },
-    {
-        "prompt": "calendar add: dentist 3pm",
-        "expected_intent": "SchedulerIntent"
-    },
-    {
-        "prompt": "remind me in 10 minutes to grab laundry",
-        "expected_intent": "SchedulerIntent"
-    },
-    {
-        "prompt": "i would like to schedule a meeting with the board for tuesday",
-        "expected_intent": "SchedulerIntent"
-    },
-    {
-        "prompt": "book a flight to london on my itinerary",
-        "expected_intent": "SchedulerIntent"
-    },
-    {
-        "prompt": "when is my anniversary",
-        "expected_intent": "SchedulerIntent"
-    },
-    {
-        "prompt": "alarm 6am",
-        "expected_intent": "SchedulerIntent"
-    },
-    {
-        "prompt": "set up a recurring alarm for my gym session",
-        "expected_intent": "SchedulerIntent"
-    },
-    {
-        "prompt": "put project deadline on the schedule",
-        "expected_intent": "SchedulerIntent"
-    },
-    {
-        "prompt": "i have a client call, pencil it in",
-        "expected_intent": "SchedulerIntent"
-    },
-    {
-        "prompt": "make sure i don't forget the grocery shopping",
-        "expected_intent": "SchedulerIntent"
-    },
-    {
-        "prompt": "max",
-        "expected_intent": "WindowManagementIntent"
-    },
-    {
-        "prompt": "hide all",
-        "expected_intent": "WindowManagementIntent"
-    },
-    {
-        "prompt": "i request that you snap this window to the right edge of the screen",
-        "expected_intent": "WindowManagementIntent"
-    },
-    {
-        "prompt": "throw this app onto monitor number two",
-        "expected_intent": "WindowManagementIntent"
-    },
-    {
-        "prompt": "minimize everything to the desktop",
-        "expected_intent": "WindowManagementIntent"
-    },
-    {
-        "prompt": "close the active window",
-        "expected_intent": "WindowManagementIntent"
-    },
-    {
-        "prompt": "tile these side by side",
-        "expected_intent": "WindowManagementIntent"
-    },
-    {
-        "prompt": "make it fullscreen",
-        "expected_intent": "WindowManagementIntent"
-    },
-    {
-        "prompt": "restore that minimized app",
-        "expected_intent": "WindowManagementIntent"
-    },
-    {
-        "prompt": "switch to virtual desktop 3",
-        "expected_intent": "WindowManagementIntent"
-    }
+  {
+    "prompt": "calc",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "exec notepad.exe",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "it would be wonderful if you could start up discord for me",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "i require google chrome to be running",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "initiate the boot sequence for slack",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "get ms word going",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "pop open excel",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "i wanna use paint",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "bring up the command prompt utility",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "fire off the calculator app",
+    "expected_intent": "ApplicationLaunchIntent"
+  },
+  {
+    "prompt": "https://www.github.com",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "route me over to reddit",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "i feel like browsing youtube, take me there",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "load up the wikipedia homepage",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "direct my browser to amazon",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "www.netflix.com",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "could you kindly open a tab for twitter",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "let us proceed to the bbc news website",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "jump into facebook",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "surf on over to stackoverflow",
+    "expected_intent": "WebNavigationIntent"
+  },
+  {
+    "prompt": "temp right now outside",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "fetch me data regarding the global warming phenomenon",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "who exactly is the ceo of microsoft these days",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "i demand to know the distance from the earth to the sun",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "can someone tell me what the population of tokyo is",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "need info: quantum physics",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "search query: current president of france",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "i was wondering if you might be able to find the definition of serendipity",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "what's the deal with inflation",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "give me a rundown on the history of Rome",
+    "expected_intent": "InformationRetrievalIntent"
+  },
+  {
+    "prompt": "music. now.",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "i need some auditory stimulation, play some classical",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "could you perhaps put on a podcast about true crime",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "i want to vibe to some synthwave",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "make with the tunes",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "commence audio playback of the latest album by taylor swift",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "i'm in the mood for a movie trailer",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "play that one song from interstellar",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "let the heavy metal roar",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "start broadcasting the daily news audio",
+    "expected_intent": "MediaStreamingIntent"
+  },
+  {
+    "prompt": "rm -rf old_logs",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "obliterate the temp folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "i would greatly appreciate it if you purged the trash",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "send the file named document.docx to the void",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "this image is garbage, dump it",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "nuke the downloads directory",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "make the backup zip disappear",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "destroy all unused assets",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "clear out my junk",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "i want this folder gone permanently",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "yo",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "sup",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "good evening, artificial intelligence",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "i find myself quite bored, do you have any jokes",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "what is the meaning of your existence",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "i am grateful for your assistance",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "farewell",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "you are quite intelligent",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "are you listening to me",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "let us converse about life",
+    "expected_intent": "ConversationalIntent"
+  },
+  {
+    "prompt": "kill -9",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "taskkill chrome",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "i respectfully request that you terminate the background updater",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "show me a list of all active cpu processes",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "what is eating all my ram",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "stop the java service",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "close this frozen program immediately",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "end the task for notepad",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "which applications are running right now",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "force quit this",
+    "expected_intent": "ProcessManagementIntent"
+  },
+  {
+    "prompt": "init react",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "new django project",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "i would like to bootstrap a brand new typescript frontend",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "scaffold an express server",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "generate a boilerplate for a flask api",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "create an empty git repo with a readme",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "set up a monorepo structure using turbo",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "start a spring boot app",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "spin up a vue template",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "i need a new c++ cmake skeleton",
+    "expected_intent": "ProjectScaffoldIntent"
+  },
+  {
+    "prompt": "pip install pandas",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "npm i lodash",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "it is imperative that we add the tensorflow library to our environment",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "fetch the requests module",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "grab the latest version of react",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "yarn add tailwindcss",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "install the project requirements",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "put axios in the dependencies",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "require sqlalchemy",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "download beautifulsoup",
+    "expected_intent": "DependencyInstallIntent"
+  },
+  {
+    "prompt": "write me a bash script",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "i need python code to parse a csv",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "can you draft a powershell script to monitor memory",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "generate a regex for phone numbers",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "code a function to reverse a linked list",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "implement a sorting algorithm in c++",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "build a tool that scrapes images from a webpage",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "create a dockerfile for a node app",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "write a macro to format this excel sheet",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "program a bot that sends automated emails",
+    "expected_intent": "CodeActIntent"
+  },
+  {
+    "prompt": "give me the tldr of this manuscript",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "i beg of you to analyze this thesis",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "extract the methodology from the attached pdf",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "what are the main takeaways from this literature review",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "summarize the abstract of the study",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "i need a critique of this experimental design",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "what dataset was utilized by the authors here",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "fetch related works on this academic topic",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "read this paper and explain the results",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "cross reference these two academic articles",
+    "expected_intent": "AcademicResearchIntent"
+  },
+  {
+    "prompt": "do stats",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "i need you to train a deep learning classifier on this csv",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "would you kindly perform a principal component analysis",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "fit a support vector machine model",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "generate a linear regression trend line",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "i want to see a clustering of this dataframe",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "run a time series prediction",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "detect anomalies in this dataset",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "clean up the missing values and plot a heatmap",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "evaluate the random forest's performance",
+    "expected_intent": "DataModelingIntent"
+  },
+  {
+    "prompt": "vol down",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "i'm blind, brightness down",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "if you would be so kind, please enable the dark mode interface",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "mute the system audio immediately",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "turn on the airplane mode feature",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "is the firewall active",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "toggle my bluetooth connection",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "i need battery saver mode on",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "flip the switch for night light",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "kill the wifi",
+    "expected_intent": "SysUtilityIntent"
+  },
+  {
+    "prompt": "calendar add: dentist 3pm",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "remind me in 10 minutes to grab laundry",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "i would like to schedule a meeting with the board for tuesday",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "book a flight to london on my itinerary",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "when is my anniversary",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "alarm 6am",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "set up a recurring alarm for my gym session",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "put project deadline on the schedule",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "i have a client call, pencil it in",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "make sure i don't forget the grocery shopping",
+    "expected_intent": "SchedulerIntent"
+  },
+  {
+    "prompt": "max",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "hide all",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "i request that you snap this window to the right edge of the screen",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "throw this app onto monitor number two",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "minimize everything to the desktop",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "close the active window",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "tile these side by side",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "make it fullscreen",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "restore that minimized app",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "switch to virtual desktop 3",
+    "expected_intent": "WindowManagementIntent"
+  },
+  {
+    "prompt": "would you mind expanding on what you just told me",
+    "expected_intent": "ContinuationIntent"
+  },
+  {
+    "prompt": "there's more to that story, isn't there, keep going",
+    "expected_intent": "ContinuationIntent"
+  },
+  {
+    "prompt": "don't leave me hanging, what happened after that",
+    "expected_intent": "ContinuationIntent"
+  },
+  {
+    "prompt": "I'm curious about the rest of what you were saying",
+    "expected_intent": "ContinuationIntent"
+  },
+  {
+    "prompt": "carry on with the explanation from before",
+    "expected_intent": "ContinuationIntent"
+  },
+  {
+    "prompt": "so yeah, and then",
+    "expected_intent": "ContinuationIntent"
+  },
+  {
+    "prompt": "keep talking, this is interesting",
+    "expected_intent": "ContinuationIntent"
+  },
+  {
+    "prompt": "unpack that further for me if you would",
+    "expected_intent": "ContinuationIntent"
+  },
+  {
+    "prompt": "what's the remainder of that explanation",
+    "expected_intent": "ContinuationIntent"
+  },
+  {
+    "prompt": "pick that thread back up",
+    "expected_intent": "ContinuationIntent"
+  },
+  {
+    "prompt": "would you be able to type out everything I'm about to say",
+    "expected_intent": "DictationIntent"
+  },
+  {
+    "prompt": "I'm going to talk now, please capture it as text",
+    "expected_intent": "DictationIntent"
+  },
+  {
+    "prompt": "get ready to write down my words verbatim",
+    "expected_intent": "DictationIntent"
+  },
+  {
+    "prompt": "switch into a mode where you transcribe my speech",
+    "expected_intent": "DictationIntent"
+  },
+  {
+    "prompt": "I need you acting as a stenographer right now",
+    "expected_intent": "DictationIntent"
+  },
+  {
+    "prompt": "put my spoken words into written form as I go",
+    "expected_intent": "DictationIntent"
+  },
+  {
+    "prompt": "let's get this speech-to-text thing going",
+    "expected_intent": "DictationIntent"
+  },
+  {
+    "prompt": "start capturing whatever comes out of my mouth as text",
+    "expected_intent": "DictationIntent"
+  },
+  {
+    "prompt": "transcription time, get ready",
+    "expected_intent": "DictationIntent"
+  },
+  {
+    "prompt": "I want my voice turned into a document as I speak",
+    "expected_intent": "DictationIntent"
+  },
+  {
+    "prompt": "could you possibly bump the sound down a notch",
+    "expected_intent": "MediaControlIntent"
+  },
+  {
+    "prompt": "silence this racket immediately",
+    "expected_intent": "MediaControlIntent"
+  },
+  {
+    "prompt": "I'd like the next song in the queue please",
+    "expected_intent": "MediaControlIntent"
+  },
+  {
+    "prompt": "this track isn't doing it for me, move along",
+    "expected_intent": "MediaControlIntent"
+  },
+  {
+    "prompt": "bring the audio level back up to something reasonable",
+    "expected_intent": "MediaControlIntent"
+  },
+  {
+    "prompt": "hold the playback right where it is",
+    "expected_intent": "MediaControlIntent"
+  },
+  {
+    "prompt": "let the music keep going from here",
+    "expected_intent": "MediaControlIntent"
+  },
+  {
+    "prompt": "wind this clip back to the start",
+    "expected_intent": "MediaControlIntent"
+  },
+  {
+    "prompt": "give me the tune that played right before this one",
+    "expected_intent": "MediaControlIntent"
+  },
+  {
+    "prompt": "cut the sound entirely for a moment",
+    "expected_intent": "MediaControlIntent"
+  },
+  {
+    "prompt": "would you set up a fresh directory named archive for me",
+    "expected_intent": "GeneralizedOSIntent"
+  },
+  {
+    "prompt": "I need this document's name changed to something else",
+    "expected_intent": "GeneralizedOSIntent"
+  },
+  {
+    "prompt": "bundle these files into a single compressed package",
+    "expected_intent": "GeneralizedOSIntent"
+  },
+  {
+    "prompt": "pull the contents out of this compressed package",
+    "expected_intent": "GeneralizedOSIntent"
+  },
+  {
+    "prompt": "show me everything sitting inside this folder",
+    "expected_intent": "GeneralizedOSIntent"
+  },
+  {
+    "prompt": "get a terminal window open in this location",
+    "expected_intent": "GeneralizedOSIntent"
+  },
+  {
+    "prompt": "run that script I pointed you to earlier",
+    "expected_intent": "GeneralizedOSIntent"
+  },
+  {
+    "prompt": "I'd like this file duplicated somewhere else",
+    "expected_intent": "GeneralizedOSIntent"
+  },
+  {
+    "prompt": "take me up one level in the folder structure",
+    "expected_intent": "GeneralizedOSIntent"
+  },
+  {
+    "prompt": "fire off this command in the shell for me",
+    "expected_intent": "GeneralizedOSIntent"
+  }
 ]
