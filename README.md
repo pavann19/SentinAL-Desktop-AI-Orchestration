@@ -10,7 +10,7 @@ security outside it — through capability allowlists, filesystem sandboxing, ke
 filtering, and human-in-the-loop confirmation gates that the model cannot talk its way past.
 
 > **Project status: research prototype / early MVP.** The security boundary and intent
-> routing are well tested (768 automated tests, 86.47% coverage, 66-test adversarial fuzz
+> routing are well tested (850+ automated tests, 87%+ coverage, 66-test adversarial fuzz
 > suite at a 100% block rate). End-to-end task success, measured with an independent,
 > statistically-scored benchmark (OS-state verification, not the pipeline's own self-report;
 > 95% Wilson confidence interval), is **94.2%** (95% CI 88.4–97.2%, n=120: 40 tasks × 3 runs)
@@ -191,7 +191,7 @@ All figures below are reproducible from committed artifacts (see the next sectio
 | **End-to-end task success — real-machine benchmark** | **94.2%** (95% CI 88.4–97.2%, 109/120) |
 | Security fuzzing block rate | **100%** (66/66) |
 | Median end-to-end latency | 101.5 ms (validation adds 0.06 ms) |
-| Test suite | 768 passing, 86.47% coverage |
+| Test suite | 856 passing (CI-gated scope), 87.08% coverage |
 
 **On the end-to-end number.** `benchmarks/run_benchmark.py` drives the real pipeline against
 a real Windows desktop across 40 tasks spanning application launch, web navigation, file
