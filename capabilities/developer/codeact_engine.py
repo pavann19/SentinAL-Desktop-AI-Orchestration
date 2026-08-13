@@ -155,6 +155,26 @@ def generate_and_run(prompt: str, llm) -> str:
         script_name = f"codeact_{int(time.time())}.ps1"
         script_path = os.path.join(script_dir, script_name)
 
+        # Completion sentinel: this script is launched detached with -NoExit, so
+        # the console stays open indefinitely after the body finishes and process
+        # death is NOT a completion signal. A footer that writes a marker file
+        # when the body ends is the only accurate signal available, and it is
+        # only possible because SentinAL generated this script itself.
+        # Registration is best-effort — if it fails, the script still runs
+        # exactly as before, just unobserved.
+        sentinel_path = None
+        try:
+            from agentic_core.process_supervisor import (
+                build_sentinel_footer,
+                build_sentinel_header,
+                new_sentinel_path,
+            )
+            sentinel_path = new_sentinel_path("codeact")
+            script = build_sentinel_header() + script + build_sentinel_footer(sentinel_path)
+        except Exception as e:
+            _logger.warning(f"[CodeAct] Could not attach completion sentinel (non-fatal): {e}")
+            sentinel_path = None
+
         with open(script_path, "w", encoding="utf-8") as f:
             f.write(script)
 
@@ -177,11 +197,25 @@ def generate_and_run(prompt: str, llm) -> str:
             "-File", script_path
         ]
 
-        subprocess.Popen(
+        proc = subprocess.Popen(
             launch_cmd,
             creationflags=subprocess.CREATE_NEW_CONSOLE,
             start_new_session=True
         )
+
+        # Hand the process to the supervisor so its completion is reconciled in
+        # the background. The request below returns immediately either way -
+        # this adds observation, it does not add waiting.
+        try:
+            from agentic_core.process_supervisor import register_watch
+            register_watch(
+                label="codeact",
+                sentinel_path=sentinel_path,
+                pid=proc.pid,
+                expected_state={"script_path": script_path},
+            )
+        except Exception as e:
+            _logger.warning(f"[CodeAct] Could not register process watch (non-fatal): {e}")
 
         time.sleep(1.5)  # Let the window open before Jarvis speaks
         print("[CodeAct] Visible terminal launched successfully.")

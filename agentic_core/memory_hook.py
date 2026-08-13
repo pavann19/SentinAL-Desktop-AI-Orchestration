@@ -55,6 +55,25 @@ class MemoryManager:
                     absolute_path TEXT NOT NULL
                 )
             """)
+            # Process watches: detached, long-running work (CodeAct scripts,
+            # dependency installs) that cannot be verified synchronously because
+            # the request returns long before the work finishes. Persisted rather
+            # than held in memory so a watch survives a backend restart — the
+            # spawned process does not die with us, so neither should the record
+            # that something is still outstanding.
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS process_watches (
+                    watch_id      TEXT PRIMARY KEY,
+                    label         TEXT NOT NULL,
+                    sentinel_path TEXT,
+                    pid           INTEGER,
+                    expected_state TEXT,
+                    registered_at REAL NOT NULL,
+                    status        TEXT NOT NULL,
+                    resolved_at   REAL,
+                    detail        TEXT
+                )
+            """)
             self.conn.commit()
 
     # ── URL Cache Methods ──────────────────────────────────────────────────────
@@ -227,6 +246,92 @@ class MemoryManager:
                 (name_lower, absolute_path)
             )
             self.conn.commit()
+
+    # ── Process Watch Methods (Option C: async completion supervision) ─────────
+
+    def register_process_watch(self, watch_id: str, label: str, registered_at: float,
+                               sentinel_path: str | None = None, pid: int | None = None,
+                               expected_state: str | None = None) -> None:
+        """
+        Records a detached process whose completion cannot be observed
+        synchronously. Either sentinel_path (preferred — a marker file the
+        launched script writes when its body finishes) or pid (fallback — watch
+        for the process to disappear) identifies completion.
+
+        Both mechanisms exist because they suit different launch styles: a
+        script SentinAL generates itself can be given a completion footer, but a
+        raw user command handed to a terminal cannot, so that case can only be
+        watched by process liveness.
+        """
+        with self._lock:
+            self.cursor.execute(
+                """INSERT OR REPLACE INTO process_watches
+                   (watch_id, label, sentinel_path, pid, expected_state,
+                    registered_at, status, resolved_at, detail)
+                   VALUES (?, ?, ?, ?, ?, ?, 'pending', NULL, NULL)""",
+                (watch_id, label, sentinel_path, pid, expected_state, registered_at)
+            )
+            self.conn.commit()
+
+    def get_pending_watches(self) -> list:
+        """Returns every unresolved watch as a list of dicts."""
+        with self._lock:
+            self.cursor.execute(
+                """SELECT watch_id, label, sentinel_path, pid, expected_state, registered_at
+                   FROM process_watches WHERE status = 'pending' ORDER BY registered_at"""
+            )
+            rows = self.cursor.fetchall()
+        return [
+            {
+                "watch_id": r[0], "label": r[1], "sentinel_path": r[2],
+                "pid": r[3], "expected_state": r[4], "registered_at": r[5],
+            }
+            for r in rows
+        ]
+
+    def resolve_process_watch(self, watch_id: str, status: str, resolved_at: float,
+                              detail: str = "") -> None:
+        """Marks a watch finished. status is one of: completed, failed, timed_out."""
+        with self._lock:
+            self.cursor.execute(
+                """UPDATE process_watches
+                   SET status = ?, resolved_at = ?, detail = ?
+                   WHERE watch_id = ?""",
+                (status, resolved_at, detail[:500], watch_id)
+            )
+            self.conn.commit()
+
+    def get_process_watch(self, watch_id: str) -> dict | None:
+        """Fetches a single watch by id, resolved or not. Returns None if absent."""
+        with self._lock:
+            self.cursor.execute(
+                """SELECT watch_id, label, sentinel_path, pid, expected_state,
+                          registered_at, status, resolved_at, detail
+                   FROM process_watches WHERE watch_id = ?""",
+                (watch_id,)
+            )
+            row = self.cursor.fetchone()
+        if not row:
+            return None
+        return {
+            "watch_id": row[0], "label": row[1], "sentinel_path": row[2],
+            "pid": row[3], "expected_state": row[4], "registered_at": row[5],
+            "status": row[6], "resolved_at": row[7], "detail": row[8],
+        }
+
+    def purge_resolved_watches(self, older_than_epoch: float) -> int:
+        """Deletes resolved watches older than the given epoch. Returns the count
+        removed. Keeps the table from growing without bound across sessions."""
+        with self._lock:
+            self.cursor.execute(
+                """DELETE FROM process_watches
+                   WHERE status != 'pending' AND resolved_at IS NOT NULL
+                     AND resolved_at < ?""",
+                (older_than_epoch,)
+            )
+            removed = self.cursor.rowcount
+            self.conn.commit()
+        return removed
 
     def close(self):
         """Closes the database connection cleanly."""
