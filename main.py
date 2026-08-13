@@ -110,6 +110,41 @@ async def lifespan(app: FastAPI):
 
     state_manager.on_state_change(on_state_broadcast)
 
+    # ── PROCESS SUPERVISOR ──
+    # Reconciles detached, long-running work (CodeAct scripts, installs) whose
+    # completion the request/response cycle cannot observe — the request returns
+    # long before the work finishes. One supervisor for the whole process, started
+    # here alongside the other bootstrap steps, NOT one watcher per request.
+    #
+    # on_watch_resolved only NOTIFIES. It deliberately does not re-submit a
+    # corrective command: anything that executes must re-enter through the front
+    # of the pipeline (validation -> risk -> authorization -> policy -> HITL ->
+    # sandbox) like any other request. A background component with its own
+    # execution path would bypass every one of those gates.
+    async def on_watch_resolved(resolution: dict):
+        msg = {
+            "type": "process_watch",
+            "watch_id": resolution.get("watch_id"),
+            "label": resolution.get("label"),
+            "status": resolution.get("status"),
+            "detail": resolution.get("detail", ""),
+            "timestamp": time.time(),
+        }
+        for client in list(active_telemetry_clients):
+            if client.client_state == WebSocketState.CONNECTED:
+                try:
+                    await safe_send_json(client, msg)
+                except Exception:
+                    active_telemetry_clients.discard(client)
+
+    try:
+        from agentic_core.process_supervisor import start_supervisor, stop_supervisor
+        start_supervisor(on_resolved=on_watch_resolved)
+        print("[SRE] Process supervisor started.")
+    except Exception as e:
+        print(f"[RELIABILITY ERROR] Process supervisor failed to start: {e}")
+        stop_supervisor = None
+
     def on_stt_wake():
         conversation_manager.start_session()
         wake_text = wake_engine.get_wake_response(state_manager.get_snapshot())
@@ -192,6 +227,12 @@ async def lifespan(app: FastAPI):
     loop.create_task(conversation_manager.heartbeat())
 
     yield
+    try:
+        if stop_supervisor is not None:
+            await stop_supervisor()
+            print("[SRE] Process supervisor stopped.")
+    except Exception as e:
+        print(f"[RELIABILITY ERROR] Supervisor shutdown fault: {e}")
     try:
         stop_listening()
         from agentic_core.executor import memory
