@@ -1,0 +1,116 @@
+{
+  "ApplicationLaunchIntent": [
+    "run a program",
+    "start my email client",
+    "launch the calculator",
+    "open my calendar app"
+  ],
+  "WebNavigationIntent": [
+    "go to a website",
+    "take me to google",
+    "open the browser to reddit",
+    "visit an online store"
+  ],
+  "InformationRetrievalIntent": [
+    "look up something for me",
+    "find out today's date",
+    "tell me a fact",
+    "search for a definition"
+  ],
+  "GeneralizedOSIntent": [
+    "make a copy of this file",
+    "rename that document",
+    "check the time",
+    "list what's running"
+  ],
+  "MediaStreamingIntent": [
+    "put on some music",
+    "start a video",
+    "play something on youtube",
+    "stream a show"
+  ],
+  "FileDeletionIntent": [
+    "get rid of this document",
+    "clear that file out",
+    "remove this attachment",
+    "delete an old draft"
+  ],
+  "ConversationalIntent": [
+    "say something nice",
+    "chat with me for a bit",
+    "how are you feeling",
+    "make small talk"
+  ],
+  "ContinuationIntent": [
+    "keep talking about that",
+    "tell me the rest",
+    "don't stop now",
+    "and what happened next"
+  ],
+  "ProcessManagementIntent": [
+    "stop that program",
+    "end this task",
+    "show running apps",
+    "close that process"
+  ],
+  "ProjectScaffoldIntent": [
+    "start a new project",
+    "set up a fresh repo",
+    "bootstrap an app",
+    "create a starter template"
+  ],
+  "DependencyInstallIntent": [
+    "add a package",
+    "get me a library",
+    "set up this dependency",
+    "install something for the project"
+  ],
+  "CodeActIntent": [
+    "write me a script",
+    "run some code for this",
+    "automate a small task",
+    "generate a quick program"
+  ],
+  "AcademicResearchIntent": [
+    "summarize this paper",
+    "look into this study",
+    "analyze this research",
+    "review this academic pdf"
+  ],
+  "DataModelingIntent": [
+    "build a model from this data",
+    "run an analysis on this",
+    "make a chart from this dataset",
+    "explore this csv"
+  ],
+  "SysUtilityIntent": [
+    "check my battery",
+    "turn on dark mode",
+    "adjust the brightness",
+    "toggle bluetooth"
+  ],
+  "SchedulerIntent": [
+    "put this on my calendar",
+    "add something to my to-do list",
+    "plan something for later",
+    "note an appointment"
+  ],
+  "MediaControlIntent": [
+    "pause that",
+    "crank up the audio",
+    "jump to the next one",
+    "lower the sound"
+  ],
+  "WindowManagementIntent": [
+    "resize this window",
+    "move it to another screen",
+    "snap it to a side",
+    "take a picture of my screen"
+  ],
+  "DictationIntent": [
+    "type what i say",
+    "start dictating",
+    "write down my words",
+    "transcribe this for me"
+  ]
+}

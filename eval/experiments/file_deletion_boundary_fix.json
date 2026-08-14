@@ -1,0 +1,82 @@
+[
+  {
+    "prompt": "delete the file in downloads folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "remove the file inside my documents folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete that file in the desktop folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "get rid of the file sitting in the temp folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "trash the file located in the backup folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "erase the file from inside the pictures folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete the report file in the projects folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "remove the old file from the downloads folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "can you delete the file that's in my documents folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "please remove the file inside the archive folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "wipe the file out of the temp folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "throw away the file in the screenshots folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete that document sitting in the downloads folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "clear out the file from the backup folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "get that file out of the desktop folder, delete it",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete the spreadsheet in the finance folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "remove the image file from the pictures folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "permanently delete the file inside the downloads folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "trash the pdf that's in my documents folder",
+    "expected_intent": "FileDeletionIntent"
+  },
+  {
+    "prompt": "delete the log file in the temp folder",
+    "expected_intent": "FileDeletionIntent"
+  }
+]
