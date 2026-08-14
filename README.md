@@ -183,8 +183,8 @@ All figures below are reproducible from committed artifacts (see the next sectio
 
 | Metric | Result |
 |---|---|
-| Intent accuracy — held-out test split | **99.33%** (448/451) |
-| Intent accuracy — out-of-distribution set | **92.00%** (138/150) |
+| Intent accuracy — held-out test split | **98.35%** (477/485) |
+| Intent accuracy — out-of-distribution set | **86.32%** (164/190) |
 | Zero-shot baseline (pre-classifier) | 54.55% test / 70.67% OOD |
 | Fast-path resolution rate (no LLM call) | **94.24%** test / **84.67%** OOD |
 | Task success — 19 CI-safe benchmark tasks | **84.2%** (16/19) |
