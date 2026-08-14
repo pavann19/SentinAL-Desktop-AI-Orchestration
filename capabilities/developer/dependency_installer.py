@@ -157,11 +157,11 @@ def _run_install(cmd: list[str], label: str, cwd: str | None = None) -> str:
                 "-NoProfile", "-NoExit", "-File", script_path,
             ]
         else:
-            launch_cmd = [
-                "powershell", "-NoExit", "-Command",
-                f"cd '{work_dir}'; {inner_cmd}; ",
-                "Write-Host '---[SentinAL] Install complete---' -ForegroundColor Green",
-            ]
+            ps_command = (
+                f"cd '{work_dir}'; {inner_cmd}; "
+                "Write-Host '---[SentinAL] Install complete---' -ForegroundColor Green"
+            )
+            launch_cmd = ["powershell", "-NoExit", "-Command", ps_command]
 
         proc = subprocess.Popen(
             launch_cmd,
