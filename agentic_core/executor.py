@@ -486,16 +486,22 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                     continue  # Move to the next command in the chain
 
                                 if is_visible_install:
+                                    # This is the GeneralizedOSIntent raw-shell path (a literal
+                                    # "npm install ..." etc. command extracted from the request), NOT
+                                    # DependencyInstallIntent — that one is now supervised via a
+                                    # generated .ps1 + sentinel footer, see
+                                    # capabilities/developer/dependency_installer.py.
+                                    #
                                     # NOT supervised by agentic_core/process_supervisor.py, deliberately.
                                     # This launches through the cmd builtin `start`, which spawns the
                                     # console detached and returns immediately - so Popen.pid here is the
                                     # transient cmd.exe, not the PowerShell doing the install. Registering
                                     # that pid as a watch would report "completed" about a second later,
                                     # which is worse than no observation: a confident wrong answer.
-                                    # Supervising this path properly means launching powershell directly
-                                    # (list-form Popen + CREATE_NEW_CONSOLE, no `start` wrapper) to obtain
-                                    # the real pid. That is a behaviour change to a working install path
-                                    # and warrants its own verified commit rather than riding along here.
+                                    # Supervising this path properly means the same fix applied to
+                                    # DependencyInstallIntent: generate a .ps1 with a sentinel footer and
+                                    # launch it directly (list-form Popen + CREATE_NEW_CONSOLE, no `start`
+                                    # wrapper). Left as its own follow-up rather than riding along here.
                                     # Open a VISIBLE PowerShell window so the user can watch the install
                                     visible_cmd = f'start powershell -NoExit -Command "{cmd.replace(chr(34), chr(39))}"'
                                     print(f"      [Process] Opening visible terminal for: {cmd}")

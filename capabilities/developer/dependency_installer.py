@@ -12,6 +12,8 @@ import logging
 import os
 import re
 import subprocess
+import tempfile
+import time
 
 _logger = logging.getLogger("DependencyInstaller")
 
@@ -100,42 +102,100 @@ def _run_install(cmd: list[str], label: str, cwd: str | None = None) -> str:
     Internal: runs an install command in a VISIBLE terminal window.
     The user can watch the install progress scroll by in real-time.
     Returns immediately after launching, with a short startup wait.
+
+    Fix (dependency-install PID bug): the previous implementation launched via
+    `subprocess.Popen(["powershell", "-Command", "Start-Process powershell ..."])`
+    — an outer PowerShell that runs Start-Process and then exits immediately,
+    since it has no -NoExit itself. Popen.pid was therefore that transient
+    outer process, not the actual -NoExit install window Start-Process spawned
+    a moment later. Registering that pid as a watch would have reported
+    "completed" almost instantly, regardless of whether the install had
+    actually started. Same failure shape as CodeAct's original PID problem
+    (see agentic_core/process_supervisor.py's module docstring), fixed the
+    same way here: write the command to a temp .ps1 with a completion
+    sentinel appended, and launch it directly (list-form Popen,
+    CREATE_NEW_CONSOLE, no `start`/`Start-Process` wrapper) so Popen.pid IS
+    the real, visible install window.
     """
     work_dir = cwd or os.getcwd()
-
-    # Build the PowerShell command string
-    # -NoExit keeps the window open after install so user can read errors
     inner_cmd = " ".join(f'"{arg}"' if " " in arg else arg for arg in cmd)
-    ps_cmd = (
-        f'Start-Process powershell -ArgumentList '
-        f'"-NoExit", "-Command", "cd \'{work_dir}\'; {inner_cmd}; '
-        f'Write-Host \'---[SentinAL] Install complete---\' -ForegroundColor Green" '
-        f'-WindowStyle Normal'
-    )
+
+    script_dir = os.path.join(os.environ.get("TEMP", tempfile.gettempdir()), "SentinAL_DependencyInstall")
+    sentinel_path = None
+    try:
+        os.makedirs(script_dir, exist_ok=True)
+        script_path = os.path.join(script_dir, f"install_{int(time.time() * 1000)}.ps1")
+
+        from agentic_core.process_supervisor import (
+            build_sentinel_footer,
+            build_sentinel_header,
+            new_sentinel_path,
+        )
+        sentinel_path = new_sentinel_path("dependency_install")
+
+        script = (
+            build_sentinel_header()
+            + f"cd '{work_dir}'\n"
+            + f"{inner_cmd}\n"
+            + "Write-Host '---[SentinAL] Install complete---' -ForegroundColor Green\n"
+            + build_sentinel_footer(sentinel_path)
+        )
+        with open(script_path, "w", encoding="utf-8") as f:
+            f.write(script)
+    except Exception as e:
+        # Falls through to the direct-command fallback below — install still
+        # runs, it just loses the sentinel and the visible-window niceties.
+        _logger.warning(f"Could not prepare supervised install script (non-fatal): {e}")
+        script_path = None
+        sentinel_path = None
 
     _logger.info(f"Launching visible install: {label} in {work_dir}")
     try:
-        subprocess.Popen(
-            ["powershell", "-Command", ps_cmd],
+        if script_path:
+            launch_cmd = [
+                "powershell", "-ExecutionPolicy", "Bypass",
+                "-NoProfile", "-NoExit", "-File", script_path,
+            ]
+        else:
+            launch_cmd = [
+                "powershell", "-NoExit", "-Command",
+                f"cd '{work_dir}'; {inner_cmd}; "
+                "Write-Host '---[SentinAL] Install complete---' -ForegroundColor Green",
+            ]
+
+        proc = subprocess.Popen(
+            launch_cmd,
             creationflags=subprocess.CREATE_NEW_CONSOLE,
             start_new_session=True
         )
+
+        try:
+            from agentic_core.process_supervisor import register_watch
+            register_watch(
+                label="dependency_install",
+                sentinel_path=sentinel_path,
+                pid=proc.pid,
+                expected_state={"command": label},
+            )
+        except Exception as e:
+            _logger.warning(f"Could not register process watch (non-fatal): {e}")
+
         # Small wait to let the window open before the executor moves on
-        import time
         time.sleep(2.0)
         return (
             f"✓ Launched visible terminal for: {label}\n"
             f"Watch the PowerShell window for real-time progress."
         )
     except FileNotFoundError:
-        # Fallback: powershell not found, try cmd
+        # Fallback: powershell not found, try cmd. Not supervised — cmd has no
+        # equivalent sentinel mechanism wired here, and this branch is rare
+        # enough (missing powershell on Windows) not to warrant one.
         cmd_str = " ".join(cmd)
         subprocess.Popen(
             f'start cmd /K "cd /d "{work_dir}" && {cmd_str}"',
             shell=True, start_new_session=True,
             creationflags=subprocess.CREATE_NEW_CONSOLE
         )
-        import time
         time.sleep(2.0)
         return f"✓ Launched terminal for: {label}. Watch the CMD window."
     except Exception as e:
