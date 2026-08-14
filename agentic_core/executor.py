@@ -881,7 +881,7 @@ def _classify_result(result: str, step_observations: list) -> str:
     mismatch, since those are execute_pipeline()'s own authoritative signals —
     a postcondition check on a run that already failed outright is meaningless.
 
-    Fix P1-4.4 (from Codex's continued Gate-2 review — same review task as
+    Fix P1-4.4 (from the continued Gate-2 review — same review task as
     P1-4.2/P1-4.3): a malformed "expected_state" (e.g. a bare string or bool
     instead of a dict) makes observe_postcondition() fall through to
     tier_used="none", verified=False — correctly not a crash, but naively
@@ -916,7 +916,7 @@ def _run_and_observe(validated_steps: list, cancel_event) -> tuple:
     before = capture_state_snapshot()
     result = execute_pipeline(validated_steps, cancel_event=cancel_event)
 
-    # Fix P1-4.3 (from Codex's independent Gate-2 review of P1-1 —
+    # Fix P1-4.3 (from an independent Gate-2 review of P1-1 —
     # _context_packs/P1-1_review_gate2_secondparty.md /
     # tests/test_executor_observed_review.py): capture_state_snapshot()'s
     # "after" call and diff_snapshots() both run AFTER execute_pipeline()
