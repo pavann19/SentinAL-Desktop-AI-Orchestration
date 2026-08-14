@@ -487,29 +487,83 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
 
                                 if is_visible_install:
                                     # This is the GeneralizedOSIntent raw-shell path (a literal
-                                    # "npm install ..." etc. command extracted from the request), NOT
-                                    # DependencyInstallIntent — that one is now supervised via a
-                                    # generated .ps1 + sentinel footer, see
-                                    # capabilities/developer/dependency_installer.py.
+                                    # "npm install ..." etc. command extracted from the request).
                                     #
-                                    # NOT supervised by agentic_core/process_supervisor.py, deliberately.
-                                    # This launches through the cmd builtin `start`, which spawns the
-                                    # console detached and returns immediately - so Popen.pid here is the
-                                    # transient cmd.exe, not the PowerShell doing the install. Registering
-                                    # that pid as a watch would report "completed" about a second later,
-                                    # which is worse than no observation: a confident wrong answer.
-                                    # Supervising this path properly means the same fix applied to
-                                    # DependencyInstallIntent: generate a .ps1 with a sentinel footer and
-                                    # launch it directly (list-form Popen + CREATE_NEW_CONSOLE, no `start`
-                                    # wrapper). Left as its own follow-up rather than riding along here.
-                                    # Open a VISIBLE PowerShell window so the user can watch the install
-                                    visible_cmd = f'start powershell -NoExit -Command "{cmd.replace(chr(34), chr(39))}"'
+                                    # Fix (same PID bug as DependencyInstallIntent, see
+                                    # capabilities/developer/dependency_installer.py's _run_install):
+                                    # previously launched via `start powershell -NoExit -Command "..."`
+                                    # (shell=True). `start` spawns the console detached and returns
+                                    # immediately, so Popen.pid was the transient cmd.exe, not the
+                                    # PowerShell actually running the install — registering that pid
+                                    # as a watch would report "completed" about a second later, a
+                                    # confident wrong answer, which is worse than no observation.
+                                    #
+                                    # Fixed identically to DependencyInstallIntent: write the command
+                                    # into a generated .ps1 with a completion sentinel footer and launch
+                                    # it directly (list-form Popen, CREATE_NEW_CONSOLE, no `start`
+                                    # wrapper), so Popen.pid is the real process and the supervisor can
+                                    # tell success from failure, not just that the process died.
                                     print(f"      [Process] Opening visible terminal for: {cmd}")
-                                    subprocess.Popen(
-                                        visible_cmd, shell=True, cwd=current_cwd,
+                                    sentinel_path = None
+                                    script_path = None
+                                    try:
+                                        import tempfile as _tempfile
+
+                                        from agentic_core.process_supervisor import (
+                                            build_sentinel_footer,
+                                            build_sentinel_header,
+                                            new_sentinel_path,
+                                        )
+                                        script_dir = os.path.join(
+                                            os.environ.get("TEMP", _tempfile.gettempdir()),
+                                            "SentinAL_GeneralizedInstall",
+                                        )
+                                        os.makedirs(script_dir, exist_ok=True)
+                                        script_path = os.path.join(
+                                            script_dir, f"install_{int(time.time() * 1000)}.ps1"
+                                        )
+                                        sentinel_path = new_sentinel_path("generalized_install")
+                                        script = (
+                                            build_sentinel_header()
+                                            + f"{cmd}\n"
+                                            + "Write-Host '---[SentinAL] Install complete---' -ForegroundColor Green\n"
+                                            + build_sentinel_footer(sentinel_path)
+                                        )
+                                        with open(script_path, "w", encoding="utf-8") as f:
+                                            f.write(script)
+                                    except Exception as e:
+                                        _logger.warning(f"Could not prepare supervised install script (non-fatal): {e}")
+                                        script_path = None
+                                        sentinel_path = None
+
+                                    if script_path:
+                                        launch_cmd = [
+                                            "powershell", "-ExecutionPolicy", "Bypass",
+                                            "-NoProfile", "-NoExit", "-File", script_path,
+                                        ]
+                                    else:
+                                        launch_cmd = [
+                                            "powershell", "-NoExit", "-Command",
+                                            cmd.replace('"', "'"),
+                                        ]
+
+                                    proc = subprocess.Popen(
+                                        launch_cmd, cwd=current_cwd,
                                         creationflags=subprocess.CREATE_NEW_CONSOLE,
                                         start_new_session=True
                                     )
+
+                                    try:
+                                        from agentic_core.process_supervisor import register_watch
+                                        register_watch(
+                                            label="generalized_install",
+                                            sentinel_path=sentinel_path,
+                                            pid=proc.pid,
+                                            expected_state={"command": cmd},
+                                        )
+                                    except Exception as e:
+                                        _logger.warning(f"Could not register process watch (non-fatal): {e}")
+
                                     time.sleep(1.5)
                                     master_stdout_buffer += f"Launched visible terminal for: {cmd}"
                                     success = True

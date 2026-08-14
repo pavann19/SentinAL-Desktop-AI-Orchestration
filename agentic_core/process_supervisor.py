@@ -6,24 +6,24 @@ cannot verify synchronously.
 
 WHY THIS EXISTS
 ---------------
-These launch work that outlives the request that started it:
+These launch work that outlives the request that started it, all via a
+generated .ps1 with the same sentinel footer and a direct (no `start`
+wrapper) list-form Popen, so Popen.pid is always the real process:
 
   CodeActIntent            -> writes a .ps1 and launches it in a visible
                               PowerShell window (codeact_engine.py)
-  DependencyInstallIntent  -> npm/pip/etc. in a visible terminal, via a
-                              generated .ps1 with the same sentinel footer
+  DependencyInstallIntent  -> npm/pip/etc. in a visible terminal
                               (capabilities/developer/dependency_installer.py)
+  GeneralizedOSIntent      -> a literal shell command classified as a
+                              visible install (agentic_core/executor.py,
+                              the `is_visible_install` branch)
 
-  GeneralizedOSIntent's visible-install path (agentic_core/executor.py,
-  the `is_visible_install` branch) is NOT yet supervised — it still launches
-  through the `start powershell` shell wrapper, so its Popen.pid is the
-  transient cmd.exe, not the real process. Same bug class as the two above,
-  fixed there but not here yet; left for its own verified commit.
-
-All of the above call subprocess.Popen(...) and, in the unsupervised case,
-DISCARD the handle, then return a cheerful string immediately. Nothing holds
-a reference that could later answer "did that actually work?" — which is
-exactly what registering a watch here fixes for the two supervised intents.
+Before the fix, each of these launched through a `start`/`Start-Process`
+shell wrapper, which spawns the visible console detached and returns
+immediately — so Popen.pid was the transient wrapper process, not the real
+one. Registering that pid as a watch would have reported "completed" almost
+instantly regardless of whether the work had even started: a confident wrong
+answer, worse than no observation at all.
 
 WHY NOT JUST WAIT
 -----------------
