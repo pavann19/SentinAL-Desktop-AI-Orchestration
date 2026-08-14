@@ -1,0 +1,66 @@
+{
+  "note": "EXPERIMENT ONLY. Production artifacts unmodified. See docstring.",
+  "production_classifier": {
+    "synthetic_test_acc": 0.9835051546391752,
+    "real_world_test_acc": 0.6085430076067876,
+    "real_world_per_intent": {
+      "SchedulerIntent": {
+        "correct": 390,
+        "total": 640,
+        "acc": 0.609375
+      },
+      "InformationRetrievalIntent": {
+        "correct": 382,
+        "total": 715,
+        "acc": 0.5342657342657343
+      },
+      "MediaStreamingIntent": {
+        "correct": 215,
+        "total": 277,
+        "acc": 0.776173285198556
+      },
+      "MediaControlIntent": {
+        "correct": 34,
+        "total": 57,
+        "acc": 0.5964912280701754
+      },
+      "ConversationalIntent": {
+        "correct": 19,
+        "total": 20,
+        "acc": 0.95
+      }
+    }
+  },
+  "experimental_classifier": {
+    "trained_on": "2261 synthetic + 7970 real = 10231 total",
+    "synthetic_test_acc": 0.8927835051546392,
+    "real_world_test_acc": 0.9555295494441194,
+    "real_world_per_intent": {
+      "SchedulerIntent": {
+        "correct": 606,
+        "total": 640,
+        "acc": 0.946875
+      },
+      "InformationRetrievalIntent": {
+        "correct": 688,
+        "total": 715,
+        "acc": 0.9622377622377623
+      },
+      "MediaStreamingIntent": {
+        "correct": 267,
+        "total": 277,
+        "acc": 0.9638989169675091
+      },
+      "MediaControlIntent": {
+        "correct": 53,
+        "total": 57,
+        "acc": 0.9298245614035088
+      },
+      "ConversationalIntent": {
+        "correct": 19,
+        "total": 20,
+        "acc": 0.95
+      }
+    }
+  }
+}

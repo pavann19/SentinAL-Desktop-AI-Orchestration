@@ -598,16 +598,47 @@ class SemanticRouter:
         print("[Router] Initializing semantic embedding capabilities (all-MiniLM-L6-v2 on CPU)...")
         self._fallback_mode = False
         try:
+            from pathlib import Path
+
             from sentence_transformers import SentenceTransformer
             from sklearn.metrics.pairwise import cosine_similarity as _cos_sim
             self._cos_sim = _cos_sim
             self.model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
-            
-            # Phase A: Load trained classifier head
-            from pathlib import Path
 
+            # Fix (real-vs-synthetic accuracy gap): the previous classifier head was
+            # trained ONLY on self-authored synthetic prompts - 98.35% on the synthetic
+            # benchmark, but only 60.85% against real-world phrasing (Amazon MASSIVE,
+            # mapped to the 5 SentinAL intents it covers - eval/real_world_massive_ood.json).
+            # It was measuring "predicts my own writing," not real usage.
+            #
+            # A full fine-tune of MiniLM itself was tried and REJECTED after a canary
+            # sweep (76 fresh, hand-written prompts never seen by either dataset) caught
+            # it overfitting: 97.73%/95.67% on the curated benchmarks, but only 61.84%
+            # on genuinely novel phrasing with 22 confident (>=70%), semantically bizarre
+            # misroutes ("run a program" -> MediaStreamingIntent at 100% confidence).
+            # Full fine-tuning has enough capacity (22M params) to fit ~5,600 training
+            # examples tightly without generalizing - the aggregate benchmark numbers
+            # never caught it because the benchmarks share phrasing conventions with
+            # the training data.
+            #
+            # What's actually deployed: the STOCK, frozen MiniLM embeddings (unchanged)
+            # with only the linear classifier head retrained - synthetic train data +
+            # real data (each of the 5 augmented intents capped at 1,000 real examples,
+            # so no intent's volume can swamp the others' decision boundaries) +
+            # class_weight='balanced' + 20 targeted examples fixing a FileDeletionIntent/
+            # GeneralizedOSIntent confusion the canary sweep also caught. Verified:
+            # 95.26% synthetic / 92.33% real-world / 80.26% canary (beats production's
+            # 77.63% canary) with only 4 mild, explainable misroutes (calendar/time
+            # boundary overlap) vs the full fine-tune's 22 wild ones. Same ~9ms CPU
+            # latency as before - the embedding model itself never changed.
+            # Full experiment trail in _evidence/experiments/: real_data_augmentation_
+            # experiment.py, real_data_balanced_experiment.py, embedding_model_sweep_
+            # experiment.py, full_finetune_experiment.py (the rejected path), and the
+            # canary sweep that caught it (eval/experiments/canary_sweep.json).
+
+            # Phase A: Load trained classifier head
             import joblib
-            classifier_path = Path(__file__).resolve().parents[1] / "_evidence" / "finetuning" / "classifier_v1.joblib"
+            classifier_path = Path(__file__).resolve().parents[1] / "_evidence" / "finetuning" / "classifier_v2_realdata.joblib"
             if classifier_path.exists():
                 self.classifier = joblib.load(classifier_path)
                 self.intents = list(self.classifier.classes_)

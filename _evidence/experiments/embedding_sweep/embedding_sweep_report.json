@@ -1,0 +1,400 @@
+{
+  "note": "EXPERIMENT ONLY. Production artifacts unmodified.",
+  "ceiling": 1000,
+  "models": {
+    "all-MiniLM-L6-v2": {
+      "hf_name": "sentence-transformers/all-MiniLM-L6-v2",
+      "embedding_dim": 384,
+      "synthetic_test_acc": 0.9525773195876288,
+      "real_world_test_acc": 0.9227618490345231,
+      "synthetic_per_intent": {
+        "MediaStreamingIntent": {
+          "correct": 29,
+          "total": 31,
+          "acc": 0.9354838709677419
+        },
+        "SysUtilityIntent": {
+          "correct": 28,
+          "total": 31,
+          "acc": 0.9032258064516129
+        },
+        "CodeActIntent": {
+          "correct": 25,
+          "total": 25,
+          "acc": 1.0
+        },
+        "ApplicationLaunchIntent": {
+          "correct": 35,
+          "total": 36,
+          "acc": 0.9722222222222222
+        },
+        "FileDeletionIntent": {
+          "correct": 31,
+          "total": 31,
+          "acc": 1.0
+        },
+        "SchedulerIntent": {
+          "correct": 22,
+          "total": 25,
+          "acc": 0.88
+        },
+        "WindowManagementIntent": {
+          "correct": 30,
+          "total": 31,
+          "acc": 0.967741935483871
+        },
+        "ProjectScaffoldIntent": {
+          "correct": 30,
+          "total": 30,
+          "acc": 1.0
+        },
+        "ConversationalIntent": {
+          "correct": 33,
+          "total": 33,
+          "acc": 1.0
+        },
+        "DependencyInstallIntent": {
+          "correct": 28,
+          "total": 30,
+          "acc": 0.9333333333333333
+        },
+        "DataModelingIntent": {
+          "correct": 25,
+          "total": 25,
+          "acc": 1.0
+        },
+        "AcademicResearchIntent": {
+          "correct": 24,
+          "total": 24,
+          "acc": 1.0
+        },
+        "ContinuationIntent": {
+          "correct": 10,
+          "total": 11,
+          "acc": 0.9090909090909091
+        },
+        "GeneralizedOSIntent": {
+          "correct": 8,
+          "total": 10,
+          "acc": 0.8
+        },
+        "InformationRetrievalIntent": {
+          "correct": 27,
+          "total": 30,
+          "acc": 0.9
+        },
+        "ProcessManagementIntent": {
+          "correct": 30,
+          "total": 30,
+          "acc": 1.0
+        },
+        "WebNavigationIntent": {
+          "correct": 32,
+          "total": 33,
+          "acc": 0.9696969696969697
+        },
+        "DictationIntent": {
+          "correct": 9,
+          "total": 9,
+          "acc": 1.0
+        },
+        "MediaControlIntent": {
+          "correct": 6,
+          "total": 10,
+          "acc": 0.6
+        }
+      },
+      "real_world_per_intent": {
+        "SchedulerIntent": {
+          "correct": 588,
+          "total": 640,
+          "acc": 0.91875
+        },
+        "InformationRetrievalIntent": {
+          "correct": 649,
+          "total": 715,
+          "acc": 0.9076923076923077
+        },
+        "MediaStreamingIntent": {
+          "correct": 265,
+          "total": 277,
+          "acc": 0.9566787003610109
+        },
+        "MediaControlIntent": {
+          "correct": 55,
+          "total": 57,
+          "acc": 0.9649122807017544
+        },
+        "ConversationalIntent": {
+          "correct": 20,
+          "total": 20,
+          "acc": 1.0
+        }
+      }
+    },
+    "bge-small-en-v1.5": {
+      "hf_name": "BAAI/bge-small-en-v1.5",
+      "embedding_dim": 384,
+      "synthetic_test_acc": 0.9278350515463918,
+      "real_world_test_acc": 0.919836161497952,
+      "synthetic_per_intent": {
+        "MediaStreamingIntent": {
+          "correct": 24,
+          "total": 31,
+          "acc": 0.7741935483870968
+        },
+        "SysUtilityIntent": {
+          "correct": 29,
+          "total": 31,
+          "acc": 0.9354838709677419
+        },
+        "CodeActIntent": {
+          "correct": 24,
+          "total": 25,
+          "acc": 0.96
+        },
+        "ApplicationLaunchIntent": {
+          "correct": 33,
+          "total": 36,
+          "acc": 0.9166666666666666
+        },
+        "FileDeletionIntent": {
+          "correct": 29,
+          "total": 31,
+          "acc": 0.9354838709677419
+        },
+        "SchedulerIntent": {
+          "correct": 20,
+          "total": 25,
+          "acc": 0.8
+        },
+        "WindowManagementIntent": {
+          "correct": 30,
+          "total": 31,
+          "acc": 0.967741935483871
+        },
+        "ProjectScaffoldIntent": {
+          "correct": 30,
+          "total": 30,
+          "acc": 1.0
+        },
+        "ConversationalIntent": {
+          "correct": 33,
+          "total": 33,
+          "acc": 1.0
+        },
+        "DependencyInstallIntent": {
+          "correct": 30,
+          "total": 30,
+          "acc": 1.0
+        },
+        "DataModelingIntent": {
+          "correct": 25,
+          "total": 25,
+          "acc": 1.0
+        },
+        "AcademicResearchIntent": {
+          "correct": 23,
+          "total": 24,
+          "acc": 0.9583333333333334
+        },
+        "ContinuationIntent": {
+          "correct": 11,
+          "total": 11,
+          "acc": 1.0
+        },
+        "GeneralizedOSIntent": {
+          "correct": 8,
+          "total": 10,
+          "acc": 0.8
+        },
+        "InformationRetrievalIntent": {
+          "correct": 23,
+          "total": 30,
+          "acc": 0.7666666666666667
+        },
+        "ProcessManagementIntent": {
+          "correct": 29,
+          "total": 30,
+          "acc": 0.9666666666666667
+        },
+        "WebNavigationIntent": {
+          "correct": 33,
+          "total": 33,
+          "acc": 1.0
+        },
+        "DictationIntent": {
+          "correct": 9,
+          "total": 9,
+          "acc": 1.0
+        },
+        "MediaControlIntent": {
+          "correct": 7,
+          "total": 10,
+          "acc": 0.7
+        }
+      },
+      "real_world_per_intent": {
+        "SchedulerIntent": {
+          "correct": 590,
+          "total": 640,
+          "acc": 0.921875
+        },
+        "InformationRetrievalIntent": {
+          "correct": 648,
+          "total": 715,
+          "acc": 0.9062937062937063
+        },
+        "MediaStreamingIntent": {
+          "correct": 259,
+          "total": 277,
+          "acc": 0.9350180505415162
+        },
+        "MediaControlIntent": {
+          "correct": 55,
+          "total": 57,
+          "acc": 0.9649122807017544
+        },
+        "ConversationalIntent": {
+          "correct": 20,
+          "total": 20,
+          "acc": 1.0
+        }
+      }
+    },
+    "mpnet-base-v2": {
+      "hf_name": "sentence-transformers/all-mpnet-base-v2",
+      "embedding_dim": 768,
+      "synthetic_test_acc": 0.9587628865979382,
+      "real_world_test_acc": 0.938560561732007,
+      "synthetic_per_intent": {
+        "MediaStreamingIntent": {
+          "correct": 26,
+          "total": 31,
+          "acc": 0.8387096774193549
+        },
+        "SysUtilityIntent": {
+          "correct": 28,
+          "total": 31,
+          "acc": 0.9032258064516129
+        },
+        "CodeActIntent": {
+          "correct": 25,
+          "total": 25,
+          "acc": 1.0
+        },
+        "ApplicationLaunchIntent": {
+          "correct": 35,
+          "total": 36,
+          "acc": 0.9722222222222222
+        },
+        "FileDeletionIntent": {
+          "correct": 31,
+          "total": 31,
+          "acc": 1.0
+        },
+        "SchedulerIntent": {
+          "correct": 24,
+          "total": 25,
+          "acc": 0.96
+        },
+        "WindowManagementIntent": {
+          "correct": 31,
+          "total": 31,
+          "acc": 1.0
+        },
+        "ProjectScaffoldIntent": {
+          "correct": 30,
+          "total": 30,
+          "acc": 1.0
+        },
+        "ConversationalIntent": {
+          "correct": 33,
+          "total": 33,
+          "acc": 1.0
+        },
+        "DependencyInstallIntent": {
+          "correct": 30,
+          "total": 30,
+          "acc": 1.0
+        },
+        "DataModelingIntent": {
+          "correct": 25,
+          "total": 25,
+          "acc": 1.0
+        },
+        "AcademicResearchIntent": {
+          "correct": 24,
+          "total": 24,
+          "acc": 1.0
+        },
+        "ContinuationIntent": {
+          "correct": 11,
+          "total": 11,
+          "acc": 1.0
+        },
+        "GeneralizedOSIntent": {
+          "correct": 8,
+          "total": 10,
+          "acc": 0.8
+        },
+        "InformationRetrievalIntent": {
+          "correct": 25,
+          "total": 30,
+          "acc": 0.8333333333333334
+        },
+        "ProcessManagementIntent": {
+          "correct": 30,
+          "total": 30,
+          "acc": 1.0
+        },
+        "WebNavigationIntent": {
+          "correct": 33,
+          "total": 33,
+          "acc": 1.0
+        },
+        "DictationIntent": {
+          "correct": 9,
+          "total": 9,
+          "acc": 1.0
+        },
+        "MediaControlIntent": {
+          "correct": 7,
+          "total": 10,
+          "acc": 0.7
+        }
+      },
+      "real_world_per_intent": {
+        "SchedulerIntent": {
+          "correct": 593,
+          "total": 640,
+          "acc": 0.9265625
+        },
+        "InformationRetrievalIntent": {
+          "correct": 675,
+          "total": 715,
+          "acc": 0.9440559440559441
+        },
+        "MediaStreamingIntent": {
+          "correct": 261,
+          "total": 277,
+          "acc": 0.9422382671480144
+        },
+        "MediaControlIntent": {
+          "correct": 56,
+          "total": 57,
+          "acc": 0.9824561403508771
+        },
+        "ConversationalIntent": {
+          "correct": 19,
+          "total": 20,
+          "acc": 0.95
+        }
+      }
+    }
+  },
+  "production_baseline": {
+    "synthetic_test_acc": 0.9835051546391752,
+    "real_world_test_acc": 0.6085430076067876
+  }
+}

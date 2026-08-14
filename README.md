@@ -183,8 +183,9 @@ All figures below are reproducible from committed artifacts (see the next sectio
 
 | Metric | Result |
 |---|---|
-| Intent accuracy — held-out test split | **98.35%** (477/485) |
-| Intent accuracy — out-of-distribution set | **86.32%** (164/190) |
+| Intent accuracy — held-out test split (synthetic) | **95.26%** (462/485) |
+| Intent accuracy — real-world phrasing (Amazon MASSIVE, 5 of 19 intents) | **92.33%** (1,578/1,709) |
+| Intent accuracy — out-of-distribution set (synthetic) | **86.32%** (164/190) |
 | Zero-shot baseline (pre-classifier) | 54.55% test / 70.67% OOD |
 | Fast-path resolution rate (no LLM call) | **94.24%** test / **84.67%** OOD |
 | Task success — 19 CI-safe benchmark tasks | **84.2%** (16/19) |
@@ -192,6 +193,25 @@ All figures below are reproducible from committed artifacts (see the next sectio
 | Security fuzzing block rate | **100%** (66/66) |
 | Median end-to-end latency | 101.5 ms (validation adds 0.06 ms) |
 | Test suite | 856 passing (CI-gated scope), 87.08% coverage |
+
+**On the real-world number.** Every dataset SentinAL was evaluated against used to be
+self-authored — written by the same person/process being measured against, which is a
+closed loop: a classifier scoring 98%+ on synthetic prompts was measuring how well it
+predicts its own training data's writing style, not real usage. Fixed by evaluating (and
+partly training) against [Amazon MASSIVE](https://huggingface.co/datasets/AmazonScience/massive)
+(cc-by-4.0, real crowd-sourced voice-assistant utterances), filtered and relabeled to the 5
+of SentinAL's 19 intents it has a genuine semantic match for (`MediaStreamingIntent`,
+`MediaControlIntent`, `SchedulerIntent`, `InformationRetrievalIntent`, `ConversationalIntent`)
+— see `eval/real_world_massive_ood.json`. The synthetic test-split number dropped from an
+earlier 98.35% to 95.26% as a direct result of retraining the classifier against this more
+diverse data; that trade was verified deliberately, not accidental drift — a version that
+fully fine-tuned the embedding model instead scored 97.73%/96.55% on both curated benchmarks
+but collapsed to 61.84% (22 confident, semantically nonsensical misroutes) on a held-out set
+of fresh, hand-written prompts neither benchmark had seen, i.e. it had overfit to both
+datasets' phrasing conventions rather than generalizing. The deployed classifier — a linear
+head on frozen, unmodified embeddings — scored 80.26% on that same fresh-prompt canary set
+(beating the pre-fix classifier's 77.63%), which is the actual reason it was chosen over the
+higher-scoring but less trustworthy alternative.
 
 **On the end-to-end number.** `benchmarks/run_benchmark.py` drives the real pipeline against
 a real Windows desktop across 40 tasks spanning application launch, web navigation, file
