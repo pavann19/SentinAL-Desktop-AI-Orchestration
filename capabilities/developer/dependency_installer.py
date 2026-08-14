@@ -159,7 +159,7 @@ def _run_install(cmd: list[str], label: str, cwd: str | None = None) -> str:
         else:
             launch_cmd = [
                 "powershell", "-NoExit", "-Command",
-                f"cd '{work_dir}'; {inner_cmd}; "
+                f"cd '{work_dir}'; {inner_cmd}; ",
                 "Write-Host '---[SentinAL] Install complete---' -ForegroundColor Green",
             ]
 
