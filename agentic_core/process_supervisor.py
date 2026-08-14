@@ -6,17 +6,24 @@ cannot verify synchronously.
 
 WHY THIS EXISTS
 ---------------
-Two intents launch work that outlives the request that started it:
+These launch work that outlives the request that started it:
 
   CodeActIntent            -> writes a .ps1 and launches it in a visible
                               PowerShell window (codeact_engine.py)
-  DependencyInstallIntent  -> npm/pip/etc. in a visible terminal
-  (and GeneralizedOSIntent's visible-install path)
+  DependencyInstallIntent  -> npm/pip/etc. in a visible terminal, via a
+                              generated .ps1 with the same sentinel footer
+                              (capabilities/developer/dependency_installer.py)
 
-Both call subprocess.Popen(...) and DISCARD the handle, then return a cheerful
-string immediately. Nothing anywhere holds a reference that could later answer
-"did that actually work?" — which is precisely why these intents were the two
-excluded from the postcondition coverage built elsewhere in this project.
+  GeneralizedOSIntent's visible-install path (agentic_core/executor.py,
+  the `is_visible_install` branch) is NOT yet supervised — it still launches
+  through the `start powershell` shell wrapper, so its Popen.pid is the
+  transient cmd.exe, not the real process. Same bug class as the two above,
+  fixed there but not here yet; left for its own verified commit.
+
+All of the above call subprocess.Popen(...) and, in the unsupervised case,
+DISCARD the handle, then return a cheerful string immediately. Nothing holds
+a reference that could later answer "did that actually work?" — which is
+exactly what registering a watch here fixes for the two supervised intents.
 
 WHY NOT JUST WAIT
 -----------------
