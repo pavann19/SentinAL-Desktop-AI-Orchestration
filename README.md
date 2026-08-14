@@ -252,8 +252,6 @@ Stated plainly, because they matter for anyone evaluating this:
 - **GUI automation is pixel-based** (`pyautogui`), so it breaks on resolution changes, DPI
   scaling, multi-monitor setups, and theme changes. Migration to UI Automation trees is
   planned but not done.
-- **The trained classifier was pickled under scikit-learn 1.6.1.** A fresh install with a
-  newer scikit-learn emits a version warning; retraining is recommended.
 - **The end-to-end benchmark is self-authored** (`benchmarks/tasks.py`), not drawn from an
   external, independently-curated task set, and all measurements come from a single Windows
   machine. The methodology (independent OS-state verification, confidence intervals, no
