@@ -149,7 +149,65 @@ MCP's actual, correct role in this architecture is unchanged from `CONTAINMENT_A
 
 ---
 
-## 7. Updated sequencing
+## 7. Local knowledge-graph memory — Graphiti/Mem0-inspired, self-hosted only
+
+**Not a proposal to use Graphiti-as-a-service or Mem0's hosted API, and not a proposal to buy
+either.** Both are commercial products built around either a hosted backend or a mandatory
+external graph database (Neo4j/FalkorDB) — a real operational dependency that conflicts
+with SentinAL's own design constraint of zero external services and a single `pip install`.
+What follows is a from-scratch, local implementation of the same underlying *idea* — memory
+as a graph of entities and typed, time-bounded relationships, not a flat table of interaction
+rows — using pieces already in this architecture or already free/local/embeddable.
+
+**The gap this closes.** `agentic_core/memory_hook.py`'s `MemoryManager` today is flat SQLite
+tables (URL template cache, path cache, interaction history, process watches) with no
+relationships between entities and no way to answer "what have I been doing related to
+Project X" without re-deriving it from scratch via similarity search over raw text every
+time. This is the same gap the original Gemini-generated plans flagged ("memory is a log,"
+addressed there by proposing a vector store) — the correction here is that a vector store
+alone still can't represent *relationships*, only similarity; a graph is the structure that's
+actually missing.
+
+**Storage — no new server process.** Extend the existing local SQLite database with two
+tables, not a graph database:
+- `graph_nodes(id, type, name, first_seen, last_seen, embedding_ref)` — entities (Project,
+  Person, Topic, File, or whatever the extraction step below identifies)
+- `graph_edges(id, source_node_id, target_node_id, relation_type, valid_from, valid_to,
+  source_interaction_id)` — bi-temporal edges. This is the one idea most worth borrowing
+  from Graphiti specifically: an edge carries a validity window, so a superseded fact (the
+  user says "I'm not working on Project X anymore") closes out the old edge's `valid_to` and
+  adds a new one, rather than an `UPDATE` destroying the history of what was true when.
+
+**Traversal.** No Neo4j/Cypher needed at this scale — a single user's interaction history is
+realistically hundreds to low thousands of nodes. SQLite's recursive CTEs handle multi-hop
+graph queries directly against the two tables above; an in-process `networkx` graph (pure
+Python, no server, BSD-licensed) is the fallback for anything more complex. Both are
+zero-infrastructure options consistent with the project's "everything is a local file"
+design.
+
+**Entity/relation extraction.** Reuses the Critic or Planner LLM already in the model roster
+(§3) — no new model dependency. Each logged interaction is passed through a small extraction
+prompt ("what entities and relationships does this interaction reference"), and the result
+becomes graph writes. Critically, this output is gated the same way every other LLM opinion
+in this architecture is: extraction is untrusted, and a malformed or injected extraction must
+not be able to write arbitrary graph edges any more than a malformed plan can execute
+arbitrary commands. The Policy Engine's validation boundary (§1) extends to graph writes,
+not just actions.
+
+**Retrieval — hybrid, matching what Graphiti/Mem0 actually do internally.** `nomic-embed-text`
+(already resident per §3, already how today's fast path works) embeds each node for semantic
+similarity search; graph traversal handles relationship-aware queries ("who else was
+mentioned alongside Project X") that similarity search alone can't answer. Neither is
+sufficient alone — the combination is the actual value proposition — and both halves are
+already either resident or already-used pieces of this architecture. This is a new schema
+and query layer, not a new infrastructure category.
+
+**Where this sits.** A Cognition-Plane / memory concern, sequenced alongside whichever stage
+owns `memory_hook.py`'s evolution — see the sequencing table below.
+
+---
+
+## 8. Updated sequencing
 
 This slots into the existing S1–S6 plan from `CONTAINMENT_ARCHITECTURE.md` without renumbering it — these are refinements to S4/S5/S6, not new stages:
 
@@ -160,9 +218,10 @@ This slots into the existing S1–S6 plan from `CONTAINMENT_ARCHITECTURE.md` wit
 | S6 — proactive autonomy | Event bus = `watchdog` + `APScheduler` (§5), not MCP. MCP stays scoped to capability schemas |
 | *(new, cross-cutting)* | UIA migration (§4) — reframed as a reliability improvement to fold into whichever stage is touching GUI automation, not a standalone success-rate lever |
 | *(new, cross-cutting)* | Taint tracking (§6) — heuristic filter first, real classifier later, provenance tagging as the structural fix underneath both |
+| *(new, cross-cutting)* | Local knowledge-graph memory (§7) — bi-temporal `graph_nodes`/`graph_edges` on the existing SQLite database, no new server; folds into whichever stage next touches `memory_hook.py` |
 
 ---
 
-## 8. What this document does not change
+## 9. What this document does not change
 
 The plane model, the containment-tier table, the invariant ("authority flows down, never up"), and the honest-limits section in `CONTAINMENT_ARCHITECTURE.md` are all still correct and still the foundation. Nothing here contradicts that document — it corrects the *new* material the two Gemini/Antigravity docs proposed on top of it.
