@@ -15,7 +15,7 @@ than being replaced by a mock.
 """
 import os
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -168,14 +168,64 @@ class TestGuiVsCliRouting:
 
 
 class TestVisibleTerminalRouting:
+    """
+    Regression coverage for the same PID bug fixed in
+    capabilities/developer/dependency_installer.py: launching via a `start`
+    shell wrapper makes Popen.pid the transient cmd.exe, not the real
+    PowerShell process. Fixed identically here — a generated .ps1 with a
+    sentinel footer, launched directly (list-form Popen, no shell wrapper).
+    """
+
+    @patch("agentic_core.process_supervisor.register_watch")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.makedirs")
     @patch("subprocess.Popen")
-    def test_npm_install_opens_a_visible_terminal(self, mock_popen):
-        proc = MagicMock()
+    def test_npm_install_opens_a_visible_terminal(self, mock_popen, mock_makedirs, mock_file, mock_register):
+        proc = MagicMock(pid=5150)
         mock_popen.return_value = proc
         execute_pipeline(_os_step([_shell_action("npm install react")]))
         called_cmd = mock_popen.call_args[0][0]
-        assert "powershell" in called_cmd.lower()
+        assert isinstance(called_cmd, list)
+        assert "powershell" in called_cmd[0].lower()
         proc.communicate.assert_not_called()  # fire-and-forget, like GUI launches
+
+    @patch("agentic_core.process_supervisor.register_watch")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.makedirs")
+    @patch("subprocess.Popen")
+    def test_launch_is_list_form_with_no_shell_wrapper(self, mock_popen, mock_makedirs, mock_file, mock_register):
+        proc = MagicMock(pid=5150)
+        mock_popen.return_value = proc
+        execute_pipeline(_os_step([_shell_action("npm install react")]))
+        args, kwargs = mock_popen.call_args
+        assert not kwargs.get("shell")
+        assert "-File" in args[0]
+        assert not any(str(a).strip().lower().startswith("start ") for a in args[0])
+
+    @patch("agentic_core.process_supervisor.register_watch")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.makedirs")
+    @patch("subprocess.Popen")
+    def test_real_pid_is_registered_with_the_supervisor(self, mock_popen, mock_makedirs, mock_file, mock_register):
+        proc = MagicMock(pid=5150)
+        mock_popen.return_value = proc
+        execute_pipeline(_os_step([_shell_action("npm install react")]))
+        mock_register.assert_called_once()
+        _, kwargs = mock_register.call_args
+        assert kwargs["pid"] == 5150
+        assert kwargs["label"] == "generalized_install"
+        assert kwargs["sentinel_path"]
+
+    @patch("subprocess.Popen")
+    def test_script_prep_failure_still_launches_unsupervised(self, mock_popen):
+        proc = MagicMock(pid=5150)
+        mock_popen.return_value = proc
+        with patch("os.makedirs", side_effect=OSError("disk full")):
+            execute_pipeline(_os_step([_shell_action("npm install react")]))
+        launch_cmd = mock_popen.call_args[0][0]
+        assert isinstance(launch_cmd, list)
+        assert "-File" not in launch_cmd
+        assert "-Command" in launch_cmd
 
 
 class TestStandardCliExecution:
