@@ -239,8 +239,6 @@ Stated plainly, because they matter for anyone evaluating this:
   planned but not done.
 - **Four intents rely on a zero-shot fallback**, not the trained classifier — they have no
   labeled training data yet. Reachable and correct, but not covered by the 99.33% figure.
-- **The trained classifier was pickled under scikit-learn 1.6.1.** A fresh install with a
-  newer scikit-learn emits a version warning; retraining is recommended.
 - **`ContinuationIntent` has no executor handler** — it routes correctly but currently has
   nothing to execute.
 - **Evaluation data is synthetic**, not collected from real users, and all measurements come
