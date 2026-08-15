@@ -253,6 +253,13 @@ Stated plainly, because they matter for anyone evaluating this:
 
 - **60% end-to-end success on open-ended queries.** Roughly two in five realistic requests
   fail. Fine for a demo, not for unattended use.
+- **10 of 19 intents have live effect verification** — 8 synchronously (the postcondition
+  observer checks immediately after execution: process/window/filesystem state) and 2 more
+  (`CodeActIntent`, `DependencyInstallIntent`) asynchronously, via a background process
+  supervisor that tracks detached, long-running work (an npm install, a generated script)
+  that can't be checked the moment `execute_pipeline()` returns. The remaining 9 intents
+  execute without any independent check that the action actually took effect, beyond
+  whatever `execute_pipeline()` itself reports.
 - **Windows-only.** The execution layer is not portable as written.
 - **GUI automation is pixel-based** (`pyautogui`), so it breaks on resolution changes, DPI
   scaling, multi-monitor setups, and theme changes. Migration to UI Automation trees is
