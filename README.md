@@ -263,11 +263,13 @@ CI (`.github/workflows/ci.yml`) runs ruff, mypy, and the test suite on every pus
 
 Stated plainly, because they matter for anyone evaluating this:
 
-- **6 of 19 intents have live postcondition verification**; the rest execute without an
-  independent check that the action actually took effect, beyond whatever `execute_pipeline()`
-  itself reports. Two of the unverified intents (dependency install, arbitrary code execution)
-  launch detached, long-running processes that are inherently hard to verify synchronously —
-  a real design constraint, not an oversight.
+- **9 of 19 intents have live effect verification** — 7 synchronously (the postcondition
+  observer checks immediately after execution: process/window/filesystem state) and 2 more
+  (`CodeActIntent`, `DependencyInstallIntent`) asynchronously, via a background process
+  supervisor that tracks detached, long-running work (an npm install, a generated script)
+  that can't be checked the moment `execute_pipeline()` returns. The remaining 10 intents
+  execute without any independent check that the action actually took effect, beyond
+  whatever `execute_pipeline()` itself reports.
 - **Windows-only.** The execution layer is not portable as written.
 - **GUI automation is pixel-based** (`pyautogui`), so it breaks on resolution changes, DPI
   scaling, multi-monitor setups, and theme changes. Migration to UI Automation trees is
