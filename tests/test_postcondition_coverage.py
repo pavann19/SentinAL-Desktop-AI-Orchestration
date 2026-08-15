@@ -196,6 +196,83 @@ class TestDeriveExpectedState:
     def test_project_scaffold_without_name_has_no_postcondition(self):
         assert _derive_expected_state({"intent": "ProjectScaffoldIntent", "framework": "react"}) is None
 
+    def test_generalized_os_mkdir_expects_directory_to_exist(self):
+        derived = _derive_expected_state({
+            "intent": "GeneralizedOSIntent",
+            "actions": [{"type": "shell", "payload": "mkdir", "value": r"C:\tmp\sentinal-new-dir"}],
+        })
+        assert derived == {"path_exists": os.path.abspath(r"C:\tmp\sentinal-new-dir")}
+
+    def test_generalized_os_mkdir_combined_payload_expects_directory_to_exist(self):
+        derived = _derive_expected_state({
+            "intent": "GeneralizedOSIntent",
+            "actions": [{"type": "shell", "payload": "md relative-dir"}],
+        })
+        assert derived == {"path_exists": os.path.abspath(os.path.join(os.getcwd(), "relative-dir"))}
+
+    def test_generalized_os_mkdir_value_with_spaces_expects_single_directory(self):
+        derived = _derive_expected_state({
+            "intent": "GeneralizedOSIntent",
+            "actions": [{"type": "shell", "payload": "mkdir", "value": r"C:\tmp\folder with spaces"}],
+        })
+        assert derived == {"path_exists": os.path.abspath(r"C:\tmp\folder with spaces")}
+
+    def test_generalized_os_mkdir_unquoted_combined_spaces_has_no_postcondition(self):
+        assert _derive_expected_state({
+            "intent": "GeneralizedOSIntent",
+            "actions": [{"type": "shell", "payload": "mkdir first second"}],
+        }) is None
+
+    def test_generalized_os_non_mkdir_shell_has_no_postcondition(self):
+        assert _derive_expected_state({
+            "intent": "GeneralizedOSIntent",
+            "actions": [{"type": "shell", "payload": "taskkill /IM notepad.exe /F"}],
+        }) is None
+
+    def test_generalized_os_gui_action_has_no_postcondition(self):
+        assert _derive_expected_state({
+            "intent": "GeneralizedOSIntent",
+            "actions": [{"type": "gui", "payload": "press", "value": "enter"}],
+        }) is None
+
+    @pytest.mark.parametrize("intent", [
+        "SysUtilityIntent",
+        "MediaControlIntent",
+        "DictationIntent",
+        "SchedulerIntent",
+        "AcademicResearchIntent",
+        "DataModelingIntent",
+        "DependencyInstallIntent",
+        "CodeActIntent",
+        "InformationRetrievalIntent",
+        "ConversationalIntent",
+        "ContinuationIntent",
+    ])
+    def test_evaluated_uncheckable_intents_remain_unwired(self, intent):
+        assert _derive_expected_state({
+            "intent": intent,
+            "target": "example",
+            "prompt": "example",
+            "packages": "requests",
+        }) is None
+
+    def test_generalized_os_mkdir_mismatch_is_classified_end_to_end(self, tmp_path, monkeypatch):
+        missing = tmp_path / "was-not-created"
+        step = {
+            "intent": "GeneralizedOSIntent",
+            "actions": [{"type": "shell", "payload": "mkdir", "value": str(missing)}],
+        }
+        step["expected_state"] = _derive_expected_state(step)
+
+        from agentic_core import executor
+        monkeypatch.setattr(executor, "execute_pipeline", lambda steps, cancel_event=None: "claimed success")
+        monkeypatch.setattr(executor, "MAX_REPLANS", 0)
+
+        observed = executor.execute_pipeline_observed([step])
+
+        assert observed["failure_category"] == "postcondition_mismatch"
+        assert observed["step_observations"][0]["observation"].tier_used == "filesystem"
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Settle/timeout polling — what unblocked the browser intents

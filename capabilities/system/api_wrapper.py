@@ -7,6 +7,7 @@
 
 import asyncio
 import os
+import re
 from typing import Any
 
 from agentic_core.tracing import traced_step
@@ -58,6 +59,31 @@ def _site_label(target: str) -> str | None:
     # ("github", "spotify") survives intact while "youtube.com" -> "youtube".
     label = parts[-2] if len(parts) >= 2 else parts[0]
     return label.lower() or None
+
+
+def _mkdir_target_from_command(command: str) -> str | None:
+    """Extracts the one path operand from simple Windows mkdir/md commands."""
+    if not command:
+        return None
+
+    command = os.path.expandvars(command.strip())
+    match = re.match(
+        r"^(?:mkdir|md)\s+(?P<path>\"[^\"]+\"|'[^']+'|.+?)\s*$",
+        command,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+
+    raw_path = match.group("path").strip()
+    if not raw_path.startswith(('"', "'")) and any(ch.isspace() for ch in raw_path):
+        return None
+    path = raw_path.strip('"').strip("'")
+    if not path:
+        return None
+    if os.path.isabs(path):
+        return os.path.abspath(path)
+    return os.path.abspath(os.path.join(os.getcwd(), path))
 
 
 def _derive_expected_state(step: dict) -> dict | None:
@@ -148,6 +174,33 @@ def _derive_expected_state(step: dict) -> dict | None:
         base = location if location else os.getcwd()
         return {"path_exists": os.path.abspath(os.path.join(base, project_name))}
 
+    # ── GeneralizedOSIntent: only simple directory creation is verifiable ─────
+    # This intent can run arbitrary shell and GUI actions, so most effects are
+    # not safe to infer here. The narrow safe case is a single shell action whose
+    # command is exactly mkdir/md with one path operand: the executor runs that
+    # command synchronously, and the directory's existence is a deterministic OS
+    # fact. Other shell commands, GUI actions, Explorer opens, and visible
+    # install commands are deliberately left uncovered because "not verified"
+    # would not reliably mean "did not happen".
+    if intent == "GeneralizedOSIntent":
+        actions = step.get("actions")
+        if not isinstance(actions, list) or len(actions) != 1:
+            return None
+        action = actions[0]
+        if not isinstance(action, dict) or str(action.get("type", "") or "").lower().strip() != "shell":
+            return None
+        payload = str(action.get("payload", "") or "").strip()
+        value = str(action.get("value", "") or "").strip()
+        if value:
+            command_value = os.path.expandvars(value)
+            if " " in command_value and not command_value.startswith(('"', "'")):
+                command_value = f'"{command_value}"'
+            command = f"{payload} {command_value}".strip()
+        else:
+            command = payload
+        mkdir_target = _mkdir_target_from_command(command)
+        return {"path_exists": mkdir_target} if mkdir_target else None
+
     # ── Browser intents: a window for the site must appear within the settle window ──
     if intent == "WebNavigationIntent":
         label = _site_label(target)
@@ -181,6 +234,14 @@ def _derive_expected_state(step: dict) -> dict | None:
             "settle_timeout_ms": 3000,
         }
 
+    # Evaluated and intentionally skipped:
+    # SysUtilityIntent: action is classified inside the handler at execution time; deriving registry checks from prompt text could disagree and duplicate side effects.
+    # MediaControlIntent: volume/playback virtual keys leave no durable OS-state fact where "not verified" reliably means the keypress failed.
+    # DictationIntent: typed text lands in whichever app has focus, with no reliable generic OS-state readback.
+    # SchedulerIntent, AcademicResearchIntent, DataModelingIntent: currently honest ERROR stubs that write no schedule, summary, model, or visualization artifact.
+    # DependencyInstallIntent: supervised asynchronously via the process supervisor (sentinel + real PID), not the synchronous postcondition observer this function feeds — see capabilities/developer/dependency_installer.py.
+    # CodeActIntent: completion is already supervised by the same sentinel-file mechanism, so a second postcondition layer would duplicate it.
+    # InformationRetrievalIntent, ConversationalIntent, ContinuationIntent: read-only/conversational outputs have no durable OS-state postcondition.
     return None
 
 

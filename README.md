@@ -263,11 +263,11 @@ CI (`.github/workflows/ci.yml`) runs ruff, mypy, and the test suite on every pus
 
 Stated plainly, because they matter for anyone evaluating this:
 
-- **9 of 19 intents have live effect verification** — 7 synchronously (the postcondition
+- **10 of 19 intents have live effect verification** — 8 synchronously (the postcondition
   observer checks immediately after execution: process/window/filesystem state) and 2 more
   (`CodeActIntent`, `DependencyInstallIntent`) asynchronously, via a background process
   supervisor that tracks detached, long-running work (an npm install, a generated script)
-  that can't be checked the moment `execute_pipeline()` returns. The remaining 10 intents
+  that can't be checked the moment `execute_pipeline()` returns. The remaining 9 intents
   execute without any independent check that the action actually took effect, beyond
   whatever `execute_pipeline()` itself reports.
 - **Windows-only.** The execution layer is not portable as written.
