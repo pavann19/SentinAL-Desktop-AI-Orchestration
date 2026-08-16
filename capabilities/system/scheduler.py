@@ -46,15 +46,28 @@ _LEADIN_PATTERN = re.compile(
 )
 
 
+# Lazily-created, module-level shared instance — not one MemoryManager() per
+# call. Same leak, same fix as capabilities/developer/data_modeler.py and
+# academic_research.py: each instance opens its own sqlite3 connection that
+# only closes at process exit, so instantiating fresh per call leaked one
+# connection per add/list/cancel. Tests monkeypatch this function directly
+# (see tests/test_scheduler.py's isolated_memory fixture), which still works
+# fine against a singleton-returning function.
+_memory_singleton = None
+
+
 def _memory():
-    from agentic_core.memory_hook import MemoryManager
-    return MemoryManager()
+    global _memory_singleton
+    if _memory_singleton is None:
+        from agentic_core.memory_hook import MemoryManager
+        _memory_singleton = MemoryManager()
+    return _memory_singleton
 
 
 _TIME_HINT_PATTERN = re.compile(
     r"(\b(?:today|tomorrow|tonight)\b(?:\s+at\s+[\d:]+\s*(?:am|pm)?)?"
     r"|\bnext\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|week|month)\b"
-    r"|\bin\s+\d+\s+(?:minute|hour|day|week)s?\b"
+    r"|\b(?:in|for)\s+\d+\s+(?:minute|hour|day|week)s?\b"
     r"|\bat\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?\b"
     r"|\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b)",
     re.IGNORECASE,
@@ -87,6 +100,11 @@ def _parse_due_at(text: str) -> float | None:
     # time and degrading it to an undated task.
     if re.fullmatch(r"tonight", phrase, re.IGNORECASE):
         phrase = "today 8pm"
+    # dateparser understands "in N minutes" as a relative duration but not
+    # "for N minutes" (same duration, timer-style phrasing - "set a timer
+    # FOR 20 minutes") - translate the preposition rather than lose the
+    # duration and silently degrade a timer request to an undated task.
+    phrase = re.sub(r"^for\b", "in", phrase, flags=re.IGNORECASE)
     try:
         import dateparser
     except ImportError:

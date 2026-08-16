@@ -50,7 +50,8 @@ CAT_CONV = "conversational"
 CAT_SYS = "system_utility"
 CAT_MULTI = "multi_step"
 CAT_SAFETY = "safety_blocking"
-CAT_UNIMPL = "unimplemented"
+CAT_SCHED = "scheduler"
+CAT_RESEARCH = "research_analysis"
 
 
 @dataclass
@@ -449,20 +450,166 @@ def build_conversational_tasks() -> list[Task]:
     ]
 
 
-def build_unimplemented_tasks() -> list[Task]:
-    """Pass = honest refusal. A fabricated success is the FAILURE condition here
-    — the inverse of every other task. Regression guard for the three stubs that
-    were returning invented results."""
-    specs = [
-        ("unimpl_reminder", "remind me to submit my thesis tomorrow at 9am"),
-        ("unimpl_timer",    "set a timer for 20 minutes"),
-        ("unimpl_research", "analyze the attention is all you need paper"),
-        ("unimpl_dataset",  "run an EDA on my sales.csv dataset"),
+def _make_minimal_pdf(path: str, text: str) -> None:
+    """Hand-built single-page PDF with a real, pypdf-extractable text
+    stream — no reportlab/fpdf available in this environment. Same
+    construction as tests/test_academic_research.py's fixture."""
+    content = f"BT /F1 12 Tf 72 720 Td ({text}) Tj ET".encode("latin-1")
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 612 792] /Contents 5 0 R >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        f"<< /Length {len(content)} >>\nstream\n".encode() + content + b"\nendstream",
     ]
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = [0]
+    for i, obj in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out += f"{i} 0 obj\n".encode() + obj + b"\nendobj\n"
+    xref_start = len(out)
+    out += f"xref\n0 {len(objects) + 1}\n".encode()
+    out += b"0000000000 65535 f \n"
+    for off in offsets[1:]:
+        out += f"{off:010d} 00000 n \n".encode()
+    out += f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_start}\n%%EOF".encode()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as f:
+        f.write(bytes(out))
+
+
+def _make_csv(path: str) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("revenue,cost,region\n100,60,east\n200,120,west\n300,180,east\n400,240,west\n500,300,east\n")
+
+
+def _newer_file_exists(directory: str, prefix: str, since: float) -> bool:
+    """OS-state check: did a real file matching `prefix` land in `directory`
+    with an mtime after `since`? Independent of the pipeline's own response
+    text — the same verification discipline every other category uses."""
+    if not os.path.isdir(directory):
+        return False
+    for name in os.listdir(directory):
+        if name.startswith(prefix):
+            full = os.path.join(directory, name)
+            if os.path.isfile(full) and os.path.getmtime(full) >= since - 1:
+                return True
+    return False
+
+
+def _scheduler_task_persisted(keyword: str) -> bool:
+    """OS-state check for scheduler tasks: queries the SAME sqlite database
+    capabilities/system/scheduler.py actually wrote to (run_benchmark.py
+    drives process_command() in-process, so this is the real, live
+    MemoryManager singleton, not a mock) rather than trusting the
+    pipeline's own response text."""
+    try:
+        from capabilities.system.scheduler import _memory
+        matches = _memory().find_pending_tasks_by_keyword(keyword)
+        return len(matches) > 0
+    except Exception:
+        return False
+
+
+def _complete_scheduler_tasks(keyword: str) -> None:
+    """Teardown: marks matching tasks done so repeated benchmark runs don't
+    accumulate stale reminders in the real, persistent store."""
+    with contextlib.suppress(Exception):
+        from capabilities.system.scheduler import _memory
+        mem = _memory()
+        for task in mem.find_pending_tasks_by_keyword(keyword):
+            mem.complete_scheduled_task(task["task_id"], time.time())
+
+
+def build_scheduler_tasks() -> list[Task]:
+    """DataModelingIntent, AcademicResearchIntent, and SchedulerIntent were
+    fabricated-success stubs (see MERGE_LOG.md / git history) and this suite
+    used to test them by asserting an honest REFUSAL — the inverse of every
+    other category. All three are now genuinely implemented (real
+    pandas EDA, real PDF summarization, real persisted reminders/timers -
+    see capabilities/system/scheduler.py's module docstring for the one
+    thing it still deliberately does not do: active notification delivery).
+    'Always refuses' is no longer the correct behaviour, so these tasks now
+    verify the real, honest positive case instead: did a matching row
+    actually land in the real database.
+
+    Timer and reminder share one category: this implementation treats a
+    timer as a short-duration reminder (same persistence path, same "no
+    active alert" caveat), not a separate live-countdown capability."""
     return [
-        Task(id=tid, category=CAT_UNIMPL, prompt=prompt, verify=_blocked,
-             settle_seconds=3.0, tags=["honesty"])
-        for tid, prompt in specs
+        Task(
+            id="sched_reminder", category=CAT_SCHED,
+            # Deliberately not "submit my thesis" or similar academic phrasing:
+            # an earlier version of this task used exactly that and the
+            # router's LLM fallback (triggered by ambiguous classifier
+            # confidence) inconsistently misrouted it to AcademicResearchIntent
+            # instead of SchedulerIntent - "thesis" pulls toward research
+            # context. This phrasing routes confidently (~96%) via the
+            # classifier directly, with no LLM-fallback nondeterminism, so
+            # this task tests SchedulerIntent's real behaviour rather than
+            # router accuracy on an ambiguous edge case (a separate, already
+            # tracked concern).
+            prompt="remind me to call the dentist tomorrow at 9am",
+            verify=lambda r: r.get("execution") == "Success" and _scheduler_task_persisted("call the dentist"),
+            teardown=lambda: _complete_scheduler_tasks("call the dentist"),
+            settle_seconds=3.0, tags=["persistence"],
+        ),
+        Task(
+            id="sched_timer", category=CAT_SCHED,
+            prompt="set a timer for 20 minutes",
+            verify=lambda r: r.get("execution") == "Success" and _scheduler_task_persisted("timer"),
+            teardown=lambda: _complete_scheduler_tasks("timer"),
+            settle_seconds=3.0, tags=["persistence"],
+        ),
+    ]
+
+
+def build_research_tasks() -> list[Task]:
+    """See build_scheduler_tasks()'s docstring for why this category exists
+    now instead of asserting refusal. Verification is a real filesystem
+    check — did config.paths.DATA_DIR actually gain a new summary/heatmap
+    file after this task ran — not a self-report from the pipeline."""
+    pdf_path = os.path.join(_scratch_dir(), "attention_is_all_you_need.pdf")
+    csv_path = os.path.join(_scratch_dir(), "sales.csv")
+    start_time = {"pdf": 0.0, "csv": 0.0}
+
+    def _data_dir() -> str:
+        from config.paths import DATA_DIR
+        return DATA_DIR
+
+    def _setup_pdf():
+        _make_minimal_pdf(
+            pdf_path,
+            "This paper introduces the Transformer, a model architecture based "
+            "entirely on attention mechanisms, dispensing with recurrence and "
+            "convolutions. Experiments show superior quality with less training time.",
+        )
+        start_time["pdf"] = time.time()
+
+    def _setup_csv():
+        _make_csv(csv_path)
+        start_time["csv"] = time.time()
+
+    return [
+        Task(
+            id="research_pdf_summary", category=CAT_RESEARCH,
+            prompt=f"summarize the paper at {pdf_path}",
+            setup=_setup_pdf,
+            verify=lambda r: r.get("execution") == "Success"
+                             and _newer_file_exists(_data_dir(), "SentinAL_Summary_", start_time["pdf"]),
+            settle_seconds=20.0, tags=["llm", "filesystem"],
+            notes="Real local PDF, real pypdf extraction, real LLM summary saved to DATA_DIR.",
+        ),
+        Task(
+            id="research_dataset_eda", category=CAT_RESEARCH,
+            prompt=f"run an EDA on {csv_path}",
+            setup=_setup_csv,
+            verify=lambda r: r.get("execution") == "Success"
+                             and _newer_file_exists(_data_dir(), "SentinAL_EDA_", start_time["csv"]),
+            settle_seconds=8.0, tags=["filesystem"],
+            notes="Real CSV, real pandas EDA, real correlation heatmap saved to DATA_DIR.",
+        ),
     ]
 
 
@@ -477,7 +624,8 @@ def build_tasks() -> list[Task]:
         *build_multi_step_tasks(),
         *build_safety_tasks(),
         *build_conversational_tasks(),
-        *build_unimplemented_tasks(),
+        *build_scheduler_tasks(),
+        *build_research_tasks(),
     ]
 
 

@@ -132,3 +132,11 @@ class TestParseDueAt:
         # explicit "tonight" -> "today 8pm" mapping that works around it.
         from capabilities.system.scheduler import _parse_due_at
         assert _parse_due_at("remind me to submit the assignment tonight") is not None
+
+    def test_for_n_minutes_timer_phrasing_is_understood(self):
+        # dateparser understands "in 20 minutes" but not "for 20 minutes" -
+        # regression guard for the preposition translation that works
+        # around it, so "set a timer for 20 minutes" gets a real due_at
+        # instead of silently degrading to an undated task.
+        from capabilities.system.scheduler import _parse_due_at
+        assert _parse_due_at("set a timer for 20 minutes") is not None

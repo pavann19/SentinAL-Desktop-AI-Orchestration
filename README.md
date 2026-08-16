@@ -212,6 +212,16 @@ head on frozen, unmodified embeddings — scored 80.26% on that same fresh-promp
 (beating the pre-fix classifier's 77.63%), which is the actual reason it was chosen over the
 higher-scoring but less trustworthy alternative.
 
+**On the end-to-end number.** `benchmarks/run_benchmark.py` drives the real pipeline against
+a real Windows desktop across 40 tasks spanning application launch, web navigation, file
+operations, process management, system utilities, multi-step requests, safety-blocking
+prompts, conversation, scheduler/reminder persistence, and local research/data analysis — each repeated 3 times
+(n=120). Verification is independent of the pipeline: pass/fail comes from querying actual
+OS state (the process table, filesystem, window list), never from the pipeline's own success
+report, and a 95% Wilson confidence interval is reported alongside the point estimate rather
+than a bare percentage. Full methodology, the task suite, and every commit's provenance are
+in `benchmarks/`; see [Reproducing the Evaluation](#reproducing-the-evaluation).
+
 **Read the last two success numbers together.** 84.2% is measured on a curated,
 CI-safe task suite; 60% is measured on open-ended queries and is much closer to what a new
 user would actually experience. The gap between them is real and is the main thing standing

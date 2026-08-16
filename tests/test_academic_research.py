@@ -85,6 +85,12 @@ class TestExtractPdfFilename:
     def test_no_pdf_mentioned_returns_none(self):
         assert _extract_pdf_filename("", "summarize this research") is None
 
+    def test_unquoted_absolute_path_with_spaces_in_a_directory_name(self):
+        # Same regression guard as data_modeler.py's equivalent test - real
+        # Windows usernames routinely contain spaces.
+        prompt = r"summarize the paper at C:\Users\Jane Doe\Documents\paper.pdf"
+        assert _extract_pdf_filename("", prompt) == r"C:\Users\Jane Doe\Documents\paper.pdf"
+
 
 class TestResolvePdfPath:
     def test_absolute_existing_path_resolves(self, tmp_path):

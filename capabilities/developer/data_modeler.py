@@ -32,16 +32,23 @@ def _memory():
     return _memory_singleton
 
 # Matches "sales.csv", "data/sales.csv", "'my file.csv'" etc. embedded in a
-# free-text prompt. Two alternatives, not one greedy class: an UNQUOTED name
-# must not contain spaces (otherwise "run an EDA on my sales.csv dataset"
-# greedily captures "run an EDA on my sales.csv", not just "sales.csv" -
-# there's no word-boundary signal telling the regex where the filename
-# actually starts). A QUOTED name may contain spaces, since the quotes
-# themselves mark the boundary. Includes ':' so Windows drive letters
-# (C:\...) survive extraction - dropping it silently turned an absolute
-# path into a drive-relative one that resolved against the wrong drive.
+# free-text prompt. Three alternatives, not one greedy class:
+#   - QUOTED may contain spaces, since the quotes mark the boundary.
+#   - BARE (unquoted, no drive letter) must not contain spaces - otherwise
+#     "run an EDA on my sales.csv dataset" greedily captures "run an EDA on
+#     my sales.csv", not just "sales.csv" - there's no boundary signal
+#     telling the regex where the filename actually starts.
+#   - ABSOLUTE (drive-letter-anchored, e.g. "C:\Users\Jane Doe\data.csv") MAY
+#     contain spaces despite being unquoted: a drive letter + colon is an
+#     unambiguous start marker on its own, so the space-exclusion reason the
+#     bare case needs doesn't apply here. Real Windows usernames routinely
+#     contain spaces ("Jane Doe" is the OS's own suggested default format),
+#     so without this branch any absolute path under such a profile silently
+#     truncates to whatever follows the space.
 _CSV_NAME_PATTERN = re.compile(
-    r"""['"](?P<quoted>[\w .:\\/-]+\.csv)['"]|(?P<bare>[\w.:\\/-]+\.csv)""",
+    r"""['"](?P<quoted>[\w .:\\/-]+\.csv)['"]"""
+    r"""|(?P<absolute>[A-Za-z]:[\\/][^'"\n]+?\.csv)\b"""
+    r"""|(?P<bare>[\w.:\\/-]+\.csv)""",
     re.IGNORECASE,
 )
 
@@ -64,7 +71,7 @@ def _extract_csv_filename(target: str, prompt: str) -> str | None:
             continue
         match = _CSV_NAME_PATTERN.search(text)
         if match:
-            return (match.group("quoted") or match.group("bare")).strip()
+            return (match.group("quoted") or match.group("absolute") or match.group("bare")).strip()
     return None
 
 
