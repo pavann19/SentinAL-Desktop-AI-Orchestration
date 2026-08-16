@@ -173,3 +173,55 @@ class TestUrlTemplateValidation:
         mem.save_url_template("YouTube", "https://youtube.com/results?q={query}")
         assert mem.get_url_template("youtube") is not None
         assert mem.get_url_template("YOUTUBE") is not None
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Scheduled tasks / reminders — real persistence for SchedulerIntent
+# ══════════════════════════════════════════════════════════════════════════════
+class TestScheduledTasks:
+    def test_registered_task_appears_in_pending_list(self, mem):
+        mem.register_scheduled_task("t1", "call mom", None, 1000.0)
+        pending = mem.get_pending_scheduled_tasks()
+        assert len(pending) == 1
+        assert pending[0]["description"] == "call mom"
+        assert pending[0]["due_at"] is None
+
+    def test_undated_tasks_sort_after_dated_ones(self, mem):
+        mem.register_scheduled_task("t1", "someday task", None, 1000.0)
+        mem.register_scheduled_task("t2", "urgent task", 500.0, 1000.0)
+        pending = mem.get_pending_scheduled_tasks()
+        assert [t["task_id"] for t in pending] == ["t2", "t1"]
+
+    def test_dated_tasks_sort_soonest_first(self, mem):
+        mem.register_scheduled_task("t1", "later", 2000.0, 1000.0)
+        mem.register_scheduled_task("t2", "sooner", 1500.0, 1000.0)
+        pending = mem.get_pending_scheduled_tasks()
+        assert [t["task_id"] for t in pending] == ["t2", "t1"]
+
+    def test_completed_task_does_not_appear_in_pending_list(self, mem):
+        mem.register_scheduled_task("t1", "finish report", None, 1000.0)
+        mem.complete_scheduled_task("t1", 2000.0)
+        assert mem.get_pending_scheduled_tasks() == []
+
+    def test_find_by_keyword_is_case_insensitive_substring_match(self, mem):
+        mem.register_scheduled_task("t1", "call the DENTIST", None, 1000.0)
+        matches = mem.find_pending_tasks_by_keyword("dentist")
+        assert len(matches) == 1
+        assert matches[0]["task_id"] == "t1"
+
+    def test_find_by_keyword_excludes_completed_tasks(self, mem):
+        mem.register_scheduled_task("t1", "call the dentist", None, 1000.0)
+        mem.complete_scheduled_task("t1", 2000.0)
+        assert mem.find_pending_tasks_by_keyword("dentist") == []
+
+    def test_find_by_keyword_returns_multiple_real_matches(self, mem):
+        mem.register_scheduled_task("t1", "call the dentist", None, 1000.0)
+        mem.register_scheduled_task("t2", "email the dentist office", None, 1000.0)
+        assert len(mem.find_pending_tasks_by_keyword("dentist")) == 2
+
+    def test_registering_same_task_id_twice_overwrites(self, mem):
+        mem.register_scheduled_task("t1", "first version", None, 1000.0)
+        mem.register_scheduled_task("t1", "updated version", None, 1000.0)
+        pending = mem.get_pending_scheduled_tasks()
+        assert len(pending) == 1
+        assert pending[0]["description"] == "updated version"

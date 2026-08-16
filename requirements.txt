@@ -29,6 +29,16 @@ langgraph>=1.0.0,<2.0.0
 sentence-transformers>=3.0.0,<4.0.0
 scikit-learn==1.8.0
 
+# ── DataModelingIntent (EDA) ────────────────────────────────────────────────
+pandas>=2.0.0,<3.0.0
+matplotlib>=3.8.0,<4.0.0
+
+# ── AcademicResearchIntent (local PDF summarization) ────────────────────────
+pypdf>=5.0.0,<7.0.0
+
+# ── SchedulerIntent (reminder time parsing) ──────────────────────────────────
+dateparser>=1.2.0,<2.0.0
+
 # ── STT / Voice Pipeline ──────────────────────────────────────────────────────
 faster-whisper>=1.0.0,<2.0.0
 sounddevice>=0.4.7,<1.0.0

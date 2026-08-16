@@ -74,6 +74,80 @@ class MemoryManager:
                     detail        TEXT
                 )
             """)
+            # Scheduled tasks / reminders for SchedulerIntent. Replaces the
+            # earlier fabricated-success stub (see MERGE_LOG.md / git history)
+            # that told users "I will remind you" while writing nothing
+            # anywhere. due_at is nullable: a plain task ("add X to my list")
+            # has no due time, only a reminder ("remind me to X at 5pm") does.
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS scheduled_tasks (
+                    task_id      TEXT PRIMARY KEY,
+                    description  TEXT NOT NULL,
+                    due_at       REAL,
+                    created_at   REAL NOT NULL,
+                    completed    INTEGER NOT NULL DEFAULT 0,
+                    completed_at REAL
+                )
+            """)
+            self.conn.commit()
+
+    # ── Scheduled Tasks / Reminders ───────────────────────────────────────────
+
+    def register_scheduled_task(self, task_id: str, description: str,
+                                due_at: float | None, created_at: float) -> None:
+        """Persists a new task/reminder. due_at is None for a plain to-do
+        item with no specific time attached."""
+        with self._lock:
+            self.cursor.execute(
+                """INSERT OR REPLACE INTO scheduled_tasks
+                   (task_id, description, due_at, created_at, completed, completed_at)
+                   VALUES (?, ?, ?, ?, 0, NULL)""",
+                (task_id, description, due_at, created_at)
+            )
+            self.conn.commit()
+
+    def get_pending_scheduled_tasks(self) -> list:
+        """Returns every not-yet-completed task, soonest due_at first (tasks
+        with no due_at sort last, not first — an undated to-do shouldn't
+        visually outrank something with an actual deadline)."""
+        with self._lock:
+            self.cursor.execute(
+                """SELECT task_id, description, due_at, created_at
+                   FROM scheduled_tasks WHERE completed = 0
+                   ORDER BY (due_at IS NULL), due_at, created_at"""
+            )
+            rows = self.cursor.fetchall()
+        return [
+            {"task_id": r[0], "description": r[1], "due_at": r[2], "created_at": r[3]}
+            for r in rows
+        ]
+
+    def find_pending_tasks_by_keyword(self, keyword: str) -> list:
+        """Case-insensitive substring match against pending task descriptions
+        — used to resolve "cancel my dentist reminder" to a specific stored
+        row without requiring the user to know its internal id."""
+        with self._lock:
+            self.cursor.execute(
+                """SELECT task_id, description, due_at, created_at
+                   FROM scheduled_tasks
+                   WHERE completed = 0 AND description LIKE ?
+                   ORDER BY (due_at IS NULL), due_at, created_at""",
+                (f"%{keyword}%",)
+            )
+            rows = self.cursor.fetchall()
+        return [
+            {"task_id": r[0], "description": r[1], "due_at": r[2], "created_at": r[3]}
+            for r in rows
+        ]
+
+    def complete_scheduled_task(self, task_id: str, completed_at: float) -> None:
+        """Marks a task done. Kept, not deleted, so history is inspectable."""
+        with self._lock:
+            self.cursor.execute(
+                """UPDATE scheduled_tasks SET completed = 1, completed_at = ?
+                   WHERE task_id = ?""",
+                (completed_at, task_id)
+            )
             self.conn.commit()
 
     # ── URL Cache Methods ──────────────────────────────────────────────────────
