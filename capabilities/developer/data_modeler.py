@@ -8,7 +8,6 @@ claim without ever opening a file. This version does the real work — reads
 the actual CSV, computes real summary statistics from it, and saves a real
 correlation heatmap — or returns an honest ERROR if any of that fails.
 """
-import glob
 import logging
 import os
 import re
