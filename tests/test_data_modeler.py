@@ -31,6 +31,24 @@ class TestExtractCsvFilename:
     def test_quoted_filename_with_spaces(self):
         assert _extract_csv_filename('', 'analyse "monthly sales.csv" for me') == "monthly sales.csv"
 
+    def test_unquoted_absolute_path_with_spaces_in_a_directory_name(self):
+        # Real Windows usernames routinely contain spaces ("Jane Doe" is the
+        # OS's own suggested default) - regression guard for the bug this
+        # surfaced as: the bare (no-space) branch alone truncated a real
+        # scratch-directory path to whatever followed the space, silently
+        # resolving against the wrong location.
+        prompt = r"run an eda on C:\Users\Jane Doe\Documents\sales.csv"
+        assert _extract_csv_filename("", prompt) == r"C:\Users\Jane Doe\Documents\sales.csv"
+
+    def test_unquoted_relative_filename_with_spaces_and_no_anchor_grabs_trailing_fragment(self):
+        # A relative filename with embedded spaces and no quotes and no
+        # drive-letter anchor has no way to be disambiguated from the
+        # surrounding sentence - the bare pattern's best-effort fallback is
+        # the trailing space-free segment, not the intended full name. A
+        # known, accepted limitation (not a bug): unquoted names with spaces
+        # need quotes or an absolute path to resolve correctly.
+        assert _extract_csv_filename("", "run an eda on my sales data.csv please") == "data.csv"
+
 
 class TestResolveCsvPath:
     def test_absolute_existing_path_resolves(self, tmp_path):

@@ -33,8 +33,15 @@ def _memory():
         _memory_singleton = MemoryManager()
     return _memory_singleton
 
+# See the identical, more detailed comment in data_modeler.py's
+# _CSV_NAME_PATTERN — same three-branch structure (quoted / drive-letter-
+# anchored absolute / bare unquoted) and the same reason: a bare filename
+# can't safely contain spaces (no boundary marker), but an absolute path
+# starting with a drive letter can, since the drive letter IS the boundary.
 _PDF_NAME_PATTERN = re.compile(
-    r"""['"](?P<quoted>[\w .:\\/-]+\.pdf)['"]|(?P<bare>[\w.:\\/-]+\.pdf)""",
+    r"""['"](?P<quoted>[\w .:\\/-]+\.pdf)['"]"""
+    r"""|(?P<absolute>[A-Za-z]:[\\/][^'"\n]+?\.pdf)\b"""
+    r"""|(?P<bare>[\w.:\\/-]+\.pdf)""",
     re.IGNORECASE,
 )
 
@@ -57,7 +64,7 @@ def _extract_pdf_filename(target: str, prompt: str) -> str | None:
             continue
         match = _PDF_NAME_PATTERN.search(text)
         if match:
-            return (match.group("quoted") or match.group("bare")).strip()
+            return (match.group("quoted") or match.group("absolute") or match.group("bare")).strip()
     return None
 
 

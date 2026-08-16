@@ -216,7 +216,7 @@ higher-scoring but less trustworthy alternative.
 **On the end-to-end number.** `benchmarks/run_benchmark.py` drives the real pipeline against
 a real Windows desktop across 40 tasks spanning application launch, web navigation, file
 operations, process management, system utilities, multi-step requests, safety-blocking
-prompts, conversation, and known-unimplemented-capability refusal — each repeated 3 times
+prompts, conversation, scheduler/reminder persistence, and local research/data analysis — each repeated 3 times
 (n=120). Verification is independent of the pipeline: pass/fail comes from querying actual
 OS state (the process table, filesystem, window list), never from the pipeline's own success
 report, and a 95% Wilson confidence interval is reported alongside the point estimate rather
