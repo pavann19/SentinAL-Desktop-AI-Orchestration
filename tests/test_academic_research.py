@@ -86,6 +86,23 @@ class TestExtractPdfFilename:
         assert _extract_pdf_filename("", "summarize this research") is None
 
 
+class TestResolvePdfPath:
+    def test_absolute_existing_path_resolves(self, tmp_path):
+        f = tmp_path / "paper.pdf"
+        f.write_bytes(b"%PDF-1.4\n%%EOF")
+        assert _resolve_pdf_path(str(f)) == os.path.abspath(str(f))
+
+    def test_missing_file_returns_none(self, tmp_path):
+        with patch("capabilities.developer.academic_research._SEARCH_DIRS", [str(tmp_path)]):
+            assert _resolve_pdf_path("does_not_exist.pdf") is None
+
+    def test_found_in_search_directory(self, tmp_path):
+        f = tmp_path / "found.pdf"
+        f.write_bytes(b"%PDF-1.4\n%%EOF")
+        with patch("capabilities.developer.academic_research._SEARCH_DIRS", [str(tmp_path)]):
+            assert _resolve_pdf_path("found.pdf") == os.path.abspath(str(f))
+
+
 class TestExtractText:
     def test_extracts_real_text_from_real_pdf(self, tmp_path):
         pdf = tmp_path / "real.pdf"
