@@ -13,7 +13,7 @@ filtering, and human-in-the-loop confirmation gates that the model cannot talk i
 > routing are well tested (850+ automated tests, 87%+ coverage, 66-test adversarial fuzz
 > suite at a 100% block rate). End-to-end task success, measured with an independent,
 > statistically-scored benchmark (OS-state verification, not the pipeline's own self-report;
-> 95% Wilson confidence interval), is **95.0%** (95% CI 89.5–97.7%, n=120: 40 tasks × 3 runs)
+> 95% Wilson confidence interval), is **96.7%** (95% CI 91.7–98.7%, n=120: 40 tasks × 3 runs)
 > — good enough for supervised daily use, not yet unattended. See [Evaluation](#evaluation)
 > for the full methodology and [Known Limitations](#known-limitations) before deploying.
 
@@ -189,7 +189,7 @@ All figures below are reproducible from committed artifacts (see the next sectio
 | Zero-shot baseline (pre-classifier) | 54.55% test / 70.67% OOD |
 | Fast-path resolution rate (no LLM call) | **94.24%** test / **84.67%** OOD |
 | Task success — 19 CI-safe benchmark tasks | **84.2%** (16/19) |
-| **End-to-end task success — real-machine benchmark** | **95.0%** (95% CI 89.5–97.7%, 114/120) |
+| **End-to-end task success — real-machine benchmark** | **96.7%** (95% CI 91.7–98.7%, 116/120) |
 | Security fuzzing block rate | **100%** (66/66) |
 | Median end-to-end latency | 101.5 ms (validation adds 0.06 ms) |
 | Test suite | 856 passing (CI-gated scope), 87.08% coverage |
