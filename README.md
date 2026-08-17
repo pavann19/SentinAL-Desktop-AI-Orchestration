@@ -42,7 +42,7 @@ filtering, and human-in-the-loop confirmation gates that the model cannot talk i
 
 - **Hybrid intent router** — a keyword fast-path, then a trained classifier over local
   sentence embeddings, then an LLM fallback only for genuinely ambiguous requests.
-  94.2% of held-out queries resolve locally in under 50 ms with no model call at all.
+  88.45% of held-out queries resolve locally with no LLM call at all (see [Evaluation](#evaluation)).
 - **Content-aware privacy routing** — prompts containing PII, credentials, or sensitive
   filesystem paths are forced onto a local on-device model and never reach a cloud API.
 - **Deterministic validation pipeline** — allowlist → target check → filesystem sandbox →
@@ -185,9 +185,9 @@ All figures below are reproducible from committed artifacts (see the next sectio
 |---|---|
 | Intent accuracy — held-out test split (synthetic) | **95.26%** (462/485) |
 | Intent accuracy — real-world phrasing (Amazon MASSIVE, 5 of 19 intents) | **92.33%** (1,578/1,709) |
-| Intent accuracy — out-of-distribution set (synthetic) | **86.32%** (164/190) |
+| Intent accuracy — out-of-distribution set (synthetic) | **83.68%** (159/190) |
 | Zero-shot baseline (pre-classifier) | 54.55% test / 70.67% OOD |
-| Fast-path resolution rate (no LLM call) | **94.24%** test / **84.67%** OOD |
+| Fast-path resolution rate (no LLM call) | **88.45%** test (429/485) |
 | Task success — 19 CI-safe benchmark tasks | **84.2%** (16/19) |
 | **End-to-end task success — real-machine benchmark** | **96.7%** (95% CI 91.7–98.7%, 116/120) |
 | Security fuzzing block rate | **100%** (66/66) |

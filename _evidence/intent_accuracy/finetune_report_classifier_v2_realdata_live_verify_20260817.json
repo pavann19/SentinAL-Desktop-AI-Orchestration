@@ -1,0 +1,23 @@
+{
+  "run_id": "classifier_v2_realdata_live_verify_20260817",
+  "generated_at": "2026-08-17",
+  "note": "Live re-verification of the currently deployed classifier (_evidence/finetuning/classifier_v2_realdata.joblib) against the current committed dataset and split_indices.json, run without retraining (loads the existing joblib and scores it). Produced in response to a forensic audit finding that no committed report matched this exact deployed model.",
+  "dataset_sha256_16": "ee781fc2276e3b21",
+  "dataset_total": 3230,
+  "classifier_path": "_evidence/finetuning/classifier_v2_realdata.joblib",
+  "classifier_metrics": {
+    "test_n": 485,
+    "test_acc": 0.9526,
+    "test_correct": 462,
+    "ood_n": 190,
+    "ood_acc": 0.8368,
+    "ood_correct": 159
+  },
+  "fastpath_rate": {
+    "split": "test",
+    "n": 485,
+    "resolved": 429,
+    "rate": 0.8845,
+    "definition": "fraction of queries router.route() resolves WITHOUT triggering the LLM fallback (intent != 'UnknownIntent' AND NOT is_ambiguous), mirrors agentic_core/processor.py's real trigger"
+  }
+}
