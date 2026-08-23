@@ -4,12 +4,13 @@ Unit tests for capabilities/system/gui_resolver.py.
 
 All external GUI/vision dependencies (pyautogui, pygetwindow, pywinauto, the
 VLM pipeline) are mocked — no test here touches a real screen, window, or
-model. pywinauto is not installed in this environment (an optional Tier-3
-dependency, matching production where it may also be absent), so its
-success/fallback paths are tested by injecting a fake module into
-sys.modules before the function's local `from pywinauto import ...`
-executes — the standard technique for testing an optional-dependency code
-path without requiring the dependency itself.
+model. pywinauto's success/fallback paths are tested by injecting a fake
+module into sys.modules before the function's local `from pywinauto import
+...` executes — the standard technique for testing an optional-dependency
+code path regardless of whether the real package happens to be installed in
+whatever environment runs this suite. The "not installed" test forces that
+case deterministically the same way (patch.dict with None), rather than
+relying on the real environment happening to lack it.
 """
 import sys
 import os
@@ -141,8 +142,31 @@ class TestFindControlByLabel:
         assert result is None
 
     def test_pywinauto_not_installed_returns_none(self):
-        # Genuinely not installed in this environment — real ImportError path.
-        assert find_control_by_label("Notepad", "Save") is None
+        with patch.dict(sys.modules, {"pywinauto": None}):
+            assert find_control_by_label("Notepad", "Save") is None
+
+    def test_empty_app_title_searches_foreground_window(self):
+        """The common case: an LLM-derived label is known, but not the exact
+        window title. Must use the foreground window instead of requiring
+        app_title, and must not go anywhere near findwindows.find_windows()
+        (that path is for when a title IS given)."""
+        ctrl = MagicMock()
+        ctrl.rectangle.return_value = MagicMock(left=10, right=30, top=40, bottom=60)
+        dlg = MagicMock()
+        dlg.child_window.return_value = ctrl
+        fake = _FakeWinauto(top_window=dlg)
+
+        with patch.dict(sys.modules, {"pywinauto": fake}), \
+             patch("win32gui.GetForegroundWindow", return_value=999):
+            result = find_control_by_label("", "Save")
+
+        assert result == (20, 50)
+        fake.findwindows.find_windows.assert_not_called()
+        fake.Application.return_value.connect.assert_called_once_with(handle=999)
+
+    def test_empty_app_title_no_foreground_window_returns_none(self):
+        with patch("win32gui.GetForegroundWindow", return_value=0):
+            assert find_control_by_label("", "Save") is None
 
 
 class TestFindByDescription:
@@ -191,11 +215,22 @@ class TestResolveElement:
     def test_no_args_exhausts_all_tiers_returns_none(self):
         assert resolve_element() is None
 
+    @patch("capabilities.system.gui_resolver.find_control_by_label", return_value=(7, 8))
     @patch("capabilities.system.gui_resolver.find_by_image", return_value=(1, 2))
-    def test_image_tier_wins_when_provided(self, mock_find_image):
+    def test_accessibility_tier_wins_over_image_when_label_given(self, mock_find_image, mock_find_control):
+        """UIA-first: a label available means the reliable tier is tried
+        before the fragile pixel-matching one, even if an image was also
+        supplied — this is the whole point of the reordering."""
         result = resolve_element(image_path="btn.png", app_title="Notepad", label="Save")
+        assert result == (7, 8)
+        mock_find_image.assert_not_called()
+
+    @patch("capabilities.system.gui_resolver.find_by_image", return_value=(1, 2))
+    def test_image_tier_used_when_no_label_given(self, mock_find_image):
+        """No label means UIA can't be attempted at all — image matching is
+        legitimately the only tier that can resolve an image-only request."""
+        result = resolve_element(image_path="btn.png")
         assert result == (1, 2)
-        mock_find_image.assert_called_once()
 
     @patch("capabilities.system.gui_resolver.find_window_center", return_value=(5, 6))
     def test_window_tier_used_when_app_title_only(self, mock_find_window):
@@ -207,8 +242,17 @@ class TestResolveElement:
         result = resolve_element(app_title="Notepad", label="Save")
         assert result == (7, 8)
 
+    @patch("capabilities.system.gui_resolver.find_control_by_label", return_value=(7, 8))
+    def test_accessibility_tier_used_with_label_only_no_app_title(self, mock_find_control):
+        """The relaxed precondition: app_title is no longer required for the
+        accessibility tier to be attempted."""
+        result = resolve_element(label="Save")
+        assert result == (7, 8)
+        mock_find_control.assert_called_once_with("", "Save")
+
     @patch("capabilities.system.gui_resolver.find_by_description", return_value=(9, 10))
-    def test_vlm_tier_used_as_last_resort_for_label_only(self, mock_find_desc):
+    @patch("capabilities.system.gui_resolver.find_control_by_label", return_value=None)
+    def test_vlm_tier_used_as_last_resort_for_label_only(self, mock_find_control, mock_find_desc):
         result = resolve_element(label="the Save button")
         assert result == (9, 10)
 
@@ -221,12 +265,9 @@ class TestResolveElement:
         assert result is None
 
     @patch("capabilities.system.gui_resolver.find_by_description", return_value=(9, 9))
-    @patch("capabilities.system.gui_resolver.find_window_center", return_value=None)
-    def test_falls_through_to_next_tier_when_earlier_tier_fails(self, mock_window, mock_desc):
-        """app_title with no label tries the window tier first; if that fails
-        and a label is later added the VLM tier should still be reachable."""
+    @patch("capabilities.system.gui_resolver.find_control_by_label", return_value=None)
+    def test_falls_through_to_vlm_when_accessibility_tier_fails(self, mock_control, mock_desc):
+        """app_title with a label routes to the accessibility tier first; if
+        that fails, VLM is still reachable as the last resort."""
         result = resolve_element(app_title="Notepad", label="Save button")
-        # app_title + label routes straight to accessibility tier (mocked away
-        # by not patching find_control_by_label -> real pywinauto ImportError
-        # path returns None), then falls through to VLM.
         assert result == (9, 9)

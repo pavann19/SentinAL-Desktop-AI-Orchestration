@@ -2,10 +2,11 @@
 # GUI Coordinate Resolver for SentinAL.
 # Completes the ⚠️ Partial PyAutoGUI integration by adding element-finding logic.
 #
-# Strategy (multi-tier, fastest-first):
-#   Tier 1: pyautogui.locateOnScreen — image-based element matching
+# Strategy (multi-tier, reliability-first — see resolve_element()'s own
+# docstring for the full reasoning):
+#   Tier 1: Windows Accessibility API (pywinauto/UIA) — find controls by name/label
 #   Tier 2: pygetwindow — find windows by title substring
-#   Tier 3: Windows Accessibility API (pywinauto) — find controls by name/label
+#   Tier 3: pyautogui.locateOnScreen — image-based element matching (fragile fallback)
 #   Tier 4: VLM screenshot fallback (vision_module.py) — last resort
 #
 # Returns (x, y) pixel coordinates or None on failure.
@@ -127,7 +128,10 @@ def find_control_by_label(app_title: str, control_label: str) -> tuple[int, int]
     More reliable than image matching for standard Windows controls.
 
     Args:
-        app_title:     Title of the application window to search in
+        app_title:     Title of the application window to search in. If empty,
+                        searches the current foreground window instead — the
+                        common case where the caller (an LLM-derived label)
+                        knows what to click but not the exact window title.
         control_label: The accessible name/label of the control (button text, field label, etc.)
 
     Returns:
@@ -136,12 +140,21 @@ def find_control_by_label(app_title: str, control_label: str) -> tuple[int, int]
     try:
         from pywinauto import Application, findwindows
 
-        wins = findwindows.find_windows(title_re=f".*{re.escape(app_title)}.*")
-        if not wins:
-            _logger.debug(f"find_control_by_label: no window matching '{app_title}'")
-            return None
+        if app_title:
+            wins = findwindows.find_windows(title_re=f".*{re.escape(app_title)}.*")
+            if not wins:
+                _logger.debug(f"find_control_by_label: no window matching '{app_title}'")
+                return None
+            handle = wins[0]
+        else:
+            import win32gui
 
-        app = Application(backend="uia").connect(handle=wins[0])
+            handle = win32gui.GetForegroundWindow()
+            if not handle:
+                _logger.debug("find_control_by_label: no foreground window")
+                return None
+
+        app = Application(backend="uia").connect(handle=handle)
         dlg = app.top_window()
 
         try:
@@ -149,7 +162,7 @@ def find_control_by_label(app_title: str, control_label: str) -> tuple[int, int]
             rect = ctrl.rectangle()
             cx = (rect.left + rect.right) // 2
             cy = (rect.top + rect.bottom) // 2
-            _logger.info(f"find_control_by_label: '{control_label}' in '{app_title}' at ({cx},{cy})")
+            _logger.info(f"find_control_by_label: '{control_label}' in '{app_title or 'foreground window'}' at ({cx},{cy})")
             return cx, cy
         except Exception:
             # Fallback: search all descendants
@@ -261,10 +274,16 @@ def resolve_element(
     Main entry point — tries each resolution tier in order and returns
     the first successful result.
 
-    Priority:
-        1. Image matching (if image_path provided)
-        2. Window center (if app_title provided)
-        3. Accessibility API (if both app_title + label provided)
+    Priority (UIA-first, not image-first — see module docstring / README's
+    "Known Limitations": pixel-based matching breaks on DPI/resolution/
+    multi-monitor/theme changes, so it's a fallback here, not the first
+    thing tried whenever a label is available):
+        1. Accessibility API (if label provided — app_title is optional; when
+           omitted, searches the current foreground window instead of
+           requiring the caller to already know the exact window title)
+        2. Window center (if app_title provided and no label — a plain
+           "bring this window forward" request, not an element click)
+        3. Image matching (if image_path provided — the fragile fallback)
         4. VLM screenshot analysis (if label provided, as last resort)
 
     Args:
@@ -276,21 +295,25 @@ def resolve_element(
     Returns:
         (x, y) pixel coordinates or None if all tiers fail
     """
-    # Tier 1: Image
-    if image_path:
-        result = find_by_image(image_path, confidence)
+    # Tier 1: Accessibility (UIA) — app_title optional, searches the
+    # foreground window when omitted.
+    if label:
+        result = find_control_by_label(app_title, label)
         if result:
             return result
 
-    # Tier 2: Window
+    # Tier 2: Window center — only when there's no label to resolve an
+    # element for; a bare app_title means "bring this window forward".
     if app_title and not label:
         result = find_window_center(app_title)
         if result:
             return result
 
-    # Tier 3: Accessibility
-    if app_title and label:
-        result = find_control_by_label(app_title, label)
+    # Tier 3: Image matching — the fragile fallback, tried only once UIA
+    # (which needs a label) and window-center (which needs no label) have
+    # both had their shot.
+    if image_path:
+        result = find_by_image(image_path, confidence)
         if result:
             return result
 

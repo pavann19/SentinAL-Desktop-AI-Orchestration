@@ -278,9 +278,15 @@ Stated plainly, because they matter for anyone evaluating this:
   no durable OS-state fact where "not verified" would reliably mean "did not happen"
   (a keypress, typed text landing wherever has focus).
 - **Windows-only.** The execution layer is not portable as written.
-- **GUI automation is pixel-based** (`pyautogui`), so it breaks on resolution changes, DPI
-  scaling, multi-monitor setups, and theme changes. Migration to UI Automation trees is
-  planned but not done.
+- **GUI element resolution now tries UI Automation first, not last.** `resolve_element()`
+  (`capabilities/system/gui_resolver.py`) is UIA-first when a label is available — accessible
+  name/label lookup via `pywinauto`, against the foreground window if no window title is
+  known — falling back to pixel image-matching (`pyautogui.locateOnScreen`) only when no
+  label was given, and to a VLM screenshot query as the last resort. Pixel-based matching is
+  therefore a fallback, not the default path, for anything the accessibility tree can resolve
+  by name. It still breaks on resolution/DPI/multi-monitor/theme changes when it does run —
+  keyboard shortcuts and screenshots elsewhere (`window_manager.py`, `dictation.py`,
+  `media_control.py`) don't go through this resolver and aren't affected either way.
 - **The end-to-end benchmark is self-authored** (`benchmarks/tasks.py`), not drawn from an
   external, independently-curated task set, and all measurements come from a single Windows
   machine. The methodology (independent OS-state verification, confidence intervals, no
