@@ -9,7 +9,7 @@ from capabilities.system import gui_resolver, process_manager, vision_module
 @dataclass
 class Observation:
     verified: bool
-    tier_used: Literal["process", "filesystem", "window", "vlm", "none"]
+    tier_used: Literal["process", "filesystem", "window", "vlm", "memory", "none"]
     confidence: float
     latency_ms: float
     detail: str
@@ -79,6 +79,13 @@ def observe_postcondition(expected: dict) -> Observation:
                                        verified = True if a tuple (not None) is returned
       - "vlm_query": str           -> Tier 4: vision_module.verify_screen_state(...)
                                        verified = result of that call directly
+      - "task_description_recent": str -> Tier 5: a PENDING scheduled task whose
+                                       description contains this (case-insensitive
+                                       substring), created within "within_seconds"
+                                       (default 120) -> verified True
+      - "task_cancelled": str      -> Tier 5b: the inverse — verified = True if NO
+                                       PENDING scheduled task's description contains
+                                       this substring (cancel/complete succeeded)
     If expected has none of these keys, or expected is empty/None:
       return Observation(verified=False, tier_used="none", confidence=0.0,
                           latency_ms=0.0, detail="no verifiable expectation provided")
@@ -195,6 +202,59 @@ def observe_postcondition(expected: dict) -> Observation:
                 )
             except Exception as e:
                 return Observation(verified=False, tier_used="filesystem", confidence=0.0, latency_ms=(time.time() - start_time) * 1000, detail=f"error: {e}")
+
+        if "task_description_recent" in expected:
+            # For SchedulerIntent's "add" action: the row is written synchronously
+            # inside handle_scheduler() before execute_pipeline() returns, so no
+            # settle window is needed by default — but freshness still matters,
+            # the same reasoning as glob_recent: a task added last week matching
+            # the same keyword must not count as evidence this step just added one.
+            keyword = expected["task_description_recent"]
+            start_time = time.time()
+            try:
+                within_s = float(expected.get("within_seconds", 120) or 120)
+            except (TypeError, ValueError):
+                within_s = 120.0
+            try:
+                from capabilities.system.scheduler import _memory as _scheduler_memory
+
+                now = time.time()
+                matches = _scheduler_memory().find_pending_tasks_by_keyword(keyword)
+                fresh = [m for m in matches if (now - m["created_at"]) <= within_s]
+                latency_ms = (time.time() - start_time) * 1000
+                if fresh:
+                    newest = max(fresh, key=lambda m: m["created_at"])
+                    age = now - newest["created_at"]
+                    return Observation(
+                        verified=True, tier_used="memory", confidence=1.0, latency_ms=latency_ms,
+                        detail=f"found pending task '{newest['description']}' ({age:.1f}s old) matching '{keyword}'",
+                    )
+                return Observation(
+                    verified=False, tier_used="memory", confidence=1.0, latency_ms=latency_ms,
+                    detail=f"no pending task newer than {within_s:.0f}s matching '{keyword}'",
+                )
+            except Exception as e:
+                return Observation(verified=False, tier_used="memory", confidence=0.0, latency_ms=(time.time() - start_time) * 1000, detail=f"error: {e}")
+
+        if "task_cancelled" in expected:
+            keyword = expected["task_cancelled"]
+            start_time = time.time()
+            try:
+                from capabilities.system.scheduler import _memory as _scheduler_memory
+
+                matches = _scheduler_memory().find_pending_tasks_by_keyword(keyword)
+                latency_ms = (time.time() - start_time) * 1000
+                if matches:
+                    return Observation(
+                        verified=False, tier_used="memory", confidence=1.0, latency_ms=latency_ms,
+                        detail=f"{len(matches)} pending task(s) still match '{keyword}': {matches[0]['description']}",
+                    )
+                return Observation(
+                    verified=True, tier_used="memory", confidence=1.0, latency_ms=latency_ms,
+                    detail=f"no pending task matches '{keyword}' — cancelled",
+                )
+            except Exception as e:
+                return Observation(verified=False, tier_used="memory", confidence=0.0, latency_ms=(time.time() - start_time) * 1000, detail=f"error: {e}")
 
         if "window_title" in expected:
             window_title = expected["window_title"]

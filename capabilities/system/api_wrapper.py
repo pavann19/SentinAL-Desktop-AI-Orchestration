@@ -264,11 +264,40 @@ def _derive_expected_state(step: dict) -> dict | None:
             "settle_timeout_ms": 3000,
         }
 
+    # ── SchedulerIntent: routes deterministically on prompt keywords, same as ──
+    # the handler itself (handle_scheduler() checks _LIST_TRIGGERS, then
+    # _CANCEL_TRIGGERS, else falls through to add) — reusing that exact
+    # precedence and those exact trigger lists means this cannot disagree with
+    # the handler more often than the handler disagrees with itself, the same
+    # principle WindowManagementIntent's screenshot check relies on above.
+    # "list" is read-only, like ProcessManagementIntent's list action — no
+    # postcondition. "cancel"/"add" reuse scheduler.py's own keyword-cleaning
+    # (_cancel_keyword, _clean_description) rather than re-deriving it, so a
+    # second, independently-arrived-at cleaning can't drift from the one the
+    # handler actually searches with.
+    if intent == "SchedulerIntent":
+        from capabilities.system.scheduler import (
+            _CANCEL_TRIGGERS,
+            _LIST_TRIGGERS,
+            _cancel_keyword,
+            _clean_description,
+        )
+        prompt_text = str(step.get("prompt", "") or "").lower()
+
+        if any(trigger in prompt_text for trigger in _LIST_TRIGGERS):
+            return None
+
+        if any(trigger in prompt_text for trigger in _CANCEL_TRIGGERS):
+            keyword = _cancel_keyword(target, step.get("prompt", "") or "")
+            return {"task_cancelled": keyword} if keyword else None
+
+        description = _clean_description(target, step.get("prompt", "") or "")
+        return {"task_description_recent": description, "within_seconds": 30} if description else None
+
     # Evaluated and intentionally skipped:
     # SysUtilityIntent: action is classified inside the handler at execution time; deriving registry checks from prompt text could disagree and duplicate side effects.
     # MediaControlIntent: volume/playback virtual keys leave no durable OS-state fact where "not verified" reliably means the keypress failed.
     # DictationIntent: typed text lands in whichever app has focus, with no reliable generic OS-state readback.
-    # SchedulerIntent: persists to SQLite (agentic_core/memory_hook.py), not the filesystem — the observer has no DB-read tier, and a glob/mtime check on the db file itself would not reliably distinguish this task's insert from any other concurrent write, so it would not meet the "not verified means did not happen" bar. Needs a new observer tier (e.g. a query-based check), not just a derivation case.
     # DependencyInstallIntent: supervised asynchronously via the process supervisor (sentinel + real PID), not the synchronous postcondition observer this function feeds — see capabilities/developer/dependency_installer.py.
     # CodeActIntent: completion is already supervised by the same sentinel-file mechanism, so a second postcondition layer would duplicate it.
     # InformationRetrievalIntent, ConversationalIntent, ContinuationIntent: read-only/conversational outputs have no durable OS-state postcondition.

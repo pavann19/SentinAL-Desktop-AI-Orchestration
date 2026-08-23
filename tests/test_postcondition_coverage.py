@@ -239,7 +239,6 @@ class TestDeriveExpectedState:
         "SysUtilityIntent",
         "MediaControlIntent",
         "DictationIntent",
-        "SchedulerIntent",
         "DependencyInstallIntent",
         "CodeActIntent",
         "InformationRetrievalIntent",
@@ -514,6 +513,102 @@ class TestAcademicResearchDerivation:
 
         (tmp_path / "SentinAL_Summary_paper_1234567890.txt").write_text("summary")
         assert observe_postcondition(derived).verified is True
+
+
+class TestMemoryTier:
+    """observe_postcondition's task_description_recent / task_cancelled keys,
+    queried against a real isolated MemoryManager (SQLite in tmp_path), same
+    pattern as tests/test_scheduler.py's isolated_memory fixture."""
+
+    @pytest.fixture()
+    def isolated_memory(self, tmp_path, monkeypatch):
+        from agentic_core.memory_hook import MemoryManager
+        m = MemoryManager(db_path=str(tmp_path / "test_memory_tier.db"))
+        monkeypatch.setattr("capabilities.system.scheduler._memory", lambda: m)
+        yield m
+        m.close()
+
+    def test_task_description_recent_verified_for_a_fresh_matching_task(self, isolated_memory):
+        isolated_memory.register_scheduled_task("t1", "call the dentist", None, time.time())
+        obs = observe_postcondition({"task_description_recent": "dentist"})
+        assert obs.verified is True
+        assert obs.tier_used == "memory"
+
+    def test_task_description_recent_unverified_when_no_match(self, isolated_memory):
+        obs = observe_postcondition({"task_description_recent": "dentist"})
+        assert obs.verified is False
+        assert obs.tier_used == "memory"
+
+    def test_task_description_recent_stale_match_does_not_count(self, isolated_memory):
+        """Same freshness principle as glob_recent: a task added long ago
+        matching the same keyword is not evidence THIS step just added one."""
+        isolated_memory.register_scheduled_task("t1", "call the dentist", None, time.time() - 9999)
+        obs = observe_postcondition({"task_description_recent": "dentist", "within_seconds": 60})
+        assert obs.verified is False
+
+    def test_task_description_recent_ignores_completed_tasks(self, isolated_memory):
+        isolated_memory.register_scheduled_task("t1", "call the dentist", None, time.time())
+        isolated_memory.complete_scheduled_task("t1", time.time())
+        obs = observe_postcondition({"task_description_recent": "dentist"})
+        assert obs.verified is False
+
+    def test_task_cancelled_verified_when_nothing_matches(self, isolated_memory):
+        obs = observe_postcondition({"task_cancelled": "dentist"})
+        assert obs.verified is True
+        assert obs.tier_used == "memory"
+
+    def test_task_cancelled_unverified_while_still_pending(self, isolated_memory):
+        isolated_memory.register_scheduled_task("t1", "call the dentist", None, time.time())
+        obs = observe_postcondition({"task_cancelled": "dentist"})
+        assert obs.verified is False
+
+    def test_task_cancelled_verified_after_real_cancel(self, isolated_memory):
+        isolated_memory.register_scheduled_task("t1", "call the dentist", None, time.time())
+        assert observe_postcondition({"task_cancelled": "dentist"}).verified is False
+
+        isolated_memory.complete_scheduled_task("t1", time.time())
+        assert observe_postcondition({"task_cancelled": "dentist"}).verified is True
+
+
+class TestSchedulerDerivation:
+    def test_add_derives_task_description_recent(self):
+        derived = _derive_expected_state(
+            {"intent": "SchedulerIntent", "target": "", "prompt": "remind me to call mom"}
+        )
+        assert derived == {"task_description_recent": "call mom", "within_seconds": 30}
+
+    def test_add_prefers_target_like_the_handler_does(self):
+        """Mirrors _clean_description's own precedence: target wins over prompt
+        when both are present, same as the handler's _add_task()."""
+        derived = _derive_expected_state({
+            "intent": "SchedulerIntent", "target": "call mom",
+            "prompt": "remind me to call mom tonight",
+        })
+        assert derived["task_description_recent"] == "call mom"
+
+    def test_list_request_has_no_postcondition(self):
+        assert _derive_expected_state({
+            "intent": "SchedulerIntent", "target": "", "prompt": "what's on my schedule today",
+        }) is None
+
+    def test_cancel_derives_task_cancelled_with_cleaned_keyword(self):
+        derived = _derive_expected_state({
+            "intent": "SchedulerIntent", "target": "dentist",
+            "prompt": "cancel my dentist reminder",
+        })
+        assert derived == {"task_cancelled": "dentist"}
+
+    def test_cancel_without_keyword_has_no_postcondition(self):
+        assert _derive_expected_state({
+            "intent": "SchedulerIntent", "target": "", "prompt": "cancel my reminder",
+        }) is None
+
+    def test_list_checked_before_cancel_when_both_trigger_words_present(self):
+        """Matches handle_scheduler()'s own precedence (_LIST_TRIGGERS checked
+        first) — this derivation must not disagree with which branch actually runs."""
+        assert _derive_expected_state({
+            "intent": "SchedulerIntent", "target": "", "prompt": "show my tasks to cancel later",
+        }) is None
 
 
 class TestSiteLabelExtraction:
