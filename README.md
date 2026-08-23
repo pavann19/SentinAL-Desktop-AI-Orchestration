@@ -192,7 +192,7 @@ All figures below are reproducible from committed artifacts (see the next sectio
 | **End-to-end task success — real-machine benchmark** | **96.7%** (95% CI 91.7–98.7%, 116/120) |
 | Security fuzzing block rate | **100%** (66/66) |
 | Median end-to-end latency | 101.5 ms (validation adds 0.06 ms) |
-| Test suite | 441 passing, 70.5% coverage |
+| Test suite | 990 passing (CI-gated scope), 87.50% coverage |
 
 **On the real-world number.** Every dataset SentinAL was evaluated against used to be
 self-authored — written by the same person/process being measured against, which is a
@@ -223,11 +223,6 @@ report, and a 95% Wilson confidence interval is reported alongside the point est
 than a bare percentage. Full methodology, the task suite, and every commit's provenance are
 in `benchmarks/`; see [Reproducing the Evaluation](#reproducing-the-evaluation).
 
-**Read the last two success numbers together.** 84.2% is measured on a curated,
-CI-safe task suite; 60% is measured on open-ended queries and is much closer to what a new
-user would actually experience. The gap between them is real and is the main thing standing
-between this prototype and a product.
-
 ## Reproducing the Evaluation
 
 ```bash
@@ -242,11 +237,17 @@ python -m eval.measure_intent_accuracy --mode full-pipeline --sample-size 40 --s
 
 # Task-success harness
 python -m eval.run_eval
+
+# End-to-end benchmark: drives the real pipeline on a real desktop (Windows).
+# Opens/closes real applications and browser tabs — avoid using the machine while it runs.
+python benchmarks/run_benchmark.py --repeat 3
 ```
 
-Results are written to `_evidence/`, alongside the committed runs backing the table above.
-Splits are seeded and the exact indices are committed, so accuracy figures reproduce
-byte-for-byte.
+Results are written to `_evidence/` and `benchmarks/results/`, alongside the committed runs
+backing the table above. Splits are seeded and the exact indices are committed, so accuracy
+figures reproduce byte-for-byte. Every benchmark report records its git commit and a
+dirty-working-tree flag, so a result is only citable alongside the exact code that produced
+it.
 
 ## Testing
 
