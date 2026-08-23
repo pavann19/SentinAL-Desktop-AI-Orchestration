@@ -192,7 +192,7 @@ All figures below are reproducible from committed artifacts (see the next sectio
 | **End-to-end task success — real-machine benchmark** | **96.7%** (95% CI 91.7–98.7%, 116/120) |
 | Security fuzzing block rate | **100%** (66/66) |
 | Median end-to-end latency | 101.5 ms (validation adds 0.06 ms) |
-| Test suite | 856 passing (CI-gated scope), 87.08% coverage |
+| Test suite | 990 passing (CI-gated scope), 87.50% coverage |
 
 **On the real-world number.** Every dataset SentinAL was evaluated against used to be
 self-authored — written by the same person/process being measured against, which is a
