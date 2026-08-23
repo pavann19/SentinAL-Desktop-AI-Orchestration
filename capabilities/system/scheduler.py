@@ -161,13 +161,21 @@ def _list_tasks() -> str:
     return f"You have {len(tasks)} pending item(s):\n" + "\n".join(lines)
 
 
-def _cancel_task(target: str, prompt: str) -> str:
+def _cancel_keyword(target: str, prompt: str) -> str:
+    """Extracted so api_wrapper._derive_expected_state() can compute the exact
+    same search keyword _cancel_task() will use, for its postcondition check —
+    a second, independently-arrived-at cleaning could disagree with this one."""
     keyword = _clean_description(target, prompt)
     for trigger in _CANCEL_TRIGGERS:
         keyword = re.sub(re.escape(trigger), "", keyword, flags=re.IGNORECASE).strip()
     # Words like "my" and "reminder" left over from "cancel my dentist reminder"
     # carry no matching value and would only narrow the LIKE search unhelpfully.
     keyword = re.sub(r"\b(my|the|reminder|task)\b", "", keyword, flags=re.IGNORECASE).strip()
+    return keyword
+
+
+def _cancel_task(target: str, prompt: str) -> str:
+    keyword = _cancel_keyword(target, prompt)
 
     if not keyword:
         return "ERROR: I couldn't tell which task to cancel — no description was given."

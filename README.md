@@ -264,19 +264,19 @@ CI (`.github/workflows/ci.yml`) runs ruff, mypy, and the test suite on every pus
 Stated plainly, because they matter for anyone evaluating this:
 
 - **13 of 19 intents have live effect verification** — 11 synchronously (the postcondition
-  observer checks immediately after execution: process/window/filesystem state, including
-  the EDA heatmap PNG and research summary `.txt` that `DataModelingIntent` and
-  `AcademicResearchIntent` now genuinely write) and 2 more (`CodeActIntent`,
-  `DependencyInstallIntent`) asynchronously, via a background process supervisor that
-  tracks detached, long-running work (an npm install, a generated script) that can't be
-  checked the moment `execute_pipeline()` returns. The remaining 6 intents —
-  `InformationRetrievalIntent`, `ConversationalIntent`, `ContinuationIntent`,
-  `SysUtilityIntent`, `MediaControlIntent`, `DictationIntent` — execute without any
-  independent check that the action actually took effect, beyond whatever
-  `execute_pipeline()` itself reports; most are read-only/conversational outputs with no
-  durable OS-state fact to check. `SchedulerIntent` persists to SQLite rather than the
-  filesystem, so it isn't covered by the current filesystem/process/window observer either
-  — a genuine postcondition check for it would need a new, query-based observer tier.
+  observer checks immediately after execution: process/window/filesystem/memory state,
+  including the EDA heatmap PNG and research summary `.txt` that `DataModelingIntent` and
+  `AcademicResearchIntent` genuinely write, and a query-based tier that checks
+  `SchedulerIntent`'s SQLite-persisted task/reminder rows directly rather than any
+  filesystem proxy) and 2 more (`CodeActIntent`, `DependencyInstallIntent`) asynchronously,
+  via a background process supervisor that tracks detached, long-running work (an npm
+  install, a generated script) that can't be checked the moment `execute_pipeline()`
+  returns. The remaining 6 intents — `InformationRetrievalIntent`, `ConversationalIntent`,
+  `ContinuationIntent`, `SysUtilityIntent`, `MediaControlIntent`, `DictationIntent` — execute
+  without any independent check that the action actually took effect, beyond whatever
+  `execute_pipeline()` itself reports; these are read-only/conversational outputs, or leave
+  no durable OS-state fact where "not verified" would reliably mean "did not happen"
+  (a keypress, typed text landing wherever has focus).
 - **Windows-only.** The execution layer is not portable as written.
 - **GUI automation is pixel-based** (`pyautogui`), so it breaks on resolution changes, DPI
   scaling, multi-monitor setups, and theme changes. Migration to UI Automation trees is
