@@ -234,11 +234,41 @@ def _derive_expected_state(step: dict) -> dict | None:
             "settle_timeout_ms": 3000,
         }
 
+    # ── DataModelingIntent: the EDA handler saves a real heatmap PNG to DATA_DIR ──
+    # Same shape as the WindowManagementIntent screenshot check below: the exact
+    # filename embeds a stem derived from the resolved CSV path plus a call-time
+    # timestamp, which this derivation site cannot recompute without duplicating
+    # the handler's own filename resolution (_safe_stem + _resolve_csv_path) — and
+    # a second, independently-arrived-at resolution could disagree with the
+    # handler's, which is the same trap SysUtilityIntent is skipped for below. A
+    # wildcard glob scoped to the intent's fixed filename prefix, with freshness
+    # bounded by settle/within_seconds, is conclusive without that duplication.
+    if intent == "DataModelingIntent":
+        from config.paths import DATA_DIR
+        return {
+            "glob_recent": os.path.join(DATA_DIR, "SentinAL_EDA_*.png"),
+            "within_seconds": 120,
+            "settle_timeout_ms": 3000,
+        }
+
+    # ── AcademicResearchIntent: the summarizer saves a real .txt to DATA_DIR ────
+    # Same reasoning and same wildcard-by-prefix approach as DataModelingIntent
+    # above — see capabilities/developer/academic_research.py's own docstring,
+    # which anticipated this: "the postcondition is a filesystem check on the
+    # summary."
+    if intent == "AcademicResearchIntent":
+        from config.paths import DATA_DIR
+        return {
+            "glob_recent": os.path.join(DATA_DIR, "SentinAL_Summary_*.txt"),
+            "within_seconds": 120,
+            "settle_timeout_ms": 3000,
+        }
+
     # Evaluated and intentionally skipped:
     # SysUtilityIntent: action is classified inside the handler at execution time; deriving registry checks from prompt text could disagree and duplicate side effects.
     # MediaControlIntent: volume/playback virtual keys leave no durable OS-state fact where "not verified" reliably means the keypress failed.
     # DictationIntent: typed text lands in whichever app has focus, with no reliable generic OS-state readback.
-    # SchedulerIntent, AcademicResearchIntent, DataModelingIntent: currently honest ERROR stubs that write no schedule, summary, model, or visualization artifact.
+    # SchedulerIntent: persists to SQLite (agentic_core/memory_hook.py), not the filesystem — the observer has no DB-read tier, and a glob/mtime check on the db file itself would not reliably distinguish this task's insert from any other concurrent write, so it would not meet the "not verified means did not happen" bar. Needs a new observer tier (e.g. a query-based check), not just a derivation case.
     # DependencyInstallIntent: supervised asynchronously via the process supervisor (sentinel + real PID), not the synchronous postcondition observer this function feeds — see capabilities/developer/dependency_installer.py.
     # CodeActIntent: completion is already supervised by the same sentinel-file mechanism, so a second postcondition layer would duplicate it.
     # InformationRetrievalIntent, ConversationalIntent, ContinuationIntent: read-only/conversational outputs have no durable OS-state postcondition.

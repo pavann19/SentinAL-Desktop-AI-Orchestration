@@ -240,8 +240,6 @@ class TestDeriveExpectedState:
         "MediaControlIntent",
         "DictationIntent",
         "SchedulerIntent",
-        "AcademicResearchIntent",
-        "DataModelingIntent",
         "DependencyInstallIntent",
         "CodeActIntent",
         "InformationRetrievalIntent",
@@ -474,6 +472,48 @@ class TestWindowManagementDerivation:
         assert _derive_expected_state(
             {"intent": "WindowManagementIntent", "prompt": "", "target": "screenshot please"}
         ) is not None
+
+
+class TestDataModelingDerivation:
+    def test_derives_a_glob_check_on_the_eda_png_prefix(self):
+        derived = _derive_expected_state(
+            {"intent": "DataModelingIntent", "target": "sales.csv"}
+        )
+        assert derived is not None
+        assert "SentinAL_EDA_" in derived["glob_recent"]
+        assert derived["glob_recent"].endswith(".png")
+        assert derived["within_seconds"] > 0
+        assert derived["settle_timeout_ms"] > 0
+
+    def test_verifies_after_a_real_heatmap_is_written(self, tmp_path, monkeypatch):
+        import config.paths as paths_module
+        monkeypatch.setattr(paths_module, "DATA_DIR", str(tmp_path))
+        derived = _derive_expected_state({"intent": "DataModelingIntent", "target": "sales.csv"})
+        assert observe_postcondition(derived).verified is False  # nothing written yet
+
+        (tmp_path / "SentinAL_EDA_sales_1234567890.png").write_bytes(b"x")
+        assert observe_postcondition(derived).verified is True
+
+
+class TestAcademicResearchDerivation:
+    def test_derives_a_glob_check_on_the_summary_txt_prefix(self):
+        derived = _derive_expected_state(
+            {"intent": "AcademicResearchIntent", "target": "paper.pdf"}
+        )
+        assert derived is not None
+        assert "SentinAL_Summary_" in derived["glob_recent"]
+        assert derived["glob_recent"].endswith(".txt")
+        assert derived["within_seconds"] > 0
+        assert derived["settle_timeout_ms"] > 0
+
+    def test_verifies_after_a_real_summary_is_written(self, tmp_path, monkeypatch):
+        import config.paths as paths_module
+        monkeypatch.setattr(paths_module, "DATA_DIR", str(tmp_path))
+        derived = _derive_expected_state({"intent": "AcademicResearchIntent", "target": "paper.pdf"})
+        assert observe_postcondition(derived).verified is False  # nothing written yet
+
+        (tmp_path / "SentinAL_Summary_paper_1234567890.txt").write_text("summary")
+        assert observe_postcondition(derived).verified is True
 
 
 class TestSiteLabelExtraction:
