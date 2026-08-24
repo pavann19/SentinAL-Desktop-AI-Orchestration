@@ -70,12 +70,30 @@ docs flagged as the most likely tail-risk.
       would have silently disabled both the UIA tier and the
       postcondition observer's `window_exists()` checks. Fixed in the
       same commit.
-- [ ] Not done: no benchmark task currently exercises a non-default
-      DPI/resolution/multi-monitor configuration, so S3's actual lift on
-      the tracked success-rate number is unmeasured — the fix is real
-      (confirmed by code inspection + new tests in
-      `tests/test_gui_resolver.py`), but S2's benchmark can't yet prove
-      the delta the way it proved the intent-verification lift in S1.
+- [x] Live-verified against a real running window (not mocked) — 2026-08-24.
+      `find_control_by_label("", "Close")` resolved a real Notepad "Close"
+      button's coordinates, matching an independent manual `pywinauto`
+      probe exactly, and the exact-match lookup correctly distinguished
+      it from a same-window "Close Tab" button with different text — the
+      collision a naive fuzzy match would have hit. Documented in
+      `gui_resolver.py` next to `resolve_element()`.
+- [x] Found along the way, not currently reachable in production: apps
+      that host multiple top-level windows under one process (Windows
+      11's modern Notepad — confirmed live, 10 accumulated windows shared
+      one PID) break `process_absent` as a postcondition for "did closing
+      THIS window close the app." Not a live bug — `GeneralizedOSIntent`'s
+      "gui"/"click" action derives no postcondition today — but recorded
+      as a note for whoever wires one later: `window_exists` (this window
+      gone) is the correct check for a click-to-close action, not
+      `process_absent` (this app entirely gone).
+- [ ] Still not done: no benchmark task currently exercises a non-default
+      DPI/resolution/multi-monitor configuration, so S3's lift on the
+      tracked success-rate number is unmeasured — the fix is now both
+      code-inspection-confirmed AND live-verified against a real window,
+      but S2's benchmark still can't prove the delta the way it proved
+      the intent-verification lift in S1. Left open — simulating a real
+      DPI/resolution change safely on a live dev machine is its own,
+      separate scope, not a quick addition.
 
 ---
 
