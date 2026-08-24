@@ -263,6 +263,29 @@ def find_by_description(description: str) -> tuple[int, int] | None:
         return None
 
 
+# ── Live-verified 2026-08-24 ──────────────────────────────────────────────────
+# find_control_by_label() confirmed against a real, running Notepad window (not
+# mocked): resolved coordinates for a real "Close" button matched an
+# independent manual pywinauto probe exactly, and the exact-match child_window
+# lookup correctly distinguished the window-chrome "Close" button from a
+# same-window "Close Tab" button with different text — the ambiguity a naive
+# fuzzy/substring match would have hit.
+#
+# Found along the way, NOT currently reachable in production: apps that host
+# multiple independent top-level windows under one process (Windows 11's
+# modern Notepad is one — verified live, 10 accumulated windows shared a
+# single Notepad.exe PID) break `process_absent` as a postcondition for "did
+# clicking Close on THIS window actually close the app" — the process survives
+# as long as any other window of the same app is open elsewhere. Not a bug
+# today: GeneralizedOSIntent's "gui"/"click" action derives no postcondition
+# at all (see api_wrapper._derive_expected_state()'s "intentionally skipped"
+# list), so nothing currently checks this. Relevant if a future postcondition
+# is ever added for a UIA-resolved click-to-close action — `window_exists`
+# (this window specifically gone) would be the correct check, not
+# `process_absent` (this app entirely gone).
+# ────────────────────────────────────────────────────────────────────────────
+
+
 # ── Unified Resolver Entry Point ──────────────────────────────────────────────
 def resolve_element(
     label: str = "",
