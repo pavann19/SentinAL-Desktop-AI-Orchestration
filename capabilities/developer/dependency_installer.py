@@ -6,6 +6,11 @@
 #   - Package names are validated against an injection-safe regex before execution
 #   - pip: always uses `python -m pip` (not bare `pip`) for correct venv targeting
 #   - npm: runs in a user-specified cwd (defaults to CWD)
+#   - npm: sandboxed in a throwaway Docker container when Docker is available
+#     (S4 containment — see _sandboxed_npm_script_body's docstring), falling
+#     back to a direct host install when Docker isn't running or produces a
+#     native module the host can't use. pip stays unsandboxed — see the same
+#     docstring for why.
 #   - Output is streamed and capped at 2000 chars for LLM summarization
 
 import logging
@@ -24,6 +29,80 @@ _SAFE_PKG_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\.\[\]@>=<!, ]+$')
 
 # Maximum time for dependency install (large packages can take a while)
 _INSTALL_TIMEOUT = 300  # 5 minutes
+
+# ── Sandboxed npm install (S4 containment) ──────────────────────────────────
+# npm install's real threat is the same one pip's setup.py has always had:
+# an npm postinstall script (or a compromised/malicious package) runs
+# arbitrary code at install time, directly on the host, with the user's full
+# privileges — a well-known real supply-chain attack vector, not a
+# hypothetical one. Containing that code inside a throwaway Linux container
+# is a genuine, narrow win: node_modules still lands on the host (mounted as
+# a volume — the whole point of the install), but whatever the postinstall
+# script does beyond that mounted directory cannot touch the rest of the
+# machine.
+#
+# NOT extended to pip_install(): pip has no existing "install location"
+# concept to redirect into a mount (it always targets whatever interpreter
+# environment is currently active) — sandboxing it cleanly needs a
+# --target/venv design decision this function doesn't have yet, so it stays
+# out of scope here rather than bolted on as a behavior change.
+#
+# Docker Desktop on this class of Windows Home machine only runs LINUX
+# containers (Windows containers need Hyper-V, which Home editions don't
+# support — same reason Windows Sandbox is unavailable). That means a
+# package with a native/compiled component (node-sass, sharp, bcrypt, any
+# node-gyp build) comes out of the sandboxed install as a Linux binary,
+# unusable by the host's Windows Node. Detected after the fact (see the
+# generated script's own post-install check below) rather than guessed at
+# up front — if it happens, the script falls back to a direct, unsandboxed
+# install in the same visible window so the packages actually work,
+# consistent with sandbox-by-default rather than sandbox-only.
+_DOCKER_NODE_IMAGE = "node:20-slim"
+_DOCKER_CHECK_TIMEOUT = 5
+
+
+def _docker_available() -> bool:
+    """True if the Docker daemon is reachable right now. Checked fresh per
+    call, not cached — Docker Desktop on a memory-constrained machine can be
+    started and stopped between requests, and a stale "available" answer
+    would launch a script that immediately fails to connect."""
+    try:
+        result = subprocess.run(
+            ["docker", "info"], capture_output=True, timeout=_DOCKER_CHECK_TIMEOUT, check=False,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+def _sandboxed_npm_script_body(pkg_list: list[str], dev: bool, work_dir: str) -> str:
+    """Builds the PowerShell body for a Docker-sandboxed npm install, with a
+    post-install native-module check that falls back to a direct host
+    install in the same window if the sandboxed result isn't usable."""
+    npm_args = " ".join(pkg_list) if pkg_list else ""
+    dev_flag = " --save-dev" if dev else ""
+    # Windows drive-letter paths pass through Docker Desktop's CLI path
+    # translation unchanged (e.g. "C:\Users\..." -> the Linux mount it needs) —
+    # no manual /c/... conversion needed from a native docker.exe invocation.
+    docker_cmd = (
+        f'docker run --rm -v "{work_dir}:/workspace" -w /workspace '
+        f'{_DOCKER_NODE_IMAGE} npm install {npm_args}{dev_flag}'.strip()
+    )
+    direct_cmd = f'npm install {npm_args}{dev_flag}'.strip()
+    return (
+        f"cd '{work_dir}'\n"
+        f"Write-Host '[SentinAL] Sandboxed install (Docker): {docker_cmd}' -ForegroundColor Cyan\n"
+        f"{docker_cmd}\n"
+        "$__native = Get-ChildItem -Path node_modules -Recurse -Filter '*.node' -ErrorAction SilentlyContinue\n"
+        "if ($__native) {\n"
+        "    Write-Host 'WARNING: sandboxed install produced native module(s) built for Linux, "
+        "not usable on Windows:' -ForegroundColor Yellow\n"
+        "    $__native | ForEach-Object { Write-Host \"  - $($_.FullName)\" -ForegroundColor Yellow }\n"
+        "    Write-Host '[SentinAL] Falling back to a direct (unsandboxed) install so these "
+        "packages actually work...' -ForegroundColor Yellow\n"
+        f"    {direct_cmd}\n"
+        "}\n"
+    )
 
 
 def _validate_packages(packages: str) -> tuple[bool, str]:
@@ -81,6 +160,7 @@ def npm_install(packages: str = "", dev: bool = False, cwd: str = "") -> str:
     if not os.path.isdir(work_dir):
         return f"ERROR: Directory '{work_dir}' does not exist."
 
+    pkg_list: list[str] = []
     if packages.strip():
         valid, reason = _validate_packages(packages)
         if not valid:
@@ -93,11 +173,19 @@ def npm_install(packages: str = "", dev: bool = False, cwd: str = "") -> str:
         # npm install with no args = restore from package.json
         cmd = ["npm", "install"]
 
-    _logger.info(f"npm install in '{work_dir}': {' '.join(cmd)}")
-    return _run_install(cmd, label=f"npm install {packages}", cwd=work_dir)
+    label = f"npm install {packages}"
+    if _docker_available():
+        _logger.info(f"npm install in '{work_dir}' (sandboxed via Docker): {' '.join(cmd)}")
+        return _run_install(
+            cmd, label=label, cwd=work_dir,
+            script_body=_sandboxed_npm_script_body(pkg_list, dev, work_dir),
+        )
+
+    _logger.info(f"npm install in '{work_dir}' (Docker unavailable, direct): {' '.join(cmd)}")
+    return _run_install(cmd, label=label, cwd=work_dir)
 
 
-def _run_install(cmd: list[str], label: str, cwd: str | None = None) -> str:
+def _run_install(cmd: list[str], label: str, cwd: str | None = None, script_body: str | None = None) -> str:
     """
     Internal: runs an install command in a VISIBLE terminal window.
     The user can watch the install progress scroll by in real-time.
@@ -116,6 +204,11 @@ def _run_install(cmd: list[str], label: str, cwd: str | None = None) -> str:
     sentinel appended, and launch it directly (list-form Popen,
     CREATE_NEW_CONSOLE, no `start`/`Start-Process` wrapper) so Popen.pid IS
     the real, visible install window.
+
+    script_body: pre-built PowerShell body (e.g. a Docker-sandboxed install
+    with its own fallback logic) to use verbatim instead of deriving one from
+    `cmd`. `cmd` is still used for the fallback (`FileNotFoundError`) path
+    below, since that path has no sandboxing concept to preserve.
     """
     work_dir = cwd or os.getcwd()
     inner_cmd = " ".join(f'"{arg}"' if " " in arg else arg for arg in cmd)
@@ -133,11 +226,14 @@ def _run_install(cmd: list[str], label: str, cwd: str | None = None) -> str:
         )
         sentinel_path = new_sentinel_path("dependency_install")
 
+        body = script_body if script_body is not None else (
+            f"cd '{work_dir}'\n"
+            f"{inner_cmd}\n"
+            "Write-Host '---[SentinAL] Install complete---' -ForegroundColor Green\n"
+        )
         script = (
             build_sentinel_header()
-            + f"cd '{work_dir}'\n"
-            + f"{inner_cmd}\n"
-            + "Write-Host '---[SentinAL] Install complete---' -ForegroundColor Green\n"
+            + body
             + build_sentinel_footer(sentinel_path)
         )
         with open(script_path, "w", encoding="utf-8") as f:

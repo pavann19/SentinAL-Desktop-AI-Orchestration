@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from unittest.mock import patch, MagicMock, mock_open
 from capabilities.developer.dependency_installer import (
     pip_install, npm_install, _validate_packages, _run_install,
+    _docker_available, _sandboxed_npm_script_body,
 )
 
 
@@ -81,23 +82,25 @@ class TestNpmInstall:
         result = npm_install("bad; rm -rf /", cwd=os.getcwd())
         assert result.startswith("ERROR")
 
+    @patch("capabilities.developer.dependency_installer._docker_available", return_value=False)
     @patch("agentic_core.process_supervisor.register_watch")
     @patch("time.sleep")
     @patch("subprocess.Popen")
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
-    def test_valid_package_launches_terminal(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register):
+    def test_valid_package_launches_terminal(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register, mock_docker):
         mock_popen.return_value = MagicMock(pid=4242)
         result = npm_install("lodash", cwd=os.getcwd())
         mock_popen.assert_called_once()
         assert "Launched visible terminal" in result
 
+    @patch("capabilities.developer.dependency_installer._docker_available", return_value=False)
     @patch("agentic_core.process_supervisor.register_watch")
     @patch("time.sleep")
     @patch("subprocess.Popen")
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
-    def test_no_packages_installs_from_package_json(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register):
+    def test_no_packages_installs_from_package_json(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register, mock_docker):
         mock_popen.return_value = MagicMock(pid=4242)
         result = npm_install("", cwd=os.getcwd())
         mock_popen.assert_called_once()
@@ -160,6 +163,104 @@ class TestRunInstallPidFix:
         written = mock_file().write.call_args[0][0]
         assert "npm install lodash" in written
         assert "SentinAL completion sentinel" in written
+
+
+class TestDockerAvailable:
+
+    @patch("subprocess.run")
+    def test_returncode_zero_means_available(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=0)
+        assert _docker_available() is True
+
+    @patch("subprocess.run")
+    def test_nonzero_returncode_means_unavailable(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=1)
+        assert _docker_available() is False
+
+    @patch("subprocess.run", side_effect=FileNotFoundError())
+    def test_docker_not_installed_means_unavailable(self, mock_run):
+        assert _docker_available() is False
+
+    @patch("subprocess.run", side_effect=Exception("timed out"))
+    def test_unexpected_exception_means_unavailable_not_raised(self, mock_run):
+        assert _docker_available() is False
+
+
+class TestSandboxedNpmScriptBody:
+
+    def test_wraps_npm_install_in_docker_run_with_mounted_cwd(self):
+        body = _sandboxed_npm_script_body(["lodash"], dev=False, work_dir=r"C:\proj")
+        assert "docker run --rm" in body
+        assert r'-v "C:\proj:/workspace"' in body
+        assert "-w /workspace" in body
+        assert "npm install lodash" in body
+
+    def test_dev_flag_included(self):
+        body = _sandboxed_npm_script_body(["lodash"], dev=True, work_dir=r"C:\proj")
+        assert "--save-dev" in body
+
+    def test_empty_package_list_installs_from_package_json(self):
+        body = _sandboxed_npm_script_body([], dev=False, work_dir=r"C:\proj")
+        assert "npm install" in body
+        assert "npm install  " not in body  # no double space where a package name would go
+
+    def test_native_module_check_and_fallback_are_present(self):
+        body = _sandboxed_npm_script_body(["sharp"], dev=False, work_dir=r"C:\proj")
+        assert "*.node" in body
+        assert "Falling back to a direct" in body
+        # The fallback command itself must be unsandboxed (no "docker run").
+        fallback_section = body.split("Falling back to a direct")[1]
+        assert "docker run" not in fallback_section
+        assert "npm install sharp" in fallback_section
+
+
+class TestNpmInstallDockerWiring:
+
+    @patch("capabilities.developer.dependency_installer._docker_available", return_value=True)
+    @patch("agentic_core.process_supervisor.register_watch")
+    @patch("time.sleep")
+    @patch("subprocess.Popen")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.makedirs")
+    def test_sandboxed_script_used_when_docker_available(
+        self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register, mock_docker,
+    ):
+        mock_popen.return_value = MagicMock(pid=4242)
+        npm_install("lodash", cwd=os.getcwd())
+        written = mock_file().write.call_args[0][0]
+        assert "docker run --rm" in written
+
+    @patch("capabilities.developer.dependency_installer._docker_available", return_value=False)
+    @patch("agentic_core.process_supervisor.register_watch")
+    @patch("time.sleep")
+    @patch("subprocess.Popen")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.makedirs")
+    def test_direct_install_used_when_docker_unavailable(
+        self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register, mock_docker,
+    ):
+        mock_popen.return_value = MagicMock(pid=4242)
+        npm_install("lodash", cwd=os.getcwd())
+        written = mock_file().write.call_args[0][0]
+        assert "docker run" not in written
+        assert "npm install lodash" in written
+
+    @patch("capabilities.developer.dependency_installer._docker_available", return_value=True)
+    @patch("agentic_core.process_supervisor.register_watch")
+    @patch("time.sleep")
+    @patch("subprocess.Popen")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.makedirs")
+    def test_pip_install_never_checks_docker(
+        self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register, mock_docker,
+    ):
+        """pip_install stays unsandboxed regardless of Docker availability —
+        it has no target-directory concept to redirect into a mount."""
+        mock_popen.return_value = MagicMock(pid=4242)
+        pip_install("requests")
+        mock_docker.assert_not_called()
+        written = mock_file().write.call_args[0][0]
+        assert "docker run" not in written
 
 
 class TestRunInstallFallback:
