@@ -97,23 +97,60 @@ docs flagged as the most likely tail-risk.
 
 ---
 
-## S4 — Containment substrate (not started — the gate on all autonomy)
+## S4 — Containment substrate (started — one real slice done, most of it open)
 Gate (per `CONTAINMENT_ARCHITECTURE.md` §6/§7): a T1→T2 tier reversal
 demonstrated under test — i.e. proof that a compromised or hallucinating
 plan is physically contained, not just discouraged by a path denylist.
 
+- [x] **Environment reality-check before committing to a plan** — 2026-08-29.
+      This machine (Windows 11 Home) has no Hyper-V, so both Windows Sandbox
+      and Windows containers are unavailable; Docker here only runs Linux
+      containers. That ruled out the original plan of sandboxing
+      `CodeActIntent` first — its LLM-generated scripts are explicitly
+      Windows-targeted (`winget`, Windows paths per its own system prompt)
+      and can't run in a Linux container at all. Re-scoped to
+      `npm_install()` instead: cross-platform by nature, so a Linux
+      container genuinely works for it.
+- [x] **`npm_install()` sandboxed in a throwaway Docker container** —
+      2026-08-29, `cad4a85`/`af66436`. Runs inside `node:20-slim`, mounting
+      the same target directory it already writes `node_modules` into.
+      Contains the real threat this always had: an npm postinstall script
+      running arbitrary code directly on the host with full user
+      privileges (a known supply-chain attack vector), not a hypothetical
+      one. `_docker_available()` checked fresh per call (not cached —
+      Docker Desktop gets started/stopped between requests on this
+      machine); falls back to a direct host install, in the same visible
+      window, when Docker isn't running OR when the sandboxed install
+      produces a native module (`*.node` file — a Linux binary, unusable
+      by the host's Windows Node), detected by the generated script
+      itself post-install rather than guessed at up front.
+- [x] **`pip_install()` deliberately left unsandboxed** — it has no
+      existing target-directory concept to redirect into a mount (always
+      targets whichever interpreter environment is active); containing it
+      needs a real `--target`/venv design decision, not a behavior change
+      bolted on here.
+- [ ] **Live end-to-end round-trip NOT verified** — real container
+      execution was confirmed on this machine (a plain `python:3.12-slim`
+      container ran and returned expected output), and all script-
+      generation/fallback/availability-check logic is unit-tested (11 new
+      tests). But a full live `npm install <pkg>` through the actual
+      container was not completed: two live Docker Desktop starts on this
+      machine dropped available RAM from single-digit GB to under 1 GB
+      (0.66 GB / 94.6% used at the worst point, Docker self-terminated
+      once already under similar pressure earlier in this same session).
+      Stated as open rather than assumed — needs either more free RAM at
+      test time or a deliberately time-boxed retry.
 - [ ] Overlay writes / snapshots so a sandboxed action's filesystem effect
       is provisional until approved, not immediate.
 - [ ] Budgets (time/action-count ceilings per plan).
 - [ ] Capability broker replacing the current allowlist-plus-sandbox-check
       model with an explicit grant per action.
-- [ ] Sandboxed execution tier (Docker or Windows Sandbox) for
-      `CodeActIntent` + `DependencyInstallIntent` specifically —
-      `SENTINAL_V2_RECONCILED_ARCHITECTURE.md` §2/§8 calls this the
-      "Sandboxed Tier," explicitly split from the already-substantially-
-      built "Host-Supervised Tier" (allowlist, sandbox path checks,
-      postcondition observer, process supervisor — all of which already
-      exist and are not part of this item).
+- [ ] `CodeActIntent` containment — genuinely blocked on this machine's
+      lack of Hyper-V (see the reality-check item above), not just
+      unscheduled. Would need either Windows containers on a different
+      edition/machine, or rescoping `CodeActIntent` itself to stop
+      generating Windows-specific operations — both are real, separate
+      decisions, not a quick follow-up.
 
 **Do not start S5 or S6 before this is real.** That's not a stylistic
 preference — it's `CONTAINMENT_ARCHITECTURE.md` §7's explicit corrected
