@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # processor.py
 # Intent Extraction Layer for SentinAL
 # Converts natural language into a JSON array of system actions.
@@ -404,6 +406,8 @@ def extract_intent(prompt: str) -> list:
         return fast_path
 
     try:
+        from agentic_core.goal_graph import GoalGraph, GoalNode
+        from agentic_core.planner import is_multistep_query, planner
         from agentic_core.router import router
         
         # ── PHASE 0: CODEACT INTERCEPTION ─────────────────────────────────────
@@ -419,33 +423,33 @@ def extract_intent(prompt: str) -> list:
                 "speech_response": "On it. I'm generating a script and will open a terminal to run everything step by step.",
             }]
 
-        # ── PHASE 1: SPLIT MULTI-STEP ─────────────────────────────────────────
+        # ── PHASE 1: S5 GOAL GRAPH PLANNER (ON-DEMAND MULTI-STEP) ─────────────
+        # Gated behind is_multistep_query(): single-step commands (~94% traffic)
+        # pay ZERO extra latency and NO planner LLM call.
+        # When multi-step is detected, the Goal Graph Planner decomposes the goal
+        # into a dependency-aware DAG (GoalGraph) with data-chaining.
+        if is_multistep_query(prompt):
+            print(f"[AUDIT] Multi-Step Goal detected for: '{prompt}'. Engaging S5 Goal Graph Planner.")
+            goal_graph = planner.plan_goal(prompt)
+            pipeline_steps = goal_graph.to_pipeline()
+            if pipeline_steps:
+                print(f"[AUDIT] S5 Planner generated DAG with {len(pipeline_steps)} steps.")
+                return pipeline_steps
+
+        # Fallback multi-step check: if is_multistep_query didn't catch it but split_multistep does
         queries = split_multistep(prompt)
-        print(f"[AUDIT] Multi-Step Splitter: Parsed {len(queries)} steps: {queries}")
-        
-        # ── Fix 1.6: GLOBAL REASONING PASS ──
-        # If we have multiple steps, or the prompt is complex, we use a single reasoning call
-        # to ensure data-chaining (like {{LAST_RESULT}}) is planned correctly.
-        if len(queries) > 1 or any(x in prompt.lower() for x in ["then", "and then", "after that"]):
-            print("[AUDIT] Complex multi-step detected. Engaging Global Reasoning Orchestrator.")
-            llm_plan = _get_routing_llm("Global Reasoning")
-            # We use the full prompt here, not the split queries, so the LLM sees the data-chaining intent.
-            plan_prompt = f"{SYSTEM_PROMPT}\n\nPlan a full execution sequence for this request: '{prompt}'. You must return a valid JSON array of intents. If a step depends on a previous result, use '{{{{LAST_RESULT}}}}' in its parameters. Reference the allowed intents list provided in your system instructions."
-            try:
-                resp = llm_plan.invoke([("system", plan_prompt)])
-                plan = safe_json_loads(resp.content, context="Global Plan")
-                if plan and isinstance(plan, list):
-                    print(f"[AUDIT] Global Plan generated: {len(plan)} steps.")
-                    return plan
-                else:
-                    print("[RELIABILITY ERROR] Global Reasoning failed to return valid JSON array. Falling back to sequential extraction.")
-            except Exception as e:
-                print(f"[SRE] Global Reasoning failed: {e}. Falling back to sequential extraction.")
+        if len(queries) > 1:
+            print(f"[AUDIT] Multi-Step Splitter fallback: Parsed {len(queries)} steps: {queries}")
+            goal_graph = planner.plan_goal(prompt)
+            pipeline_steps = goal_graph.to_pipeline()
+            if pipeline_steps and len(pipeline_steps) > 1:
+                return pipeline_steps
 
         final_pipeline = []
         
         for q_idx, step_query in enumerate(queries):
             print(f"[AUDIT] Routing Step {q_idx+1}/{len(queries)}: '{step_query}'")
+
             
             # ── DETERMINISTIC APP_MAP BYPASS ──────────────────────────────────
             # ── DETERMINISTIC REGISTRY BYPASS ──────────────────────────────────
@@ -685,3 +689,21 @@ def extract_intent(prompt: str) -> list:
             "target": "Intent Parsing Failed", 
             "value": f"The model did not return a valid format. Details: {e!s}"
         }]
+
+
+def extract_goal_graph(prompt: str) -> GoalGraph:
+    """
+    S5 Goal Graph entry point. Returns a dependency-aware GoalGraph (DAG)
+    for a user prompt. Single-step requests return a single-node graph,
+    while multi-step requests return a decomposed DAG.
+    """
+    from agentic_core.goal_graph import GoalGraph, GoalNode
+    from agentic_core.planner import is_multistep_query, planner
+
+    if is_multistep_query(prompt):
+        return planner.plan_goal(prompt)
+
+    # For single-step or fast-path requests, extract steps and build a GoalGraph
+    steps = extract_intent(prompt)
+    return GoalGraph.from_pipeline(steps, goal_description=prompt)
+

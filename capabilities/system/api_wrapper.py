@@ -429,3 +429,177 @@ async def process_command(prompt: str) -> dict[str, Any]:
         output["response"] = f"Pipeline Integration Error: {e!s}"
 
     return output
+
+
+def execute_goal_graph_observed(graph: Any, cancel_event=None) -> dict[str, Any]:
+    """
+    S5 Goal Graph Execution Engine: Plan -> Act -> Observe -> Reflect (Critic).
+    Executes a GoalGraph node-by-node in dependency-respecting topological order.
+
+    Security & Verification Invariants:
+    1. Every step emitted by the planner MUST pass through validate_steps() before execution.
+    2. Postcondition observer checks real OS state after each step.
+    3. Resident Critic evaluates the observation and bounds replans to MAX_REPLANS.
+    4. Data chaining ({{LAST_RESULT}}, {{step_id.result}}) is resolved dynamically as parent steps complete.
+    """
+    from agentic_core.critic import critic
+    from agentic_core.executor import (
+        FAILURE_CATEGORY_CANCELLED,
+        FAILURE_CATEGORY_PIPELINE_ERROR,
+        FAILURE_CATEGORY_POSTCONDITION_MISMATCH,
+        FAILURE_CATEGORY_SUCCESS,
+        MAX_REPLANS,
+        _run_and_observe,
+    )
+    from agentic_core.goal_graph import GoalGraph, GoalNode
+    from agentic_core.planner import planner
+    from agentic_core.validator import validate_steps
+
+    if not isinstance(graph, GoalGraph):
+        if isinstance(graph, list):
+            graph = GoalGraph.from_pipeline(graph)
+        else:
+            return {
+                "validation": "Error",
+                "execution": "Error",
+                "response": "Invalid graph provided.",
+                "failure_category": FAILURE_CATEGORY_PIPELINE_ERROR,
+                "replanned": False,
+            }
+
+    results: list[dict[str, Any]] = []
+    replanned_any = False
+    final_failure_category = FAILURE_CATEGORY_SUCCESS
+    overall_response = ""
+
+    try:
+        ordered_nodes = graph.topological_sort()
+    except ValueError as e:
+        return {
+            "validation": "Denied",
+            "execution": "Blocked",
+            "response": f"Goal graph validation error: {e}",
+            "failure_category": FAILURE_CATEGORY_PIPELINE_ERROR,
+            "replanned": False,
+        }
+
+    for node in ordered_nodes:
+        # Check cancellation before starting node
+        if cancel_event and cancel_event.is_set():
+            graph.mark_node_failed(node.step_id, "Cancelled by user/system")
+            return {
+                "validation": "Approved",
+                "execution": "Failed",
+                "response": "Execution cancelled by user.",
+                "failure_category": FAILURE_CATEGORY_CANCELLED,
+                "replanned": replanned_any,
+                "graph": graph.to_dict(),
+            }
+
+        # Check if node was blocked by a failed parent dependency
+        if node.status == "blocked":
+            results.append({
+                "step_id": node.step_id,
+                "status": "blocked",
+                "detail": "Blocked due to dependency failure.",
+            })
+            continue
+
+        # Dynamic data resolution (e.g. {{LAST_RESULT}})
+        resolved_step = graph.resolve_data_dependencies(node)
+
+        # ── DETERMINISTIC SECURITY GATE: validate_steps() MUST RUN FIRST ─────
+        is_valid, validation_msg, _ = validate_steps([resolved_step])
+        if not is_valid:
+            graph.mark_node_failed(node.step_id, f"Validation denied: {validation_msg}")
+            return {
+                "validation": "Denied",
+                "execution": "Blocked",
+                "response": f"Step '{node.step_id}' blocked by security validation: {validation_msg}",
+                "failure_category": FAILURE_CATEGORY_PIPELINE_ERROR,
+                "replanned": replanned_any,
+                "graph": graph.to_dict(),
+            }
+
+        # Attach expected_state if not already attached
+        if "expected_state" not in resolved_step or not resolved_step["expected_state"]:
+            derived = _derive_expected_state(resolved_step)
+            if derived:
+                resolved_step["expected_state"] = derived
+                node.expected_state = derived
+
+        # ── EXECUTION & OBSERVATION PASS ──────────────────────────────────────
+        node.status = "running"
+        result_str, snapshot_diff, step_obs = _run_and_observe([resolved_step], cancel_event)
+        observation = None
+        if step_obs:
+            first_obs = step_obs[0]
+            observation = first_obs.get("observation") if isinstance(first_obs, dict) else first_obs
+
+        # ── RESIDENT CRITIC VERDICT ───────────────────────────────────────────
+        verdict = critic.evaluate_step(node, result_str, observation)
+
+        # ── BOUNDED REPLAN ON POSTCONDITION MISMATCH ──────────────────────────
+        while critic.should_replan(node, verdict):
+            replanned_any = True
+            graph = planner.replan_failed_node(graph, node.step_id, verdict.feedback)
+            node = graph.nodes[node.step_id]
+
+            resolved_step = graph.resolve_data_dependencies(node)
+            is_valid, validation_msg, _ = validate_steps([resolved_step])
+            if not is_valid:
+                graph.mark_node_failed(node.step_id, f"Replanned step denied: {validation_msg}")
+                verdict = critic.evaluate_step(node, f"ERROR validation: {validation_msg}")
+                break
+
+            if "expected_state" not in resolved_step or not resolved_step["expected_state"]:
+                derived = _derive_expected_state(resolved_step)
+                if derived:
+                    resolved_step["expected_state"] = derived
+                    node.expected_state = derived
+
+            result_str, snapshot_diff, step_obs = _run_and_observe([resolved_step], cancel_event)
+            observation = None
+            if step_obs:
+                first_obs = step_obs[0]
+                observation = first_obs.get("observation") if isinstance(first_obs, dict) else first_obs
+            verdict = critic.evaluate_step(node, result_str, observation)
+
+        # Record node outcome
+        if verdict.approved:
+            graph.mark_node_completed(node.step_id, result=result_str, observation=observation)
+            results.append({
+                "step_id": node.step_id,
+                "status": "completed",
+                "result": result_str,
+                "observation": observation,
+            })
+            overall_response = result_str
+        else:
+            graph.mark_node_failed(node.step_id, error=result_str, observation=observation)
+            final_failure_category = verdict.failure_category
+            results.append({
+                "step_id": node.step_id,
+                "status": "failed",
+                "result": result_str,
+                "observation": observation,
+                "reason": verdict.reason,
+            })
+            overall_response = (
+                f"Step '{node.step_id}' failed: {verdict.reason}"
+                if verdict.failure_category != FAILURE_CATEGORY_POSTCONDITION_MISMATCH
+                else "I tried, but I couldn't confirm the action took effect on system state."
+            )
+            break
+
+    all_completed = graph.is_complete() and not graph.has_failures()
+    return {
+        "validation": "Approved",
+        "execution": "Success" if all_completed else "Failed",
+        "response": overall_response,
+        "failure_category": final_failure_category if not all_completed else FAILURE_CATEGORY_SUCCESS,
+        "replanned": replanned_any,
+        "results": results,
+        "graph": graph.to_dict(),
+    }
+
