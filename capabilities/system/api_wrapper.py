@@ -338,6 +338,42 @@ async def process_command(prompt: str) -> dict[str, Any]:
                 output["response"] = steps[0].get("target", "Extraction failed.")
                 return output
 
+            # ── STAGE 1b: S5 GOAL GRAPH ROUTING (multi-step only) ──────────────
+            # Fix [S5-wire]: execute_goal_graph_observed() — the critic-integrated,
+            # per-step-replan, data-chaining-aware execution engine built for S5 —
+            # was added to this module but never actually called from here. The
+            # planner still ran (extract_intent() engages it for a multi-step
+            # prompt), but its output was flattened via GoalGraph.to_pipeline()
+            # and handed to the plain execute_pipeline_observed() below, same as
+            # before S5 existed — meaning {{LAST_RESULT}}/{{step_id.result}}
+            # placeholders were never resolved (that only happens inside
+            # resolve_data_dependencies(), which only execute_goal_graph_observed()
+            # calls), and the Critic's per-step postcondition-aware replan never
+            # ran on a real request. This is that missing call site.
+            #
+            # steps already carry depends_on (GoalNode.to_dict() includes it), so
+            # reconstructing a GoalGraph from the flattened list is lossless —
+            # it's the same DAG the planner built, not a re-derived one.
+            #
+            # Single-step requests (~94% of traffic, per S5's own gating design)
+            # are untouched: len(steps) == 1 keeps using execute_pipeline_observed()
+            # exactly as before, so this adds zero latency/behavior change for the
+            # dominant case.
+            if len(steps) > 1:
+                from agentic_core.goal_graph import GoalGraph
+
+                with traced_step("execute_goal_graph", step_count=len(steps)):
+                    graph = GoalGraph.from_pipeline(steps, goal_description=prompt)
+                    goal_observed = await asyncio.to_thread(execute_goal_graph_observed, graph)
+
+                output["validation"] = goal_observed["validation"]
+                output["execution"] = goal_observed["execution"]
+                output["response"] = goal_observed["response"]
+                output["failure_category"] = goal_observed["failure_category"]
+                output["replanned"] = goal_observed["replanned"]
+                output["results"] = goal_observed.get("results")
+                return output
+
             # ── STAGE 2: VALIDATION ──
             with traced_step("validate_steps", step_count=len(steps)):
                 is_valid, validation_msg, _requires_confirm = validate_steps(steps)
