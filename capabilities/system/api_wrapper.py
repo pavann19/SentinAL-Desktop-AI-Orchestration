@@ -508,6 +508,7 @@ async def process_command(prompt: str, *, autonomous: bool = False,
                 output["results"] = goal_observed.get("results")
                 output["budget"] = goal_observed.get("budget")
                 output["snapshots"] = goal_observed.get("snapshots")
+                _remember_interaction(prompt, output)
                 return output
 
             # ── STAGE 2: VALIDATION ──
@@ -600,7 +601,27 @@ async def process_command(prompt: str, *, autonomous: bool = False,
         output["execution"] = "Error"
         output["response"] = f"Pipeline Integration Error: {e!s}"
 
+    _remember_interaction(prompt, output)
     return output
+
+
+def _remember_interaction(prompt: str, output: dict) -> None:
+    """S6 semantic memory (increment 1): embed this request for retrieval by
+    meaning. No-op unless SENTINAL_SEMANTIC_MEMORY_ENABLED; never raises; skips
+    error/blocked outcomes so the store isn't polluted with non-events."""
+    if output.get("execution") not in ("Success", "Failed"):
+        return
+    try:
+        from agentic_core.semantic_memory import remember
+        steps = output.get("steps") or []
+        first = steps[0] if steps and isinstance(steps[0], dict) else {}
+        remember(prompt, {
+            "intent": first.get("intent"),
+            "target": first.get("target"),
+            "result": output.get("response"),
+        })
+    except Exception:
+        pass
 
 
 def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = None) -> dict[str, Any]:

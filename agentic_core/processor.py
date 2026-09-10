@@ -30,6 +30,18 @@ if not _logger.handlers:
 
 memory = MemoryManager()
 
+
+def _semantic_context(query: str) -> str:
+    """S6 semantic memory (increment 1): a [RELEVANT PAST CONTEXT] block of the
+    past interactions most similar in MEANING to `query`, to sit alongside
+    memory.get_context_for_prompt()'s recency block. No-op / "" unless
+    SENTINAL_SEMANTIC_MEMORY_ENABLED; never raises."""
+    try:
+        from agentic_core.semantic_memory import format_for_prompt, retrieve
+        return format_for_prompt(retrieve(query))
+    except Exception:
+        return ""
+
 # SYSTEM_PROMPT is now imported from config.prompts (Fix 3.6)
 # It is retained as module-level name for LLM calls below, but managed centrally.
 
@@ -583,7 +595,8 @@ def extract_intent(prompt: str) -> list:
                 past_context = ""
                 if matched_intent == "InformationRetrievalIntent":
                     past_context = memory.get_context_for_prompt(intent_filter="InformationRetrievalIntent", limit=3)
-                
+                past_context = "\n".join(p for p in (past_context, _semantic_context(step_query)) if p)
+
                 # --- ENHANCED EXTRACTION PROMPT (Fix 1.5) ---
                 llm_extractor = _get_routing_llm("Target Extraction")
                 extract_prompt = (
@@ -631,7 +644,8 @@ def extract_intent(prompt: str) -> list:
             elif matched_intent == "GeneralizedOSIntent":
                 # ── CONTEXTUAL MEMORY INJECTION ────────────────────────────────
                 past_context = memory.get_context_for_prompt(limit=3)
-                
+                past_context = "\n".join(p for p in (past_context, _semantic_context(step_query)) if p)
+
                 llm_extractor = _get_routing_llm("OS Actions Extraction")
                 extract_prompt = f"{past_context}\n\nThe user issued an OS command: '{step_query}'. You must generate a JSON array of actions to execute this. Format: [{{\"type\": \"shell\" (or \"gui\"), \"payload\": \"cmd or hotkey\", \"value\": \"optional text\"}}]. Output ONLY the raw JSON array. See rules: Use %USERPROFILE% for paths, use forward slashes."
                 try:

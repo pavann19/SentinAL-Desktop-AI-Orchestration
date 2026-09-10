@@ -108,6 +108,24 @@ class MemoryManager:
                     "ALTER TABLE scheduled_tasks ADD COLUMN kind TEXT NOT NULL DEFAULT 'reminder'"
                 )
 
+            # S6 semantic memory (increment 1): past interactions embedded with
+            # the router's all-MiniLM-L6-v2, for retrieval by MEANING rather
+            # than only recency (interaction_history / get_context_for_prompt
+            # give recency). embedding is a raw float32 array as BLOB — a
+            # brute-force cosine scan over recent rows, no vector server (per
+            # SENTINAL_V2_RECONCILED_ARCHITECTURE.md §7).
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS memory_semantic (
+                    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                    text      TEXT NOT NULL,
+                    embedding BLOB NOT NULL,
+                    intent    TEXT,
+                    target    TEXT,
+                    result    TEXT,
+                    ts        REAL NOT NULL
+                )
+            """)
+
             self.conn.commit()
 
     # ── Scheduled Tasks / Reminders ───────────────────────────────────────────
@@ -202,6 +220,36 @@ class MemoryManager:
                 (notified_at, task_id)
             )
             self.conn.commit()
+
+    # ── Semantic Memory (S6 increment 1) ─────────────────────────────────────
+
+    def add_semantic_memory(self, text: str, embedding_blob: bytes, intent: str | None,
+                            target: str | None, result: str | None, ts: float) -> None:
+        """Stores one embedded interaction. embedding_blob is a raw float32
+        array (np.ndarray.tobytes())."""
+        with self._lock:
+            self.cursor.execute(
+                """INSERT INTO memory_semantic (text, embedding, intent, target, result, ts)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (text, embedding_blob, intent, target, result, ts)
+            )
+            self.conn.commit()
+
+    def recent_semantic_memories(self, limit: int = 5000) -> list:
+        """Newest-first rows for a brute-force similarity scan. `limit` caps the
+        scan so an old, large store can't make retrieval slow."""
+        with self._lock:
+            self.cursor.execute(
+                """SELECT text, embedding, intent, target, result, ts
+                   FROM memory_semantic ORDER BY id DESC LIMIT ?""",
+                (limit,)
+            )
+            rows = self.cursor.fetchall()
+        return [
+            {"text": r[0], "embedding": r[1], "intent": r[2], "target": r[3],
+             "result": r[4], "ts": r[5]}
+            for r in rows
+        ]
 
     # ── URL Cache Methods ──────────────────────────────────────────────────────
 
