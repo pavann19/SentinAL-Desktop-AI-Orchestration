@@ -143,8 +143,23 @@ plan is physically contained, not just discouraged by a path denylist.
 - [ ] Overlay writes / snapshots so a sandboxed action's filesystem effect
       is provisional until approved, not immediate.
 - [ ] Budgets (time/action-count ceilings per plan).
-- [ ] Capability broker replacing the current allowlist-plus-sandbox-check
-      model with an explicit grant per action.
+- [x] **Capability broker — risk-tier decision layer** — 2026-09-10, `ecda782`.
+      `config/capability_tiers.py` maps all 19 allowlisted intents to T0..T3
+      (with `list`-vs-mutate sub-action overrides); `agentic_core/capability_broker.py`
+      returns `GrantDecision(allowed, tier, requires_confirmation, reason)` for
+      a step or a whole plan. Two caller contexts: `autonomous=False` (every
+      caller today — T2/T3 flag confirmation, nothing newly blocked, no
+      confirmation-provision channel exists yet); `autonomous=True` (S6, not
+      built — T2/T3 denied outright). Wired into `process_command()` STAGE 1a
+      as additive response fields (`capability_tier`, `requires_confirmation`,
+      `capability_reason`), non-blocking, covering both the S5 and flat paths.
+      `validator.py`/`executor.py` untouched. 46 broker tests + 3 wiring
+      tests; 192 pass across the affected suites, no regressions.
+      Still open here: nothing *enforces* `requires_confirmation` at the
+      backend yet (`_requires_confirm` from `validate_steps()` is likewise
+      captured-unused today) — that needs a two-phase confirm channel, a
+      separate wiring task. The broker now produces the correct signal for
+      whoever consumes it.
 - [ ] `CodeActIntent` containment — genuinely blocked on this machine's
       lack of Hyper-V (see the reality-check item above), not just
       unscheduled. Would need either Windows containers on a different
