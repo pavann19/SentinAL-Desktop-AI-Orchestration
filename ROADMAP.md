@@ -509,9 +509,23 @@ picking up opportunistically:
 
 - [ ] **Installer/packaging** — no Docker image or installable package yet;
       installation is fully manual (`README.md` Known Limitations).
-- [ ] **External benchmark** — `benchmarks/tasks.py` is still self-authored,
-      not drawn from an independently-curated task set; all measurements
-      come from a single Windows machine.
+- [~] **External benchmark** — `b0ee941` (see `benchmarks/external/`). Tasks are
+      now DATA: `benchmarks/external/schema.md` defines a JSON manifest
+      (id / source / category / prompt / declarative verify+setup+teardown),
+      `benchmarks/external_loader.py` turns one into real
+      `benchmarks.tasks.Task` objects whose every `verify` kind dispatches to
+      an existing `tasks.py` helper — no new verification logic, same
+      "query the OS, never the pipeline" bar. `run_benchmark.py` gained
+      `--external` / `--external-dir` / `--only-external`, a `by_source`
+      report split, and `external_manifests {path, sha256}` in provenance;
+      with no flag every existing number is byte-identical. `ManifestError`
+      on any structural problem (unknown kind, missing field, duplicate id).
+      20 tests. `validator.py`/`executor.py`/`main.py`/`benchmarks/tasks.py`
+      untouched. **Still open:** this closes the *self-authored* half — a
+      third party can now add/audit tasks without Python — but the shipped
+      manifest is example content (`source: "example:*"`); populating
+      `third_party.json` with a genuine external corpus, and the
+      *single-Windows-machine* half, remain.
 - [x] **Repo hygiene** — `.gitignore` now covers the whole `data/` runtime
       directory instead of three incomplete per-file entries; stray
       AI-authored planning files (`Gemini_plans/`,
