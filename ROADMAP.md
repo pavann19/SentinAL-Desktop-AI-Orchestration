@@ -556,6 +556,57 @@ Unblocked now that S4's live container overlay is verified (`1174e1a`).
 
 ---
 
+## S9 — Self-improvement loop (prompts / heuristics)
+Per `CONTAINMENT_ARCHITECTURE.md` §10.1. **Gate:** first promoted change is
+versioned, rollback-able, and logged with its shadow-eval evidence.
+Self-improve: prompt templates, planning heuristics, retry/replan params,
+capability-selection weights. **Never:** the policy engine, any capability's
+tier, the allowlist, the promotion criteria themselves. The cognition plane
+*proposes*; the control plane *evaluates against fixed criteria* and promotes.
+
+- [ ] **S9-1 — versioned change store.** `improvement_store.py` +
+      `tuning_versions` table: `{target, from, to, proposed_by, rationale,
+      state, evidence}`. `propose` / `record_shadow` / `promote` / `reject`
+      / `current(target)` / `revert(target)` — every applied change is a new
+      version; `revert` is one step.
+- [ ] **S9-2 — proposer (cognition plane).** Reads `drift_report()` +
+      `capability_outcomes`; emits conservative candidates. First cut:
+      `param:<NAME>` tweaks in a bounded range and `heuristic:<NAME>` flips
+      from a fixed registry only — no prompt rewriting yet. Applies nothing.
+- [ ] **S9-3 — shadow evaluation.** Replay a candidate against the fixed S2
+      benchmark (+ external manifests) **offline**, never the live system;
+      produce before/after score + regression list. Needs a real benchmark
+      run (a real desktop) — the orchestration is built with an injectable
+      runner; execution is out of scope on this machine.
+- [ ] **S9-4 — control-plane review.** Fixed criteria: `after − before ≥
+      MIN_GAIN` (0.05) **and** zero new regressions. Pass → apply as a new
+      version + audit-log with the shadow-eval evidence. Fail → discard +
+      log reason. Consuming `current()` in the live path is a later
+      activation step, gated on a real shadow-eval run existing.
+
+---
+
+## Beyond S9 — forward phases (scoped, NOT started)
+
+These are captured for direction only. See `OPEN_ENDED_ROADMAP.md` for the
+same ground reframed as open-ended capability **axes** (A1–A8) with maturity
+ladders. **Do not implement any of S10–S16 without an explicit decision** —
+they each introduce a new risk category and each has a hard prerequisite,
+exactly as S8/S9 required S4. Every one inherits §1: authority flows down,
+never up.
+
+| Phase | Adds | New risk | Prerequisite / containment |
+|---|---|---|---|
+| **S10 — Persistent multi-session goals** | Standing intent ("keep Downloads organized", "watch this repo weekly") that survives restarts | Goal scope-creep over time; a stale goal acting on a changed world | Control-plane re-confirmation cadence; hard TTLs; S7 precondition checks per standing goal; runs through S6's autonomous path (T2/T3 still denied) |
+| **S11 — Tool synthesis** | The system authors new capabilities — small tools it writes, tests, registers — not just recipes | Arbitrary code generation as a first-class loop | S4 overlay validates every synthesized tool; human review before any exceeds T1; provenance + kill-switch registry |
+| **S12 — Internal multi-agent society** | Planner spawns specialist sub-agents (researcher / coder / critic) with separate context + grants | Emergent behavior; sub-agents colluding to exceed individual grants; harder audit | Every sub-agent's grant ⊆ parent's (§1 applied recursively); one shared swarm budget; single-writer arbitration on T2 actions; society auditable as a tree |
+| **S13 — Model-based / predictive planning** | Simulate action outcomes before committing ("will closing this window prompt for unsaved changes?") | Acting on predictions instead of observations; model error compounding over long plans | Predictions advisory only — never replace S1 postcondition checks; a calibration monitor disables predictive planning per-capability when predicted-vs-actual drifts |
+| **S14 — Cross-machine operation** | Coordinating across several machines the user owns | Blast radius ×N; a compromised plan touches N machines; network as attack surface | Per-machine tiers (a T2 on the laptop may be T3 on a server); mutual node auth; a per-machine kill switch independent of the others |
+| **S15 — Value / preference learning** | Infers *what the user wants* from feedback, not just what they typed | Specification gaming — optimizing a proxy for "user satisfaction" | The preference model may only *rank* options the policy already permits, never expand the set; "this is what I inferred — correct?" checkpoints; versioned + rollback-able like S9 |
+| **S16 — Formal guarantees on the containment kernel** | Machine-checked proofs: no cognition-plane output can promote its own tier; no plan bypasses `validate_steps()` | None — pure risk reduction | Nothing; it is the phase that makes S10–S15 defensible, and the gate every capability phase waits on |
+
+---
+
 ## Cross-cutting / not gated on the S-sequence
 
 These don't block or get blocked by S4–S7 — they're independent, and worth
