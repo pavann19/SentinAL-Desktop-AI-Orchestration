@@ -5,11 +5,17 @@
 # Architecture:
 #   1. LLM generates a PowerShell script for the WHOLE multi-step task
 #   2. Script is validated against a security blocklist (no rm -rf, no registry edits etc.)
-#   3. Script is saved to a temp file
-#   4. Script runs in a VISIBLE PowerShell window the user can watch
+#   3. Script is saved into a per-run directory
+#   4a. If Windows Sandbox is available: the script runs inside a fresh,
+#       disposable Windows Sandbox VM (S4 containment — T3 throwaway
+#       environment). Only the per-run directory is mapped in; nothing the
+#       script does can touch the host outside it, and the whole VM is
+#       destroyed when its window closes.
+#   4b. Otherwise: the script runs in a VISIBLE PowerShell window ON THE HOST
+#       with the user's full privileges (the pre-containment behaviour), and
+#       the response says so plainly.
 #
-# This completely bypasses the rigid JSON Intent system for developer
-# workflow tasks, giving the agent unlimited flexibility.
+# This bypasses the rigid JSON Intent system for developer workflow tasks.
 # ═══════════════════════════════════════════════════════════════════
 
 import logging
@@ -20,6 +26,84 @@ import tempfile
 import time
 
 _logger = logging.getLogger("CodeActEngine")
+
+# ── S4 containment: Windows Sandbox ─────────────────────────────────────────
+# CodeAct's whole point is running arbitrary LLM-generated PowerShell — a
+# blocklist over free-form code is inherently incomplete, so this is the
+# system's widest attack surface (T3). Windows Sandbox gives it an ephemeral,
+# disposable Windows VM: the generated script runs there, only a single per-run
+# directory is shared in, and the VM (and anything the script did to it) is
+# gone when the window closes.
+#
+# Requires the Windows Sandbox optional feature (Pro/Enterprise/Education/
+# Workstations editions) enabled + a reboot. Checked fresh per call, with a
+# RAM floor — a Sandbox instance needs ~1.5-2 GB and this project's dev
+# machine has crashed under memory pressure before. When it isn't available
+# CodeAct falls back to the pre-containment host path, saying so explicitly
+# rather than silently pretending it's contained.
+_SANDBOX_EXE = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "WindowsSandbox.exe")
+_SANDBOX_MIN_FREE_GB = float(os.getenv("SENTINAL_CODEACT_SANDBOX_MIN_FREE_GB", "3.0"))
+_SANDBOX_MEMORY_MB = int(os.getenv("SENTINAL_CODEACT_SANDBOX_MEMORY_MB", "2048"))
+# Fixed mount point inside the Sandbox — the per-run host dir maps to here.
+_SANDBOX_SHARE = r"C:\shared"
+
+
+def _sandbox_available() -> bool:
+    """True if Windows Sandbox can be launched right now: the feature is
+    installed AND there is enough free RAM to not risk thrashing the host."""
+    if not os.path.exists(_SANDBOX_EXE):
+        return False
+    try:
+        import psutil
+        free_gb = psutil.virtual_memory().available / 1e9
+        if free_gb < _SANDBOX_MIN_FREE_GB:
+            _logger.warning(
+                f"[CodeAct] Windows Sandbox installed but only {free_gb:.1f} GB free "
+                f"(< {_SANDBOX_MIN_FREE_GB} GB floor) — falling back to host execution."
+            )
+            return False
+    except Exception:
+        # psutil missing / unreadable: don't block on the RAM check, but the
+        # exe existing is still required above.
+        pass
+    return True
+
+
+def _build_wsb(host_run_dir: str, script_filename: str, sentinel_filename: str) -> str:
+    """
+    Builds a .wsb (Windows Sandbox config) that:
+      - maps ONLY host_run_dir in, at C:\\shared (read-write) — the sole host
+        path the sandboxed script can reach
+      - runs the generated script on logon
+      - is deliberately minimal: 2 GB, no vGPU, no clipboard/audio/video
+        redirection, ProtectedClient on. Networking stays ON because CodeAct
+        scripts routinely install/download.
+    The generated script writes its completion sentinel into C:\\shared, which
+    is host_run_dir on the other side — so the host's process supervisor sees
+    it exactly as it would for a non-sandboxed run.
+    """
+    script_in_box = f"{_SANDBOX_SHARE}\\{script_filename}"
+    return (
+        "<Configuration>\n"
+        "  <MappedFolders>\n"
+        "    <MappedFolder>\n"
+        f"      <HostFolder>{host_run_dir}</HostFolder>\n"
+        f"      <SandboxFolder>{_SANDBOX_SHARE}</SandboxFolder>\n"
+        "      <ReadOnly>false</ReadOnly>\n"
+        "    </MappedFolder>\n"
+        "  </MappedFolders>\n"
+        "  <LogonCommand>\n"
+        f"    <Command>powershell.exe -ExecutionPolicy Bypass -NoProfile -NoExit -File \"{script_in_box}\"</Command>\n"
+        "  </LogonCommand>\n"
+        f"  <MemoryInMB>{_SANDBOX_MEMORY_MB}</MemoryInMB>\n"
+        "  <Networking>Enable</Networking>\n"
+        "  <vGPU>Disable</vGPU>\n"
+        "  <ProtectedClient>Enable</ProtectedClient>\n"
+        "  <ClipboardRedirection>Disable</ClipboardRedirection>\n"
+        "  <AudioInput>Disable</AudioInput>\n"
+        "  <VideoInput>Disable</VideoInput>\n"
+        "</Configuration>\n"
+    )
 
 # ── Security Blocklist ────────────────────────────────────────────────────────
 # These patterns are forbidden in generated scripts.
@@ -146,85 +230,119 @@ def generate_and_run(prompt: str, llm) -> str:
         _logger.warning(f"[CodeAct] SECURITY BLOCK: {reason}")
         return "CodeAct: Security block — generated script contains a forbidden operation. Aborting."
 
-    # ── Step 3: Save to temp file ──────────────────────────────────────────────
+    # ── Step 3: Save to a per-run directory ──────────────────────────────────
+    # A per-run dir (not a shared flat one) so the WHOLE thing can be mapped
+    # into a sandbox as the single shared folder, and so the completion
+    # sentinel lands somewhere both the host and (when sandboxed) the VM can
+    # see via that one mapping.
+    stamp = int(time.time() * 1000)
     try:
-        # Use a named temp file in the user's temp dir so it's traceable
-        script_dir = os.path.join(os.environ.get("TEMP", tempfile.gettempdir()), "SentinAL_CodeAct")
-        os.makedirs(script_dir, exist_ok=True)
+        base = os.path.join(os.environ.get("TEMP", tempfile.gettempdir()), "SentinAL_CodeAct")
+        run_dir = os.path.join(base, f"run_{stamp}")
+        os.makedirs(run_dir, exist_ok=True)
 
-        script_name = f"codeact_{int(time.time())}.ps1"
-        script_path = os.path.join(script_dir, script_name)
+        script_filename = f"codeact_{stamp}.ps1"
+        script_path = os.path.join(run_dir, script_filename)
+        sentinel_filename = f"sentinel_{stamp}.json"
+        host_sentinel_path = os.path.join(run_dir, sentinel_filename)
 
-        # Completion sentinel: this script is launched detached with -NoExit, so
-        # the console stays open indefinitely after the body finishes and process
-        # death is NOT a completion signal. A footer that writes a marker file
-        # when the body ends is the only accurate signal available, and it is
-        # only possible because SentinAL generated this script itself.
-        # Registration is best-effort — if it fails, the script still runs
-        # exactly as before, just unobserved.
-        sentinel_path = None
+        use_sandbox = _sandbox_available()
+
+        # Completion sentinel: the script is launched with -NoExit, so process
+        # death is NOT a completion signal — a footer that writes a marker file
+        # when the body ends is. When sandboxed, the script writes it to the
+        # sandbox-side view of the mapping (C:\shared\...); the host watches the
+        # host-side path (run_dir\...) — the same file.
         try:
             from agentic_core.process_supervisor import (
                 build_sentinel_footer,
                 build_sentinel_header,
-                new_sentinel_path,
             )
-            sentinel_path = new_sentinel_path("codeact")
-            script = build_sentinel_header() + script + build_sentinel_footer(sentinel_path)
+            sentinel_in_script = (
+                f"{_SANDBOX_SHARE}\\{sentinel_filename}" if use_sandbox else host_sentinel_path
+            )
+            script = build_sentinel_header() + script + build_sentinel_footer(sentinel_in_script)
         except Exception as e:
             _logger.warning(f"[CodeAct] Could not attach completion sentinel (non-fatal): {e}")
-            sentinel_path = None
+            host_sentinel_path = None
 
         with open(script_path, "w", encoding="utf-8") as f:
             f.write(script)
-
-        print(f"[CodeAct] Script saved to: {script_path}")
+        print(f"[CodeAct] Script saved to: {script_path} (sandboxed={use_sandbox})")
 
     except Exception as e:
         _logger.error(f"[CodeAct] Failed to save script: {e}")
         return f"CodeAct: Could not save script to disk — {e}"
 
-    # ── Step 4: Launch in a visible PowerShell window ─────────────────────────
-    try:
-        # ExecutionPolicy Bypass allows running unsigned scripts
-        # -NoProfile speeds up startup
-        # -NoExit keeps window open after script completes so user can read results
-        launch_cmd = [
-            "powershell",
-            "-ExecutionPolicy", "Bypass",
-            "-NoProfile",
-            "-NoExit",
-            "-File", script_path
-        ]
+    # ── Step 4a: Run inside a disposable Windows Sandbox ─────────────────────
+    if use_sandbox:
+        try:
+            wsb_path = os.path.join(run_dir, f"codeact_{stamp}.wsb")
+            with open(wsb_path, "w", encoding="utf-8") as f:
+                f.write(_build_wsb(run_dir, script_filename, sentinel_filename))
 
+            proc = subprocess.Popen(
+                [_SANDBOX_EXE, wsb_path],
+                creationflags=subprocess.CREATE_NEW_CONSOLE,
+                start_new_session=True,
+            )
+            try:
+                from agentic_core.process_supervisor import register_watch
+                register_watch(
+                    label="codeact",
+                    sentinel_path=host_sentinel_path,
+                    pid=proc.pid,
+                    expected_state={"script_path": script_path, "sandboxed": True},
+                )
+            except Exception as e:
+                _logger.warning(f"[CodeAct] Could not register process watch (non-fatal): {e}")
+
+            time.sleep(1.5)
+            print("[CodeAct] Windows Sandbox launched.")
+            winget_note = (
+                " Note: a fresh Sandbox has no winget, so any install steps that rely on it "
+                "will fail inside it — that's a containment limit, not a bug."
+                if "winget" in script.lower() else ""
+            )
+            return (
+                "I've started your request inside an isolated Windows Sandbox. It has its own "
+                f"throwaway copy of Windows; nothing it does can touch your machine except the "
+                f"one shared folder ({run_dir}). Close the Sandbox window when it's done — "
+                f"everything else in it is discarded.{winget_note}"
+            )
+        except Exception as e:
+            _logger.error(f"[CodeAct] Sandbox launch failed ({e}); falling back to host execution.")
+            # fall through to 4b
+
+    # ── Step 4b: Run in a visible host PowerShell window (UNCONTAINED) ────────
+    try:
+        launch_cmd = [
+            "powershell", "-ExecutionPolicy", "Bypass", "-NoProfile", "-NoExit",
+            "-File", script_path,
+        ]
         proc = subprocess.Popen(
             launch_cmd,
             creationflags=subprocess.CREATE_NEW_CONSOLE,
-            start_new_session=True
+            start_new_session=True,
         )
-
-        # Hand the process to the supervisor so its completion is reconciled in
-        # the background. The request below returns immediately either way -
-        # this adds observation, it does not add waiting.
         try:
             from agentic_core.process_supervisor import register_watch
             register_watch(
                 label="codeact",
-                sentinel_path=sentinel_path,
+                sentinel_path=host_sentinel_path,
                 pid=proc.pid,
-                expected_state={"script_path": script_path},
+                expected_state={"script_path": script_path, "sandboxed": False},
             )
         except Exception as e:
             _logger.warning(f"[CodeAct] Could not register process watch (non-fatal): {e}")
 
-        time.sleep(1.5)  # Let the window open before Jarvis speaks
-        print("[CodeAct] Visible terminal launched successfully.")
-
+        time.sleep(1.5)
+        print("[CodeAct] Visible host terminal launched (UNSANDBOXED).")
         return (
             "I've opened a terminal window and started executing your request. "
-            "You can watch every step happen in real time in the PowerShell window."
+            "Windows Sandbox isn't available right now, so this is running directly on "
+            "your machine with full access to your files — watch the PowerShell window."
         )
-
     except Exception as e:
         _logger.error(f"[CodeAct] Launch failed: {e}")
         return f"CodeAct: Failed to launch PowerShell window — {e}"
