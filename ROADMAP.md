@@ -541,18 +541,34 @@ Unblocked now that S4's live container overlay is verified (`1174e1a`).
       refreshes the recipe + instance count, never state/tier/confidence.
       Inert data until S8-4. 11 tests. `validator.py`/`executor.py`/
       `main.py` untouched.
-- [ ] **S8-3 — replay-validation gate.** Given a candidate skill, generate
-      2–3 held-out slot fillings and run each **through the verified S4
-      overlay** (the `node:20-slim` container path); `mark_validated()` with
-      the pass rate. Now buildable — the overlay is verified.
-- [ ] **S8-4 — promotion + planner use.** `activate()` a cleanly-validated
-      skill; `planner.plan_goal()` gains a skill-match check (mirror
-      `_recall_recipe`) behind `SENTINAL_LEARNED_SKILLS_ENABLED` (default
-      off), never for `autonomous=True`.
-- [ ] **S8-5 — monitoring → demotion.** `world_model.capability_health()`
-      (S7 Half B) over the skill's own outcomes; rolling success below
-      `confidence − SKILL_DEMOTE_DROP` → `demote()`; below a floor →
-      `retire()`. Audit-logged.
+- [x] **S8-3 — replay-validation gate.** `0a1172b`,
+      `agentic_core/skill_validator.py`. `validate_skill(template, runner=)`
+      replays a candidate on typed held-out slot fillings and returns the
+      pass rate; the production runner executes the filled plan under a fresh
+      S4 snapshot and restores unconditionally (the containment overlay for
+      host GUI/file actions), injectable for hermetic tests.
+      `promote_if_ready()` gates the full path: enough instances → validate →
+      `mark_validated` → `activate` only if confidence ≥
+      `SKILL_CONFIDENCE_FLOOR`. Never raises. 3 tests + 3 promotion tests.
+- [x] **S8-4 — promotion + planner use.** `0a1172b`,
+      `agentic_core/skill_matcher.py`. `match_skill(prompt)` fires an ACTIVE
+      skill when its example goals are close to the prompt (embedding sim ≥
+      0.72) **and** every slot is fillable from it (target-frame extraction,
+      then type-shaped regex). `plan_goal()` checks it **before** procedural
+      memory — a validated skill outranks a raw recipe. Behind
+      `SENTINAL_LEARNED_SKILLS_ENABLED` (default off), never for
+      `autonomous=True`; every returned step still allowlist/budget/cycle
+      checked downstream. 3 tests.
+- [x] **S8-5 — monitoring → demotion.** `0a1172b`,
+      `agentic_core/skill_monitor.py` + `learned_skill_outcomes` table.
+      `record_skill_run()` (wired in `api_wrapper` next to the other outcome
+      hooks) logs each live learned-skill run and re-checks health: rolling
+      success `SKILL_DEMOTE_DROP` below validated confidence over ≥ 6 runs →
+      `demote()`; a demoted skill still failing → `retire()`. Every
+      transition audit-logged. `sweep_active_skills()` for a future scheduled
+      pass. 4 tests. `validator.py`/`executor.py`/`main.py` untouched.
+      **S8 gate met** — a learned skill can be promoted, is monitored, and is
+      demotable, all under default-off flags.
 
 ---
 
@@ -564,25 +580,34 @@ capability-selection weights. **Never:** the policy engine, any capability's
 tier, the allowlist, the promotion criteria themselves. The cognition plane
 *proposes*; the control plane *evaluates against fixed criteria* and promotes.
 
-- [ ] **S9-1 — versioned change store.** `improvement_store.py` +
-      `tuning_versions` table: `{target, from, to, proposed_by, rationale,
-      state, evidence}`. `propose` / `record_shadow` / `promote` / `reject`
-      / `current(target)` / `revert(target)` — every applied change is a new
-      version; `revert` is one step.
-- [ ] **S9-2 — proposer (cognition plane).** Reads `drift_report()` +
-      `capability_outcomes`; emits conservative candidates. First cut:
-      `param:<NAME>` tweaks in a bounded range and `heuristic:<NAME>` flips
-      from a fixed registry only — no prompt rewriting yet. Applies nothing.
-- [ ] **S9-3 — shadow evaluation.** Replay a candidate against the fixed S2
-      benchmark (+ external manifests) **offline**, never the live system;
-      produce before/after score + regression list. Needs a real benchmark
-      run (a real desktop) — the orchestration is built with an injectable
-      runner; execution is out of scope on this machine.
-- [ ] **S9-4 — control-plane review.** Fixed criteria: `after − before ≥
-      MIN_GAIN` (0.05) **and** zero new regressions. Pass → apply as a new
-      version + audit-log with the shadow-eval evidence. Fail → discard +
-      log reason. Consuming `current()` in the live path is a later
-      activation step, gated on a real shadow-eval run existing.
+- [x] **S9-1 — versioned change store.** `0a1172b`,
+      `agentic_core/improvement_store.py` + `tuning_versions` table.
+      `propose` / `record_shadow` / `promote` / `reject` / `current(target)`
+      / `revert(target)`. Every applied change is a new row; `revert` marks
+      the newest promoted one reverted so the previous value becomes current.
+      Malformed targets (no `param:`/`heuristic:`/`prompt:` prefix) rejected.
+      4 tests.
+- [x] **S9-2 — proposer (cognition plane).** `0a1172b`,
+      `improvement_engine.propose_from_outcomes()`. Reads `drift_report()`;
+      under a hard drift (drop ≥ `PROPOSE_DRIFT_MIN`) emits **bounded param
+      nudges only** (`TUNABLE_PARAMS` ranges) — no prompt rewriting this cut.
+      Applies nothing. 2 tests.
+- [x] **S9-3 — shadow-eval orchestration.** `0a1172b`,
+      `improvement_engine.shadow_eval(version_id, benchmark_runner=)`.
+      Baseline run → apply candidate to `os.environ` for one run (context
+      manager restores) → diff → `record_shadow`. The real benchmark runner
+      needs a live desktop and is **out of scope on this machine**; it is
+      injectable and tested with a fake. 3 tests.
+- [x] **S9-4 — control-plane review.** `0a1172b`,
+      `improvement_engine.review()` — the **only** promotion path. Fixed
+      criteria: `after − before ≥ MIN_BENCHMARK_GAIN` (0.05) **and** zero new
+      regressions. Pass → `promote` + evidence; fail → `reject` + reason.
+      4 tests. **S9 gate met** — a promoted change is versioned, one-step
+      reversible, and logged with its shadow-eval evidence.
+      **Not activated:** nothing in the live pipeline reads `current()` yet —
+      that is a later step, gated on a real shadow-eval run against the
+      benchmark (a live desktop). `SENTINAL_SELF_IMPROVEMENT_ENABLED` default
+      off. `validator.py`/`executor.py`/`main.py` untouched.
 
 ---
 
