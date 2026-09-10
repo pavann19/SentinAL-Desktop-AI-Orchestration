@@ -338,6 +338,25 @@ async def process_command(prompt: str) -> dict[str, Any]:
                 output["response"] = steps[0].get("target", "Extraction failed.")
                 return output
 
+            # ── STAGE 1a: CAPABILITY BROKER — risk-tier decision (S4) ──────────
+            # Surfaces the containment tier and whether a HITL confirmation is
+            # needed, for any consumer (HUD, future S6 autonomy layer) that wants
+            # to gate on it. Non-blocking here on purpose: every caller today is
+            # a direct human command (autonomous=False), and there is no
+            # confirmation-provision channel yet — hard-blocking a T3 request
+            # would just break FileDeletionIntent etc. The broker's deny path is
+            # the autonomous=True case (S6), which no current caller hits.
+            #
+            # Runs before validate_steps() only because it is purely
+            # informational at this point — it never loosens or overrides the
+            # validator's own allow/deny, which still runs below and wins.
+            from agentic_core.capability_broker import grant_all
+
+            grant_decision = grant_all(steps, autonomous=False)
+            output["capability_tier"] = grant_decision.tier
+            output["requires_confirmation"] = grant_decision.requires_confirmation
+            output["capability_reason"] = grant_decision.reason
+
             # ── STAGE 1b: S5 GOAL GRAPH ROUTING (multi-step only) ──────────────
             # Fix [S5-wire]: execute_goal_graph_observed() — the critic-integrated,
             # per-step-replan, data-chaining-aware execution engine built for S5 —
@@ -484,10 +503,9 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None) -> dict[str, Any]
         FAILURE_CATEGORY_PIPELINE_ERROR,
         FAILURE_CATEGORY_POSTCONDITION_MISMATCH,
         FAILURE_CATEGORY_SUCCESS,
-        MAX_REPLANS,
         _run_and_observe,
     )
-    from agentic_core.goal_graph import GoalGraph, GoalNode
+    from agentic_core.goal_graph import GoalGraph
     from agentic_core.planner import planner
     from agentic_core.validator import validate_steps
 

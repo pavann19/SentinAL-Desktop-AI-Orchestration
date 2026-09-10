@@ -3,12 +3,12 @@ tests/test_api_wrapper.py
 Async integration tests for capabilities/system/api_wrapper.py.
 Tests the full extract→validate→execute pipeline with mocked sub-layers.
 """
-import sys, os
+import sys
+import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
-import asyncio
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch
 
 
 class TestApiWrapperGreeting:
@@ -77,3 +77,48 @@ class TestApiWrapperGreeting:
         from capabilities.system.api_wrapper import process_command
         result = await process_command("good morning")
         assert isinstance(result["steps"], list)
+
+
+class TestCapabilityBrokerWiring:
+    """S4: the broker surfaces a risk tier + confirmation flag on every response,
+    without newly blocking any direct-human request (autonomous=False)."""
+
+    @pytest.mark.asyncio
+    async def test_conversational_request_is_t0_no_confirmation(self):
+        from capabilities.system.api_wrapper import process_command
+        result = await process_command("hello")
+        assert result["capability_tier"] == "T0"
+        assert result["requires_confirmation"] is False
+
+    @pytest.mark.asyncio
+    async def test_file_deletion_is_t3_and_flags_confirmation_but_is_not_blocked(self):
+        """FileDeletionIntent is T3 — it must be flagged for confirmation, but a
+        direct human command still reaches validation/execution (not blocked by
+        the broker itself). This is the behaviour that would break if the broker
+        hard-blocked T3 without a confirmation channel. extract_intent and the
+        executor are mocked so this stays hermetic and fast."""
+        from capabilities.system.api_wrapper import process_command
+        step = {"intent": "FileDeletionIntent", "target": "bench_broker_nonexistent_xyz.txt"}
+        with patch("agentic_core.processor.extract_intent", return_value=[step]), \
+             patch(
+                 "agentic_core.executor.execute_pipeline_observed",
+                 return_value={
+                     "result": "Deleted.", "snapshot_diff": {}, "step_observations": [],
+                     "failure_category": "success", "attempts": 1, "replanned": False,
+                 },
+             ):
+            result = await process_command("delete bench_broker_nonexistent_xyz.txt")
+        assert result["capability_tier"] == "T3"
+        assert result["requires_confirmation"] is True
+        # Not blocked by the broker: validation still ran and approved it.
+        assert result["validation"] == "Approved"
+
+    @pytest.mark.asyncio
+    async def test_capability_fields_present_even_on_denied_request(self):
+        """The broker runs before validate_steps(), so its fields are on the
+        output even when validation later denies the request."""
+        from capabilities.system.api_wrapper import process_command
+        result = await process_command("open system32")
+        assert result["validation"] == "Denied"
+        assert "capability_tier" in result
+        assert "requires_confirmation" in result
