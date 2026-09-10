@@ -148,8 +148,27 @@ plan is physically contained, not just discouraged by a path denylist.
       once already under similar pressure earlier in this same session).
       Stated as open rather than assumed — needs either more free RAM at
       test time or a deliberately time-boxed retry.
-- [ ] Overlay writes / snapshots so a sandboxed action's filesystem effect
-      is provisional until approved, not immediate.
+- [x] **Pre-action filesystem snapshot + restore** — 2026-09-10, `16c7f8e`.
+      Windows has no native copy-on-write overlay FS, so §6's T2 model ("real
+      writes + pre-action snapshot -> restore snapshot") is implemented as
+      capture-and-restore. `config/snapshots.py` (store dir under DATA_DIR,
+      retention, per-file copy size cap) + `agentic_core/snapshot.py`
+      (`PathSnapshot`/`Snapshot`, non-raising: file existed -> copied aside;
+      file absent -> delete if step created it; dir existed -> top-level entry
+      manifest, restore removes only *additions*; dir absent -> rmtree if
+      created). `api_wrapper._paths_for_step()` derives the write target for
+      `FileDeletionIntent`, `ProjectScaffoldIntent`, mkdir-form
+      `GeneralizedOSIntent`, and the `DATA_DIR` writers — `[]` for arbitrary
+      shell / GUI / CodeAct (same unpredictability `_derive_expected_state`
+      declines to guess). Wired into `execute_goal_graph_observed()`: capture
+      before each step, then on plan SUCCESS discard, on ANY failure (step
+      failed, budget spent, cancelled, validation denied mid-plan) restore
+      newest-first. Result carries `snapshots: {taken, restored, restore_errors}`;
+      `process_command()` surfaces it. This is the T2-reversal half of the S4
+      gate — the broker gave the tier, this makes the effect undoable.
+      `validator.py`/`executor.py` untouched. 12 snapshot tests + 8
+      `_paths_for_step` + 2 end-to-end (failed plan rolls back an earlier
+      step's real file deletion; successful plan discards).
 - [x] **Budgets — per-plan action + wall-time ceilings** — 2026-09-10, `4c8b654`.
       `config/budgets.py` (env-overridable, autonomous ceilings strictly
       tighter: 12 actions / 120s vs 24 / 300s) + `agentic_core/budget.py`
