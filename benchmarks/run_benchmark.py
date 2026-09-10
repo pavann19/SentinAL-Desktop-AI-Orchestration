@@ -107,6 +107,9 @@ class TaskResult:
     replanned: bool = False
     failure_reason: str = ""
     error: str = ""
+    # "self-authored" for benchmarks/tasks.py, or the manifest's `source` for an
+    # externally-authored task (benchmarks/external_loader.py).
+    source: str = "self-authored"
 
 
 def _verify_with_settle(task: Task, result: dict) -> bool:
@@ -131,6 +134,7 @@ async def run_task(task: Task) -> TaskResult:
     from capabilities.system.api_wrapper import process_command
 
     started = time.time()
+    source = getattr(task, "source", "self-authored")
 
     # setup() BEFORE prompt_for(): the world a prompt refers to must exist
     # before the prompt is formed. Prompts are resolved at build time now, so
@@ -145,6 +149,7 @@ async def run_task(task: Task) -> TaskResult:
                 task_id=task.id, category=task.category, prompt=prompt_for(task),
                 passed=False, duration_s=0.0,
                 error=f"setup failed: {e}", failure_reason="setup_error",
+                source=source,
             )
 
     prompt = prompt_for(task)
@@ -188,7 +193,7 @@ async def run_task(task: Task) -> TaskResult:
         pipeline_response=str(pipeline.get("response", ""))[:300],
         pipeline_intents=[s.get("intent", "") for s in pipeline.get("steps", []) if isinstance(s, dict)],
         replanned=bool(pipeline.get("replanned", False)),
-        failure_reason=reason, error=error,
+        failure_reason=reason, error=error, source=source,
     )
 
 
@@ -231,6 +236,16 @@ def summarize(results: list[TaskResult], repeat: int) -> dict:
     for c in categories.values():
         c["rate"] = round(c["passed"] / c["total"], 4) if c["total"] else 0.0
 
+    # Split self-authored vs. externally-authored tasks so an external number
+    # can be stated on its own — the whole point of benchmarks/external/.
+    by_source: dict[str, dict] = {}
+    for r in results:
+        s = by_source.setdefault(r.source, {"passed": 0, "total": 0})
+        s["total"] += 1
+        s["passed"] += int(r.passed)
+    for s in by_source.values():
+        s["rate"] = round(s["passed"] / s["total"], 4) if s["total"] else 0.0
+
     flaky = {t: round(rate, 4) for t, rate in task_rates.items() if 0 < rate < 1}
     false_successes = [r.task_id for r in results if r.failure_reason == "false_success"]
 
@@ -251,6 +266,7 @@ def summarize(results: list[TaskResult], repeat: int) -> dict:
         # something a user would call working.
         "fully_reliable_tasks": sum(1 for rate in task_rates.values() if rate == 1.0),
         "by_category": categories,
+        "by_source": by_source,
         "flaky_tasks": flaky,
         # Called out separately because it is the defect class this whole effort
         # targets: the pipeline reported success while the OS disagreed.
@@ -289,6 +305,12 @@ def print_report(summary: dict, results: list[TaskResult], env: dict) -> None:
     for cat, c in sorted(summary["by_category"].items()):
         print(f"    {cat:<20} {c['passed']:>3}/{c['total']:<3} = {c['rate'] * 100:5.1f}%")
 
+    by_source = summary.get("by_source", {})
+    if len(by_source) > 1:
+        print("\n  By source:")
+        for src, s in sorted(by_source.items()):
+            print(f"    {src:<24} {s['passed']:>3}/{s['total']:<3} = {s['rate'] * 100:5.1f}%")
+
     if summary["false_success_tasks"]:
         print("\n  ** FALSE SUCCESSES — pipeline claimed success, OS disagreed:")
         for t in summary["false_success_tasks"]:
@@ -314,9 +336,38 @@ def main() -> int:
     ap.add_argument("--repeat", type=int, default=1, help="runs per task (measures flakiness)")
     ap.add_argument("--dry-run", action="store_true", help="list tasks without executing")
     ap.add_argument("--output", help="report path (default: benchmarks/results/<timestamp>.json)")
+    ap.add_argument("--external", action="append", default=[], metavar="MANIFEST.json",
+                    help="also run tasks from an external JSON manifest (repeatable)")
+    ap.add_argument("--external-dir", metavar="DIR",
+                    help="also run every *.json manifest in DIR")
+    ap.add_argument("--only-external", action="store_true",
+                    help="run ONLY the external tasks, not benchmarks/tasks.py")
     args = ap.parse_args()
 
-    tasks = build_tasks()
+    external_manifests: list[dict] = []
+    external_tasks: list[Task] = []
+    if args.external or args.external_dir:
+        from benchmarks.external_loader import (
+            ManifestError,
+            load_external_tasks,
+            manifest_fingerprint,
+        )
+        paths = list(args.external)
+        if args.external_dir:
+            paths += [
+                os.path.join(args.external_dir, n)
+                for n in sorted(os.listdir(args.external_dir)) if n.endswith(".json")
+            ]
+        try:
+            for p in paths:
+                external_tasks += load_external_tasks(p)
+                external_manifests.append(manifest_fingerprint(p))
+        except (ManifestError, OSError) as e:
+            print(f"External manifest error: {e}", file=sys.stderr)
+            return 2
+
+    tasks = [] if args.only_external else build_tasks()
+    tasks += external_tasks
     if args.category:
         tasks = [t for t in tasks if t.category == args.category]
     if args.task:
@@ -334,6 +385,7 @@ def main() -> int:
         return 0
 
     env = capture_environment()
+    env["external_manifests"] = external_manifests
     if env["working_tree_dirty"]:
         print(f"\nWARNING: {env['uncommitted_files']} uncommitted file(s). "
               "The commit hash does not identify the code being measured, so "
