@@ -397,8 +397,29 @@ and `event_bus.make_event_handler()` is the caller.
       **Open:** the flag-on benchmark delta (planner-LLM call count, planner
       latency, multi-step pass rate) — a deliberate measurement run, not yet
       done on this machine.
-- [ ] `PHASE_TASK_BOARD.md`'s **P2-4** (MCP tool contracts) — explicitly
-      scoped to capability schemas only, not the event bus.
+- [~] `PHASE_TASK_BOARD.md`'s **P2-4** (MCP tool contracts). `8db98c6` —
+      `config/capability_contracts.py` (one declarative `CapabilityContract`
+      per allowlisted intent: param schema, result shape, cost bucket,
+      side-effects, examples; tier resolved from
+      `config.capability_tiers.INTENT_TIERS`, not hand-copied) +
+      `agentic_core/capability_manifest.py` (`manifest()` JSON tool manifest,
+      `validate_params()` advisory schema pre-check that does **not** replace
+      `validator.py`, `dispatch_via_contract()` schema-check → import handler
+      → invoke). Import-time check: exactly one contract per allowlisted
+      intent (bar `UnknownIntent`), no orphans. **Dynamic dispatch wired for
+      one capability** — `SchedulerIntent` (T1, self-contained) — as the
+      board's "dispatch of one migrated capability"; every other intent
+      raises `ContractDispatchUnavailable`. `python -m
+      agentic_core.capability_manifest` dumps the manifest. 18 tests.
+      `validator.py`/`executor.py`/`main.py` untouched; no new flag; the
+      pipeline is unchanged (this path is not called from `/api/command` or
+      the executor).
+      **Deferred:** route the pipeline through contracts and migrate the
+      `(target, prompt)` handler family (`media_control` / `window_manager` /
+      `dictation` / `sys_utility` share `SchedulerIntent`'s shape) — needs
+      `executor.py`'s if/elif dispatch rewritten, i.e. that file unfrozen.
+      No REST endpoint — `GET /api/capabilities` is ~4 lines in the frozen
+      `main.py`, a separate authorised change.
 - [x] `PHASE_TASK_BOARD.md`'s **P2-5** (risk-tiered policy engine:
       auto/notify/confirm/forbid) — both enforcement halves done.
       **Autonomous** half: `850678b` — `process_command(autonomous=True)`
