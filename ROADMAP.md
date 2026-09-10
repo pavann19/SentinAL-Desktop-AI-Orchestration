@@ -178,18 +178,17 @@ plan is physically contained, not just discouraged by a path denylist.
       captured-unused today) — that needs a two-phase confirm channel, a
       separate wiring task. The broker now produces the correct signal for
       whoever consumes it.
-- [ ] `CodeActIntent` containment — **not hardware-blocked** (see the
-      corrected reality-check item above; this machine is Pro for
-      Workstations and Windows Sandbox is edition-eligible). Blocked only on
-      **Windows Sandbox not being enabled yet** — needs an elevated
-      `Enable-WindowsOptionalFeature -Online -FeatureName Containers-DisposableClientVM`
-      plus a reboot (a user action, not scriptable unsupervised). Once on,
-      the plan is: run each LLM-generated CodeAct PowerShell script inside a
-      fresh Windows Sandbox instance (ephemeral, disposable — exactly the T3
-      throwaway-environment model §6 wants), with only a declared working
-      directory mapped in. The alternative — rescoping `CodeActIntent` to
-      drop Windows-specific operations so a Linux container could hold it —
-      is now a fallback, not the only option.
+- [ ] `CodeActIntent` containment — **unblocked, pending one reboot**.
+      Windows Sandbox was enabled 2026-09-10
+      (`Enable-WindowsOptionalFeature -Online -FeatureName Containers-DisposableClientVM`,
+      returned `RestartNeeded: True`; `pending.xml` + `RebootPending` staged).
+      After the machine restarts, `WindowsSandbox.exe` is available and this
+      becomes buildable. Plan: run each LLM-generated CodeAct PowerShell
+      script inside a fresh Windows Sandbox instance (ephemeral, disposable —
+      exactly the T3 throwaway-environment model §6 wants), with only a
+      declared working directory mapped in via a `.wsb` config. Fallback if
+      Sandbox proves impractical: rescope `CodeActIntent` to drop
+      Windows-specific operations so a Linux container could hold it.
 
 **Do not start S5 or S6 before this is real.** That's not a stylistic
 preference — it's `CONTAINMENT_ARCHITECTURE.md` §7's explicit corrected
