@@ -257,7 +257,7 @@ not on every request.
       replan never ran live. `process_command()` now routes multi-step results
       through the engine. 3 new tests exercise the real seam.
 
-## S6 — Proactive autonomy (unblocked — S4 gate met; not yet started)
+## S6 — Proactive autonomy (event bus increments 1–2 built; the week-soak gate is the outstanding item)
 Gate: runs unattended for a week with no unwanted action.
 Maps to `PHASE_TASK_BOARD.md`'s **P2-2** (semantic memory / local vector
 store) and **P2-3** (procedural memory / cached task recipes), reframed
@@ -270,8 +270,8 @@ SQLite database via `memory_hook.py`, not a new server.
 `autonomous=True` path (T2/T3 denied outright — `ecda782`), the tighter
 autonomous `PlanBudget` (12 actions / 120s vs 24 / 300s — `4c8b654`), and
 the pre-action snapshot that rolls back a failed plan (`16c7f8e`). All
-built and unit-tested; they are waiting for a caller that passes
-`autonomous=True`. The event bus is that caller.
+now wired: `process_command(autonomous=True)` (`850678b`) enforces them,
+and `event_bus.make_event_handler()` is the caller.
 
 - [x] **Event bus — increment 1: time triggers, notify-only** — 2026-09-10,
       `a64a82b`. `agentic_core/event_bus.py`: one resident `asyncio` loop
@@ -313,17 +313,32 @@ built and unit-tested; they are waiting for a caller that passes
       with `SENTINAL_AUTONOMOUS_GOALS_ENABLED=true` and real `'goal'` rows.
       Unit tests prove the containment logic; they cannot prove "no unwanted
       action over a week." Not claimed as passed.
-- [ ] **Event bus — increment 3: `watchdog` filesystem triggers** (a file
-      appears in a watched folder). After increments 1–2 are solid.
+- [ ] **Event bus — increment 3: `watchdog` filesystem triggers.** A second
+      event *source* alongside the time poll: a file created/moved into a
+      watched folder raises an event, dispatched through the same
+      `make_event_handler()` branch (notify by default; run as an autonomous
+      goal only under `SENTINAL_AUTONOMOUS_GOALS_ENABLED` with an explicit
+      per-watch opt-in). New: declare `watchdog` in `requirements.txt` (it's
+      an undeclared transitive dep today — same class of bug as
+      `pywinauto`/`pygetwindow` in S3), a `watched_folders` config/table,
+      debounce so an editor's save-storm is one event, a path-safety check
+      (a watched folder can't be a system dir; the triggering path is passed
+      as data, never interpolated into a shell command). Deferred until the
+      week-soak gate on increment 2 has actually been run — a second trigger
+      source is only worth adding once the autonomous execution path it
+      feeds is trusted.
 - [ ] Semantic memory tier + retrieval.
 - [ ] Procedural memory: learned task recipes cached and reused.
 - [ ] `PHASE_TASK_BOARD.md`'s **P2-4** (MCP tool contracts) — explicitly
       scoped to capability schemas only, not the event bus.
-- [ ] `PHASE_TASK_BOARD.md`'s **P2-5** (risk-tiered policy engine:
-      auto/notify/confirm/forbid) — the S4 capability broker is the tier
-      half of this; the enforcement half (nothing at the backend acts on
-      `requires_confirmation` yet — a two-phase confirm channel) belongs
-      here, alongside the event bus.
+- [~] `PHASE_TASK_BOARD.md`'s **P2-5** (risk-tiered policy engine:
+      auto/notify/confirm/forbid). The S4 capability broker is the tier
+      decision; the **autonomous** enforcement half is done (`850678b` —
+      `autonomous=True` denies T2/T3). Still open: the **direct-human**
+      enforcement half — nothing at the backend acts on
+      `requires_confirmation` for a `autonomous=False` request, because
+      there is no two-phase confirm channel through `process_command()`
+      yet. That channel belongs here.
 
 ## S7 — World context and drift detection (deferred, further out)
 Per `CONTAINMENT_ARCHITECTURE.md` §10.3/§10.4: a live environment model
