@@ -470,10 +470,15 @@ camera/mic (own governance section required, §10.3), not screenshots.
       planner prompt; a shifting context can move intent extraction).
       `validator.py`/`executor.py`/`main.py` untouched. 12 world-model +
       3 event-bus wiring tests.
-- [ ] **Half A, increment A3 — planner wiring.** Fold `current_state()` into
-      `plan_goal()`'s decomposition prompt (advisory, behind the same flag,
-      byte-identical prompt when off), so *"close it"* + foreground = Notepad
-      resolves the referent.
+- [x] **Half A, increment A3 — planner wiring.** `7fd49cc`.
+      `world_model.format_for_prompt()` renders the latest sample (foreground
+      window + open apps) as an advisory `[CURRENT ENVIRONMENT]` block;
+      `plan_goal()`'s LLM branch appends it after the semantic plan hint so
+      the planner can resolve *"close it"* / *"this window"*. Advisory only —
+      every returned step is still allowlisted / clamped / cycle-checked;
+      `''` (byte-identical prompt) unless `SENTINAL_ENV_MODEL_ENABLED` with a
+      sample; `replan_failed_node()` untouched. 4 format + 3 wiring tests.
+      **Half A complete** — planner can query current state.
 - [ ] **Half B — drift detection.** `capability_outcomes` table (one row per
       executed step: intent, `verified` bool from the `Observation`,
       tier_used, latency), recorded from `api_wrapper` (not `executor.py` —
