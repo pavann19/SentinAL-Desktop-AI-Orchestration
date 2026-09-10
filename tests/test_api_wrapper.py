@@ -203,3 +203,86 @@ class TestAutonomousMode:
             result = await process_command("do a then b", autonomous=True)
         assert result["budget"]["autonomous"] is True
         assert result["budget"]["max_actions"] == auto_actions
+
+
+class TestDirectHumanConfirmChannel:
+    """P2-5: SENTINAL_REQUIRE_CONFIRMATION on -> a T2/T3 direct-human request
+    returns PendingConfirmation with a one-time token; resend with the token
+    to proceed. Off (default) -> unchanged."""
+
+    _T3_STEP = {"intent": "FileDeletionIntent", "target": "confirm_test_file.txt"}
+    _EXEC_OK = {"result": "Deleted.", "snapshot_diff": {}, "step_observations": [],
+                "failure_category": "success", "attempts": 1, "replanned": False}
+
+    @pytest.mark.asyncio
+    async def test_disabled_by_default_t3_runs_without_a_token(self):
+        from capabilities.system.api_wrapper import process_command
+        with patch("agentic_core.processor.extract_intent", return_value=[self._T3_STEP]), \
+             patch("agentic_core.executor.execute_pipeline_observed", return_value=self._EXEC_OK):
+            result = await process_command("delete confirm_test_file.txt")
+        assert result["execution"] == "Success"
+        assert "confirm_token" not in result
+
+    @pytest.mark.asyncio
+    async def test_enabled_t3_returns_pending_confirmation_and_does_not_run(self):
+        from capabilities.system.api_wrapper import process_command
+        with patch("agentic_core.confirmation.REQUIRE_CONFIRMATION", True), \
+             patch("agentic_core.processor.extract_intent", return_value=[self._T3_STEP]), \
+             patch("agentic_core.executor.execute_pipeline_observed") as mock_exec:
+            result = await process_command("delete confirm_test_file.txt")
+        assert result["execution"] == "PendingConfirmation"
+        assert result["confirm_token"]
+        assert "FileDeletionIntent" in result["response"]
+        mock_exec.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_enabled_resend_with_the_token_runs(self):
+        from capabilities.system.api_wrapper import process_command
+        with patch("agentic_core.confirmation.REQUIRE_CONFIRMATION", True), \
+             patch("agentic_core.processor.extract_intent", return_value=[self._T3_STEP]), \
+             patch("agentic_core.executor.execute_pipeline_observed", return_value=self._EXEC_OK):
+            first = await process_command("delete confirm_test_file.txt")
+            second = await process_command("delete confirm_test_file.txt",
+                                           confirm_token=first["confirm_token"])
+        assert second["execution"] == "Success"
+        assert second.get("confirmation") == "provided"
+
+    @pytest.mark.asyncio
+    async def test_enabled_a_token_from_a_different_request_is_rejected(self):
+        from capabilities.system.api_wrapper import process_command
+        step_a = {"intent": "FileDeletionIntent", "target": "file_a.txt"}
+        step_b = {"intent": "FileDeletionIntent", "target": "file_b.txt"}
+        with patch("agentic_core.confirmation.REQUIRE_CONFIRMATION", True), \
+             patch("agentic_core.executor.execute_pipeline_observed") as mock_exec:
+            with patch("agentic_core.processor.extract_intent", return_value=[step_a]):
+                a = await process_command("delete file_a.txt")
+            # try to use A's token to confirm a DELETE of file_b
+            with patch("agentic_core.processor.extract_intent", return_value=[step_b]):
+                b = await process_command("delete file_b.txt", confirm_token=a["confirm_token"])
+        assert b["execution"] == "PendingConfirmation"   # re-challenged, not run
+        mock_exec.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_enabled_t0_request_never_needs_confirmation(self):
+        from capabilities.system.api_wrapper import process_command
+        step = {"intent": "ConversationalIntent", "message": "hi", "speech_response": "hi"}
+        with patch("agentic_core.confirmation.REQUIRE_CONFIRMATION", True), \
+             patch("agentic_core.processor.extract_intent", return_value=[step]), \
+             patch("agentic_core.executor.execute_pipeline_observed",
+                   return_value={**self._EXEC_OK, "result": "hi"}):
+            result = await process_command("say hi")
+        assert result["execution"] == "Success"
+        assert "confirm_token" not in result
+
+    @pytest.mark.asyncio
+    async def test_enabled_autonomous_t3_still_blocked_not_pending(self):
+        """The autonomous path returns Blocked upstream and never reaches the
+        confirm gate — a confirm token must not be a way to run a T3 goal
+        autonomously."""
+        from capabilities.system.api_wrapper import process_command
+        with patch("agentic_core.confirmation.REQUIRE_CONFIRMATION", True), \
+             patch("agentic_core.processor.extract_intent", return_value=[self._T3_STEP]), \
+             patch("agentic_core.executor.execute_pipeline_observed") as mock_exec:
+            result = await process_command("delete confirm_test_file.txt", autonomous=True)
+        assert result["execution"] == "Blocked"
+        mock_exec.assert_not_called()

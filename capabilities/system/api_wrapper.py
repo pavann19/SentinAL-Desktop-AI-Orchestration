@@ -360,22 +360,27 @@ def _paths_for_step(step: dict) -> list[str]:
     return []
 
 
-async def process_command(prompt: str, *, autonomous: bool = False) -> dict[str, Any]:
+async def process_command(prompt: str, *, autonomous: bool = False,
+                          confirm_token: str | None = None) -> dict[str, Any]:
     """
     Async pipeline entry point. Wraps the synchronous executor in a thread
     so it does not block the ASGI event loop (Fix 3.12).
 
     autonomous=False (every direct caller — REST, voice, benchmark): the
-    capability broker's tier/confirmation decision is surfaced but NOT
-    enforced (there is no confirmation-provision channel; blocking a T3
-    request would break FileDeletionIntent etc.).
+    capability broker's tier/confirmation decision is surfaced. It is
+    ENFORCED only when SENTINAL_REQUIRE_CONFIRMATION is on — then a T2/T3
+    plan returns execution="PendingConfirmation" with a one-time confirm
+    token, and the caller resends the same prompt with confirm_token set to
+    proceed. With the switch off (default), behaviour is unchanged: the
+    flag is informational, execution runs.
 
     autonomous=True (S6 event bus running a background goal — no human in the
-    loop): the broker's decision IS enforced. A plan whose highest tier is
-    T2 or T3 is denied outright ("no human -> cannot confirm -> deny", which
-    the broker already encodes), nothing runs, and the multi-step path runs
-    under the tighter autonomous PlanBudget. validate_steps() still runs
-    first and unconditionally either way.
+    loop): the broker's decision IS enforced unconditionally. A plan whose
+    highest tier is T2 or T3 is denied outright ("no human -> cannot
+    confirm -> deny"), nothing runs, and the multi-step path runs under the
+    tighter autonomous PlanBudget.
+
+    validate_steps() still runs first and unconditionally in every case.
     """
     from agentic_core.executor import (
         FAILURE_CATEGORY_POSTCONDITION_MISMATCH,
@@ -432,6 +437,33 @@ async def process_command(prompt: str, *, autonomous: bool = False) -> dict[str,
                     f"Autonomous goal blocked by containment policy: {grant_decision.reason}"
                 )
                 return output
+
+            # ── STAGE 1a': DIRECT-HUMAN CONFIRMATION GATE (P2-5) ───────────────
+            # Only when SENTINAL_REQUIRE_CONFIRMATION is on. A T2/T3 direct-human
+            # request either presents a valid one-time token bound to THIS exact
+            # request (consume it, continue) or gets a PendingConfirmation
+            # result with a fresh token and nothing runs. Off by default so
+            # existing REST callers / the benchmark are unaffected. The
+            # autonomous path never reaches here — it already returned Blocked
+            # for T2/T3 above.
+            if not autonomous and grant_decision.requires_confirmation:
+                from agentic_core.confirmation import (
+                    REQUIRE_CONFIRMATION,
+                    pending_confirmations,
+                    summarize,
+                )
+                if REQUIRE_CONFIRMATION:
+                    if pending_confirmations.check_and_consume(prompt, steps, confirm_token):
+                        output["confirmation"] = "provided"
+                    else:
+                        token = pending_confirmations.issue(prompt, steps, grant_decision.tier)
+                        output["validation"] = "Approved"
+                        output["execution"] = "PendingConfirmation"
+                        output["confirm_token"] = token
+                        output["response"] = summarize(
+                            steps, grant_decision.tier, grant_decision.reason
+                        )
+                        return output
 
             # ── STAGE 1b: S5 GOAL GRAPH ROUTING (multi-step only) ──────────────
             # Fix [S5-wire]: execute_goal_graph_observed() — the critic-integrated,

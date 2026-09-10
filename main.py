@@ -386,6 +386,10 @@ async def health_check():
 
 class CommandRequest(BaseModel):
     prompt: str
+    # P2-5 direct-human confirm channel. When SENTINAL_REQUIRE_CONFIRMATION is
+    # on, a T2/T3 request first returns execution="PendingConfirmation" with a
+    # confirm_token; resend the same prompt with that token to proceed.
+    confirm_token: str | None = None
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. REST Endpoint: Command Processing
@@ -396,7 +400,7 @@ async def handle_command(req: CommandRequest, request: Request):
     """// REST Execution Endpoint (Legacy Interface) — requires bearer token, rate-limited"""
     try:
         from capabilities.system.api_wrapper import process_command
-        result = await process_command(req.prompt)  # process_command is now async (Fix 3.12)
+        result = await process_command(req.prompt, confirm_token=req.confirm_token)
         return result
     except Exception as e:
         return {"input": req.prompt, "steps": [], "validation": "Error", "execution": "Error", "response": str(e)}
