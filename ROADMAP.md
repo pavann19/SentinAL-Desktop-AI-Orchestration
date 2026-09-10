@@ -442,7 +442,7 @@ and `event_bus.make_event_handler()` is the caller.
       follow-up — default-off means nothing is worse meanwhile, and the
       REST path is the complete testable core.
 
-## S7 — World context and drift detection (Half A started)
+## S7 — World context and drift detection (gate met — code complete)
 Per `CONTAINMENT_ARCHITECTURE.md` §10.3/§10.4: a live environment model
 built on S1's snapshot mechanism so the planner can query current state,
 plus per-capability success-rate trend tracked over time. Gated on S1
@@ -479,14 +479,26 @@ camera/mic (own governance section required, §10.3), not screenshots.
       `''` (byte-identical prompt) unless `SENTINAL_ENV_MODEL_ENABLED` with a
       sample; `replan_failed_node()` untouched. 4 format + 3 wiring tests.
       **Half A complete** — planner can query current state.
-- [ ] **Half B — drift detection.** `capability_outcomes` table (one row per
-      executed step: intent, `verified` bool from the `Observation`,
-      tier_used, latency), recorded from `api_wrapper` (not `executor.py` —
-      frozen; the data is already in the run's return dict).
-      `world_model.capability_health(intent, window)` = rolling success rate
-      vs. baseline with a min-sample guard; `drift_report()` lists flagged
-      intents. S7 produces the signal only — acting on it (targeted
-      re-learning) is S8, which needs S4's overlay.
+- [x] **Half B — drift detection.** `849b26c`. `capability_outcomes` table
+      (ts, intent, `verified` = whole-run success, `failure_category`,
+      whole-command `latency_ms`, `tier`) + add/recent/prune in
+      `memory_hook.py`. `world_model.record_run(output, latency_ms)` writes
+      one row per distinct intent in a terminal run (Success/Failed only —
+      Blocked/Pending/Error are upstream rejections, not capability
+      performance), called from `api_wrapper` at both return sites next to
+      `_remember_interaction` — **not** `executor.py`.
+      `capability_health(intent)` = rolling success rate over the last
+      `DRIFT_WINDOW` (20) outcomes vs. the earliest `DRIFT_BASELINE` (20),
+      `drifted` only when both sides have >= `DRIFT_MIN_SAMPLE` (8) and the
+      rolling rate is `DRIFT_DROP` (0.25)+ below baseline. `drift_report()`
+      lists flagged capabilities worst-first. Rides
+      `SENTINAL_ENV_MODEL_ENABLED` (default off) — no separate flag, nothing
+      reads the table until drift analysis is asked for.
+      `validator.py`/`executor.py`/`main.py` untouched. 14 Half-B tests + 2
+      wiring tests. **S7 gate met** — planner can query current state (A3)
+      and per-capability success-rate trend is tracked (Half B).
+      S7 produces the drift signal only; acting on it (targeted skill
+      re-learning) is **S8**, which needs S4's overlay.
 
 ---
 
