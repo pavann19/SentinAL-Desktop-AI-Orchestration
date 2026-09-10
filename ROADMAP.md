@@ -154,6 +154,19 @@ items are a live verification (npm Docker round-trip) and a benchmark gap
       once already under similar pressure earlier in this same session).
       Stated as open rather than assumed — needs either more free RAM at
       test time or a deliberately time-boxed retry.
+      **Verification path built** — `e30d410`,
+      `scripts/verify_s4_live_roundtrip.py`: runs the real
+      `docker run --rm -v <dir>:/workspace node:20-slim npm install is-number`
+      with a background RAM watchdog, asserts `npm_install()`'s own builder
+      selects the sandbox path, and checks `node_modules/<pkg>` materialises
+      in the HOST mount (the containment proof). Writes a JSON report to
+      `benchmarks/results/`, exits non-zero on failure. RAM measured this
+      session: ~4.0 GB free now; closing the desktop editor app frees
+      ~1.0–1.5 GB physical + ~2.2 GB commit → ~5.3 GB free → ~2.4 GB
+      headroom with Docker's WSL2 VM up (`.wslconfig` already caps it at
+      2 GB) — marginal but in range for one short run. Run the script once
+      from a plain terminal with the editor closed, then this box flips with
+      the report's real result.
 - [x] **Pre-action filesystem snapshot + restore** — 2026-09-10, `16c7f8e`.
       Windows has no native copy-on-write overlay FS, so §6's T2 model ("real
       writes + pre-action snapshot -> restore snapshot") is implemented as
