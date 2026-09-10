@@ -343,8 +343,28 @@ and `event_bus.make_event_handler()` is the caller.
       flip once validated. 12 hermetic tests with a stubbed deterministic
       embedder; `validator.py`/`executor.py` untouched; `main.py` gained no
       new lint issue.
-      **Open:** increment 2 — surface retrieved recipes in the planner and
-      measure the benchmark delta with the flag on.
+- [~] **Semantic memory — increment 2: advisory plan hint.** `5460ebb` —
+      records the step-shape (`[{intent, target}, ...]`) of a *successful*
+      multi-step run in a new nullable `memory_semantic.plan` column, and
+      shows it to the planner when a new goal is very close.
+      `semantic_memory.recall_plan()` retrieves the nearest successful plan
+      above a higher floor than plain recall
+      (`SENTINAL_SEMANTIC_MEMORY_PLAN_MIN_SIM`, default 0.55 vs the 0.35
+      recall floor); `format_plan_hint()` renders it as an explicitly
+      advisory block appended to `planner.plan_goal()`'s LLM decomposition
+      prompt. Hint-only: every step the planner returns is still
+      intent-allowlisted, `MAX_PLAN_STEPS`-clamped and cycle-checked, so a
+      stale hint cannot smuggle a capability or an unbounded plan;
+      `replan_failed_node()` is deliberately left without a hint. Reuses
+      `SENTINAL_SEMANTIC_MEMORY_ENABLED` — no new flag; off by default the
+      planner prompt is byte-identical to before. `validator.py`/
+      `executor.py` untouched, `main.py` not touched. 20 semantic-memory
+      tests + 4 planner-hint tests (hint reaches the prompt / absent on no
+      match / recall raising is survived / a bogus hinted intent is still
+      rewritten to `GeneralizedOSIntent`).
+      **Open:** the benchmark delta with the flag on (multi-step pass rate,
+      steps/plan, planner latency) — a deliberate measurement run, not yet
+      done on this machine.
 - [ ] Procedural memory: learned task recipes cached and reused.
 - [ ] `PHASE_TASK_BOARD.md`'s **P2-4** (MCP tool contracts) — explicitly
       scoped to capability schemas only, not the event bus.
