@@ -142,7 +142,17 @@ plan is physically contained, not just discouraged by a path denylist.
       test time or a deliberately time-boxed retry.
 - [ ] Overlay writes / snapshots so a sandboxed action's filesystem effect
       is provisional until approved, not immediate.
-- [ ] Budgets (time/action-count ceilings per plan).
+- [x] **Budgets — per-plan action + wall-time ceilings** — 2026-09-10, `4c8b654`.
+      `config/budgets.py` (env-overridable, autonomous ceilings strictly
+      tighter: 12 actions / 120s vs 24 / 300s) + `agentic_core/budget.py`
+      (`PlanBudget`, non-raising, monotonic clock; `budget_for(autonomous)`
+      factory; `FAILURE_CATEGORY_BUDGET_EXCEEDED`). Wired into
+      `execute_goal_graph_observed()`: checked at the top of the node loop and
+      before each replan; when spent, remaining nodes are marked `skipped`
+      (not run) and the result is `failure_category="budget_exceeded"`.
+      `process_command()` surfaces `output["budget"]`. Single-step flat path
+      untouched. 16 budget tests + 4 wiring tests; 114 pass across the
+      affected suites, no regressions. `validator.py`/`executor.py` untouched.
 - [x] **Capability broker — risk-tier decision layer** — 2026-09-10, `ecda782`.
       `config/capability_tiers.py` maps all 19 allowlisted intents to T0..T3
       (with `list`-vs-mutate sub-action overrides); `agentic_core/capability_broker.py`
