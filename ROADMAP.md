@@ -102,15 +102,23 @@ Gate (per `CONTAINMENT_ARCHITECTURE.md` §6/§7): a T1→T2 tier reversal
 demonstrated under test — i.e. proof that a compromised or hallucinating
 plan is physically contained, not just discouraged by a path denylist.
 
-- [x] **Environment reality-check before committing to a plan** — 2026-08-29.
-      This machine (Windows 11 Home) has no Hyper-V, so both Windows Sandbox
-      and Windows containers are unavailable; Docker here only runs Linux
-      containers. That ruled out the original plan of sandboxing
-      `CodeActIntent` first — its LLM-generated scripts are explicitly
-      Windows-targeted (`winget`, Windows paths per its own system prompt)
-      and can't run in a Linux container at all. Re-scoped to
-      `npm_install()` instead: cross-platform by nature, so a Linux
-      container genuinely works for it.
+- [x] **Environment reality-check before committing to a plan** — 2026-08-29,
+      **corrected 2026-09-10**. Docker Desktop here is WSL2-backed and only
+      runs Linux containers, so `CodeActIntent`'s Windows-targeted PowerShell
+      (`winget`, Windows paths per its own system prompt) can't run in it —
+      that part still holds, and re-scoping to `npm_install()` first (cross-
+      platform, a Linux container genuinely works) was still the right call.
+      **What was wrong:** the original note said this machine is Windows 11
+      Home with "no Hyper-V, so Windows Sandbox and Windows containers are
+      unavailable." It is actually **Windows 11 Pro for Workstations** — a
+      hypervisor is already running (VBS/HVCI + WSL2's Virtual Machine
+      Platform), and Windows Sandbox / Windows containers / the full Hyper-V
+      role are all edition-eligible. They are just not *enabled* yet
+      (`vmms`, `WindowsSandbox.exe`, Hyper-V PS module all absent; the
+      low-level `vmcompute`/`hns`/`HvHost` plumbing is present and running).
+      So `CodeActIntent` containment (below) is **not blocked by hardware** —
+      it needs Windows Sandbox turned on (elevation + reboot), then it is
+      buildable here.
 - [x] **`npm_install()` sandboxed in a throwaway Docker container** —
       2026-08-29, `cad4a85`/`af66436`. Runs inside `node:20-slim`, mounting
       the same target directory it already writes `node_modules` into.
@@ -170,12 +178,18 @@ plan is physically contained, not just discouraged by a path denylist.
       captured-unused today) — that needs a two-phase confirm channel, a
       separate wiring task. The broker now produces the correct signal for
       whoever consumes it.
-- [ ] `CodeActIntent` containment — genuinely blocked on this machine's
-      lack of Hyper-V (see the reality-check item above), not just
-      unscheduled. Would need either Windows containers on a different
-      edition/machine, or rescoping `CodeActIntent` itself to stop
-      generating Windows-specific operations — both are real, separate
-      decisions, not a quick follow-up.
+- [ ] `CodeActIntent` containment — **not hardware-blocked** (see the
+      corrected reality-check item above; this machine is Pro for
+      Workstations and Windows Sandbox is edition-eligible). Blocked only on
+      **Windows Sandbox not being enabled yet** — needs an elevated
+      `Enable-WindowsOptionalFeature -Online -FeatureName Containers-DisposableClientVM`
+      plus a reboot (a user action, not scriptable unsupervised). Once on,
+      the plan is: run each LLM-generated CodeAct PowerShell script inside a
+      fresh Windows Sandbox instance (ephemeral, disposable — exactly the T3
+      throwaway-environment model §6 wants), with only a declared working
+      directory mapped in. The alternative — rescoping `CodeActIntent` to
+      drop Windows-specific operations so a Linux container could hold it —
+      is now a fallback, not the only option.
 
 **Do not start S5 or S6 before this is real.** That's not a stylistic
 preference — it's `CONTAINMENT_ARCHITECTURE.md` §7's explicit corrected
