@@ -70,6 +70,7 @@ class SkillRegistry:
                 fingerprint=fp,
                 skeleton_json=json.dumps(skeleton, separators=(",", ":")),
                 slots_json=json.dumps(template.get("slots", []), separators=(",", ":")),
+                goal_examples_json=json.dumps(template.get("goal_examples", []), separators=(",", ":")),
                 postcondition_kind=template.get("postcondition_kind"),
                 n_instances=int(template.get("n_instances", 0)),
                 ts=time.time(),
@@ -153,6 +154,7 @@ class SkillRegistry:
                 s = dict(s)
                 s["skeleton"] = json.loads(s["skeleton_json"])
                 s["slots"] = json.loads(s["slots_json"])
+                s["goal_examples"] = json.loads(s.get("goal_examples_json") or "[]")
                 out.append(s)
             except Exception:
                 continue
