@@ -202,6 +202,7 @@ class MemoryManager:
                     fingerprint       TEXT NOT NULL,
                     skeleton_json     TEXT NOT NULL,
                     slots_json        TEXT NOT NULL,
+                    goal_examples_json TEXT NOT NULL DEFAULT '[]',
                     postcondition_kind TEXT,
                     origin            TEXT NOT NULL DEFAULT 'learned',
                     tier              TEXT NOT NULL DEFAULT 'T1',
@@ -220,6 +221,37 @@ class MemoryManager:
                     ts       REAL NOT NULL,
                     event    TEXT NOT NULL,
                     detail   TEXT
+                )
+            """)
+            # S8-5: per-skill live outcomes, for drift-based demotion — the
+            # same signal shape as capability_outcomes (S7 Half B) but keyed
+            # by skill_id instead of intent.
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS learned_skill_outcomes (
+                    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                    skill_id TEXT NOT NULL,
+                    ts       REAL NOT NULL,
+                    verified INTEGER NOT NULL
+                )
+            """)
+
+            # S9-1: versioned self-improvement changes. Every applied tuning
+            # change is a new row; revert = mark the latest promoted one
+            # reverted so the previous value becomes current. state:
+            # proposed | shadow_passed | shadow_failed | promoted | rejected |
+            # reverted.
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS tuning_versions (
+                    version_id   TEXT PRIMARY KEY,
+                    target       TEXT NOT NULL,
+                    from_value   TEXT,
+                    to_value     TEXT NOT NULL,
+                    proposed_by  TEXT,
+                    rationale    TEXT,
+                    state        TEXT NOT NULL DEFAULT 'proposed',
+                    evidence_json TEXT,
+                    created_ts   REAL NOT NULL,
+                    decided_ts   REAL
                 )
             """)
 
@@ -534,6 +566,7 @@ class MemoryManager:
 
     def upsert_learned_skill(self, skill_id: str, fingerprint: str,
                              skeleton_json: str, slots_json: str,
+                             goal_examples_json: str,
                              postcondition_kind: str | None, n_instances: int,
                              ts: float) -> None:
         """Insert a candidate skill, or refresh its abstracted recipe +
@@ -543,14 +576,15 @@ class MemoryManager:
             self.cursor.execute(
                 """INSERT INTO learned_skills
                      (skill_id, fingerprint, skeleton_json, slots_json,
-                      postcondition_kind, n_instances, created_ts)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)
+                      goal_examples_json, postcondition_kind, n_instances, created_ts)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT(skill_id) DO UPDATE SET
-                     skeleton_json = excluded.skeleton_json,
-                     slots_json    = excluded.slots_json,
-                     n_instances   = excluded.n_instances""",
+                     skeleton_json      = excluded.skeleton_json,
+                     slots_json         = excluded.slots_json,
+                     goal_examples_json = excluded.goal_examples_json,
+                     n_instances        = excluded.n_instances""",
                 (skill_id, fingerprint, skeleton_json, slots_json,
-                 postcondition_kind, n_instances, ts),
+                 goal_examples_json, postcondition_kind, n_instances, ts),
             )
             self.conn.commit()
 
@@ -613,6 +647,82 @@ class MemoryManager:
                 (skill_id,),
             )
             return [{"ts": r[0], "event": r[1], "detail": r[2]} for r in self.cursor.fetchall()]
+
+    def add_learned_skill_outcome(self, skill_id: str, verified: bool, ts: float) -> None:
+        with self._lock:
+            self.cursor.execute(
+                "INSERT INTO learned_skill_outcomes (skill_id, ts, verified) VALUES (?, ?, ?)",
+                (skill_id, ts, 1 if verified else 0),
+            )
+            self.conn.commit()
+
+    def recent_learned_skill_outcomes(self, skill_id: str, limit: int = 100) -> list:
+        with self._lock:
+            self.cursor.execute(
+                """SELECT ts, verified FROM learned_skill_outcomes
+                   WHERE skill_id = ? ORDER BY id DESC LIMIT ?""",
+                (skill_id, limit),
+            )
+            return [{"ts": r[0], "verified": bool(r[1])} for r in self.cursor.fetchall()]
+
+    # ── Self-improvement / tuning versions (S9) ───────────────────────────
+
+    def add_tuning_version(self, version_id: str, target: str, from_value: str | None,
+                           to_value: str, proposed_by: str | None, rationale: str | None,
+                           ts: float) -> None:
+        with self._lock:
+            self.cursor.execute(
+                """INSERT INTO tuning_versions
+                     (version_id, target, from_value, to_value, proposed_by,
+                      rationale, state, created_ts)
+                   VALUES (?, ?, ?, ?, ?, ?, 'proposed', ?)""",
+                (version_id, target, from_value, to_value, proposed_by, rationale, ts),
+            )
+            self.conn.commit()
+
+    def set_tuning_version_state(self, version_id: str, state: str,
+                                 evidence_json: str | None = None,
+                                 decided_ts: float | None = None) -> None:
+        sets = ["state = ?"]
+        params: list = [state]
+        if evidence_json is not None:
+            sets.append("evidence_json = ?")
+            params.append(evidence_json)
+        if decided_ts is not None:
+            sets.append("decided_ts = ?")
+            params.append(decided_ts)
+        params.append(version_id)
+        with self._lock:
+            self.cursor.execute(
+                f"UPDATE tuning_versions SET {', '.join(sets)} WHERE version_id = ?",
+                params,
+            )
+            self.conn.commit()
+
+    def get_tuning_version(self, version_id: str) -> dict | None:
+        with self._lock:
+            self.cursor.execute("SELECT * FROM tuning_versions WHERE version_id = ?", (version_id,))
+            row = self.cursor.fetchone()
+            cols = [d[0] for d in self.cursor.description] if row else []
+        return dict(zip(cols, row)) if row else None
+
+    def list_tuning_versions(self, target: str | None = None, state: str | None = None) -> list:
+        q = "SELECT * FROM tuning_versions"
+        clauses, params = [], []
+        if target is not None:
+            clauses.append("target = ?")
+            params.append(target)
+        if state is not None:
+            clauses.append("state = ?")
+            params.append(state)
+        if clauses:
+            q += " WHERE " + " AND ".join(clauses)
+        q += " ORDER BY created_ts DESC"
+        with self._lock:
+            self.cursor.execute(q, params)
+            rows = self.cursor.fetchall()
+            cols = [d[0] for d in self.cursor.description]
+        return [dict(zip(cols, r)) for r in rows]
 
     # ── URL Cache Methods ──────────────────────────────────────────────────────
 

@@ -514,6 +514,7 @@ async def process_command(prompt: str, *, autonomous: bool = False,
                 _remember_interaction(prompt, output)
                 _record_procedural_outcome(prompt, graph, output)
                 _record_capability_outcomes(output, _t0)
+                _record_skill_outcome(graph, output)
                 return output
 
             # ── STAGE 2: VALIDATION ──
@@ -609,6 +610,20 @@ async def process_command(prompt: str, *, autonomous: bool = False,
     _remember_interaction(prompt, output)
     _record_capability_outcomes(output, _t0)
     return output
+
+
+def _record_skill_outcome(graph: Any, output: dict) -> None:
+    """S8-5: if this run used a learned skill, record its success/failure so
+    the monitor can demote a drifting skill. No-op otherwise; never raises."""
+    try:
+        from agentic_core.skill_matcher import skill_id_of
+        sid = skill_id_of(graph)
+        if not sid:
+            return
+        from agentic_core.skill_monitor import record_skill_run
+        record_skill_run(sid, output.get("execution") == "Success")
+    except Exception:
+        pass
 
 
 def _record_capability_outcomes(output: dict, t0: float | None = None) -> None:

@@ -128,6 +128,18 @@ def _deterministic_plan_fallback(prompt: str) -> GoalGraph:
     return graph
 
 
+def _match_skill(prompt: str, *, autonomous: bool = False):
+    """A filled GoalGraph from a validated, ACTIVE learned skill (S8), or None.
+    Checked before procedural memory — a learned skill has passed replay
+    validation, a raw recipe has only organic-success history. No-op unless
+    SENTINAL_LEARNED_SKILLS_ENABLED, never for an autonomous goal."""
+    try:
+        from agentic_core.skill_matcher import match_skill
+        return match_skill(prompt, autonomous=autonomous)
+    except Exception:
+        return None
+
+
 def _recall_recipe(prompt: str, *, autonomous: bool = False):
     """A stored GoalGraph from a near-verbatim, repeatedly-successful past goal,
     or None. '' of the planning world: proceeds identically without it on any
@@ -200,6 +212,14 @@ class GoalGraphPlanner:
         # a recipe is a plan shape, never an execution grant. No-op unless
         # SENTINAL_PROCEDURAL_MEMORY_ENABLED, and never for an autonomous goal.
         autonomous = bool((context or {}).get("autonomous", False))
+
+        # S8-4: a validated, active learned skill outranks a raw procedural
+        # recipe — it has passed held-out replay validation in the overlay.
+        skill_graph = _match_skill(prompt, autonomous=autonomous)
+        if skill_graph is not None:
+            _logger.info(f"[Planner] Learned-skill match — {len(skill_graph.nodes)} steps")
+            return skill_graph
+
         recipe = _recall_recipe(prompt, autonomous=autonomous)
         if recipe is not None:
             _logger.info(f"[Planner] Procedural memory hit — replaying stored recipe ({len(recipe.nodes)} steps)")
