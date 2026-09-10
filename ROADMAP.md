@@ -442,13 +442,46 @@ and `event_bus.make_event_handler()` is the caller.
       follow-up — default-off means nothing is worse meanwhile, and the
       REST path is the complete testable core.
 
-## S7 — World context and drift detection (deferred, further out)
+## S7 — World context and drift detection (Half A started)
 Per `CONTAINMENT_ARCHITECTURE.md` §10.3/§10.4: a live environment model
-built on S1's snapshot mechanism, so the planner can query current state
-and per-capability success-rate trend is tracked over time. Explicitly
-gated on S1 (verification) and S2 (benchmark baseline) existing first —
-both are now done, but this item itself has had no design work yet beyond
-the one paragraph in §10.4.
+built on S1's snapshot mechanism so the planner can query current state,
+plus per-capability success-rate trend tracked over time. Gated on S1
+(verification) and S2 (benchmark baseline) — both done. Scoped digital
+environment only — running processes, foreground window, time — **not**
+camera/mic (own governance section required, §10.3), not screenshots.
+
+- [x] **Half A, increments A1 + A2 — live environment model.** `837d89b`.
+      **A1 sampler:** `agentic_core/world_model.sample_tick()` records one
+      `env_state` row (process set + hash + count, foreground app/title),
+      reusing `postcondition_observer.capture_state_snapshot()` for the
+      process list. Rides the resident event-bus loop — one call per tick,
+      in both the active and the disabled-idle branch — so **no `main.py`
+      change**, and kept fully separate from the reminder sweep (touches no
+      `scheduled_tasks` row, can't affect notify-only). Throttled to
+      `SENTINAL_ENV_SAMPLE_MIN_INTERVAL` (20 s); retention bounded by row
+      count *and* age (`SENTINAL_ENV_RETAIN_ROWS`/`_HOURS`, 500 / 6 h),
+      pruned every write. Never raises. **A2 read API:** `current_state()`
+      (latest sample — active app/title, open apps, process count, age) and
+      `changes_since(seconds)` (apps opened/closed + foreground-switch count
+      across the window). Pure reads; `{}` when disabled or < 2 samples.
+      New `env_state` table + `add_env_state`/`recent_env_states`/
+      `prune_env_state` in `memory_hook.py`; `config/world_model.py` knobs.
+      Off by default behind `SENTINAL_ENV_MODEL_ENABLED` (A3 will feed the
+      planner prompt; a shifting context can move intent extraction).
+      `validator.py`/`executor.py`/`main.py` untouched. 12 world-model +
+      3 event-bus wiring tests.
+- [ ] **Half A, increment A3 — planner wiring.** Fold `current_state()` into
+      `plan_goal()`'s decomposition prompt (advisory, behind the same flag,
+      byte-identical prompt when off), so *"close it"* + foreground = Notepad
+      resolves the referent.
+- [ ] **Half B — drift detection.** `capability_outcomes` table (one row per
+      executed step: intent, `verified` bool from the `Observation`,
+      tier_used, latency), recorded from `api_wrapper` (not `executor.py` —
+      frozen; the data is already in the run's return dict).
+      `world_model.capability_health(intent, window)` = rolling success rate
+      vs. baseline with a min-sample guard; `drift_report()` lists flagged
+      intents. S7 produces the signal only — acting on it (targeted
+      re-learning) is S8, which needs S4's overlay.
 
 ---
 
