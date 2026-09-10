@@ -189,6 +189,40 @@ class MemoryManager:
                 )
             """)
 
+            # S8 skill learning: a learned skill is a validated capability
+            # recipe originated from observed successes rather than hand-
+            # written. skeleton_json + slots_json are the abstracted
+            # (typed-slot) recipe; state moves candidate -> active -> demoted
+            # / retired; tier is ALWAYS T1 for origin='learned' (a learned
+            # skill starts more restricted than a hand-authored one and earns
+            # trust). learned_skill_events is the append-only audit trail.
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS learned_skills (
+                    skill_id          TEXT PRIMARY KEY,
+                    fingerprint       TEXT NOT NULL,
+                    skeleton_json     TEXT NOT NULL,
+                    slots_json        TEXT NOT NULL,
+                    postcondition_kind TEXT,
+                    origin            TEXT NOT NULL DEFAULT 'learned',
+                    tier              TEXT NOT NULL DEFAULT 'T1',
+                    confidence        REAL NOT NULL DEFAULT 0.0,
+                    state             TEXT NOT NULL DEFAULT 'candidate',
+                    n_instances       INTEGER NOT NULL DEFAULT 0,
+                    created_ts        REAL NOT NULL,
+                    validated_ts      REAL,
+                    activated_ts      REAL
+                )
+            """)
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS learned_skill_events (
+                    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                    skill_id TEXT NOT NULL,
+                    ts       REAL NOT NULL,
+                    event    TEXT NOT NULL,
+                    detail   TEXT
+                )
+            """)
+
             self.conn.commit()
 
     # ── Scheduled Tasks / Reminders ───────────────────────────────────────────
@@ -495,6 +529,90 @@ class MemoryManager:
             after = self.cursor.execute("SELECT COUNT(*) FROM capability_outcomes").fetchone()[0]
             self.conn.commit()
         return before - after
+
+    # ── Learned Skills (S8) ───────────────────────────────────────────────
+
+    def upsert_learned_skill(self, skill_id: str, fingerprint: str,
+                             skeleton_json: str, slots_json: str,
+                             postcondition_kind: str | None, n_instances: int,
+                             ts: float) -> None:
+        """Insert a candidate skill, or refresh its abstracted recipe +
+        instance count if it is already registered. Never changes state,
+        tier, origin, confidence or the timestamps of an existing row."""
+        with self._lock:
+            self.cursor.execute(
+                """INSERT INTO learned_skills
+                     (skill_id, fingerprint, skeleton_json, slots_json,
+                      postcondition_kind, n_instances, created_ts)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(skill_id) DO UPDATE SET
+                     skeleton_json = excluded.skeleton_json,
+                     slots_json    = excluded.slots_json,
+                     n_instances   = excluded.n_instances""",
+                (skill_id, fingerprint, skeleton_json, slots_json,
+                 postcondition_kind, n_instances, ts),
+            )
+            self.conn.commit()
+
+    def set_learned_skill_state(self, skill_id: str, state: str,
+                                ts_field: str | None = None, ts: float | None = None,
+                                confidence: float | None = None) -> None:
+        """Move a skill to a new lifecycle state. `ts_field` (validated_ts /
+        activated_ts) and `confidence` are set only when provided."""
+        sets = ["state = ?"]
+        params: list = [state]
+        if ts_field in ("validated_ts", "activated_ts") and ts is not None:
+            sets.append(f"{ts_field} = ?")
+            params.append(ts)
+        if confidence is not None:
+            sets.append("confidence = ?")
+            params.append(confidence)
+        params.append(skill_id)
+        with self._lock:
+            self.cursor.execute(
+                f"UPDATE learned_skills SET {', '.join(sets)} WHERE skill_id = ?",
+                params,
+            )
+            self.conn.commit()
+
+    def get_learned_skill(self, skill_id: str) -> dict | None:
+        with self._lock:
+            self.cursor.execute(
+                "SELECT * FROM learned_skills WHERE skill_id = ?", (skill_id,)
+            )
+            row = self.cursor.fetchone()
+            cols = [d[0] for d in self.cursor.description] if row else []
+        return dict(zip(cols, row)) if row else None
+
+    def list_learned_skills(self, state: str | None = None) -> list:
+        with self._lock:
+            if state is None:
+                self.cursor.execute("SELECT * FROM learned_skills ORDER BY created_ts DESC")
+            else:
+                self.cursor.execute(
+                    "SELECT * FROM learned_skills WHERE state = ? ORDER BY created_ts DESC",
+                    (state,),
+                )
+            rows = self.cursor.fetchall()
+            cols = [d[0] for d in self.cursor.description]
+        return [dict(zip(cols, r)) for r in rows]
+
+    def add_learned_skill_event(self, skill_id: str, event: str,
+                                detail: str | None, ts: float) -> None:
+        with self._lock:
+            self.cursor.execute(
+                "INSERT INTO learned_skill_events (skill_id, ts, event, detail) VALUES (?, ?, ?, ?)",
+                (skill_id, ts, event, detail),
+            )
+            self.conn.commit()
+
+    def learned_skill_events(self, skill_id: str) -> list:
+        with self._lock:
+            self.cursor.execute(
+                "SELECT ts, event, detail FROM learned_skill_events WHERE skill_id = ? ORDER BY id",
+                (skill_id,),
+            )
+            return [{"ts": r[0], "event": r[1], "detail": r[2]} for r in self.cursor.fetchall()]
 
     # ── URL Cache Methods ──────────────────────────────────────────────────────
 
