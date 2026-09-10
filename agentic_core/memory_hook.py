@@ -154,6 +154,23 @@ class MemoryManager:
                 )
             """)
 
+            # S7 world model (increment A1): a rolling record of the digital
+            # environment — running processes + foreground window — sampled by
+            # the resident event-bus loop. Turns memory from a log into a
+            # queryable "what's open now / what changed" model. Retention is
+            # bounded (row count + age) and pruned on every write.
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS env_state (
+                    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ts         REAL NOT NULL,
+                    proc_hash  TEXT NOT NULL,
+                    proc_count INTEGER NOT NULL,
+                    fg_app     TEXT,
+                    fg_title   TEXT,
+                    procs_json TEXT NOT NULL
+                )
+            """)
+
             self.conn.commit()
 
     # ── Scheduled Tasks / Reminders ───────────────────────────────────────────
@@ -348,6 +365,58 @@ class MemoryManager:
              "created_ts": r[6], "last_success_ts": r[7]}
             for r in rows
         ]
+
+    # ── World Model (S7) ──────────────────────────────────────────────────
+
+    def add_env_state(self, ts: float, proc_hash: str, proc_count: int,
+                      fg_app: str | None, fg_title: str | None,
+                      procs_json: str) -> None:
+        """Append one environment sample."""
+        with self._lock:
+            self.cursor.execute(
+                """INSERT INTO env_state
+                     (ts, proc_hash, proc_count, fg_app, fg_title, procs_json)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (ts, proc_hash, proc_count, fg_app, fg_title, procs_json)
+            )
+            self.conn.commit()
+
+    def recent_env_states(self, limit: int = 500) -> list:
+        """Newest-first environment samples."""
+        with self._lock:
+            self.cursor.execute(
+                """SELECT ts, proc_hash, proc_count, fg_app, fg_title, procs_json
+                   FROM env_state ORDER BY id DESC LIMIT ?""",
+                (limit,)
+            )
+            rows = self.cursor.fetchall()
+        return [
+            {"ts": r[0], "proc_hash": r[1], "proc_count": r[2],
+             "fg_app": r[3], "fg_title": r[4], "procs_json": r[5]}
+            for r in rows
+        ]
+
+    def prune_env_state(self, max_rows: int, max_age_seconds: float,
+                        now: float | None = None) -> int:
+        """Drop samples beyond the row-count cap or older than the age cap.
+        Returns the number of rows removed."""
+        import time as _t
+        now = _t.time() if now is None else now
+        with self._lock:
+            before = self.cursor.execute("SELECT COUNT(*) FROM env_state").fetchone()[0]
+            self.cursor.execute(
+                """DELETE FROM env_state WHERE id NOT IN (
+                       SELECT id FROM env_state ORDER BY id DESC LIMIT ?
+                   )""",
+                (max(1, max_rows),)
+            )
+            self.cursor.execute(
+                "DELETE FROM env_state WHERE ts < ?",
+                (now - max_age_seconds,)
+            )
+            after = self.cursor.execute("SELECT COUNT(*) FROM env_state").fetchone()[0]
+            self.conn.commit()
+        return before - after
 
     # ── URL Cache Methods ──────────────────────────────────────────────────────
 

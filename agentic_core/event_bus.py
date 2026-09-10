@@ -43,6 +43,18 @@ _memory = MemoryManager()
 _bus_task: asyncio.Task | None = None
 
 
+def _env_sample() -> None:
+    """S7 world model rides this resident loop: one environment sample per
+    tick. No-op unless SENTINAL_ENV_MODEL_ENABLED; never raises. Kept fully
+    separate from the reminder sweep — it neither reads nor writes
+    scheduled_tasks and cannot affect notify-only behaviour."""
+    try:
+        from agentic_core.world_model import sample_tick
+        sample_tick()
+    except Exception as e:  # pragma: no cover - defensive
+        _logger.debug(f"world-model sample failed (non-fatal): {e}")
+
+
 def _poll_once(memory: MemoryManager) -> list[dict]:
     """Fetch due-and-unnotified rows and stamp each notified. Returns the rows
     that were fired this tick. Runs off the event loop (called via to_thread)."""
@@ -71,6 +83,8 @@ async def event_bus_loop(on_event=None, memory: MemoryManager | None = None,
         _logger.info("Event bus disabled (SENTINAL_EVENT_BUS_ENABLED=false) — loop idle.")
         while True:
             try:
+                # S7 world model still samples even with the reminder sweep off.
+                await asyncio.to_thread(_env_sample)
                 await asyncio.sleep(tick)
             except asyncio.CancelledError:
                 raise
@@ -79,6 +93,7 @@ async def event_bus_loop(on_event=None, memory: MemoryManager | None = None,
 
     while True:
         try:
+            await asyncio.to_thread(_env_sample)  # S7 world model sample
             due = await asyncio.to_thread(_poll_once, mem)
             for task in due:
                 _logger.info(f"[event] reminder due: {task['task_id'][:8]} '{task['description']}'")

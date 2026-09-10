@@ -12,6 +12,7 @@ The loop is infinite, so loop tests run it with a tiny interval, sleep briefly,
 then cancel — nothing here sleeps for real time.
 """
 import asyncio
+import contextlib
 import os
 import sys
 import time
@@ -225,3 +226,33 @@ class TestMakeEventHandler:
         await h({"task_id": "g1", "description": "x", "kind": "goal"})
         assert self.broadcasts[0]["type"] == "autonomous_goal_result"
         assert self.broadcasts[0]["execution"] == "Error"
+
+
+# ── S7 world model rides this loop ─────────────────────────────────────────
+
+class TestWorldModelSampleWiring:
+    def test_env_sample_delegates_to_world_model(self, monkeypatch):
+        calls = []
+        import agentic_core.world_model as wm
+        monkeypatch.setattr(wm, "sample_tick", lambda: calls.append(1))
+        eb._env_sample()
+        assert calls == [1]
+
+    def test_env_sample_swallows_errors(self, monkeypatch):
+        import agentic_core.world_model as wm
+        def boom():
+            raise RuntimeError("nope")
+        monkeypatch.setattr(wm, "sample_tick", boom)
+        eb._env_sample()  # must not raise
+
+    @pytest.mark.asyncio
+    async def test_loop_samples_each_tick(self, monkeypatch):
+        n = []
+        monkeypatch.setattr(eb, "_env_sample", lambda: n.append(1))
+        mem = MemoryManager(db_path=":memory:")
+        task = asyncio.create_task(event_bus_loop(on_event=None, memory=mem, interval=0.01))
+        await asyncio.sleep(0.05)
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+        assert len(n) >= 2
