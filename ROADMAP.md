@@ -178,17 +178,23 @@ plan is physically contained, not just discouraged by a path denylist.
       captured-unused today) — that needs a two-phase confirm channel, a
       separate wiring task. The broker now produces the correct signal for
       whoever consumes it.
-- [ ] `CodeActIntent` containment — **unblocked, pending one reboot**.
-      Windows Sandbox was enabled 2026-09-10
-      (`Enable-WindowsOptionalFeature -Online -FeatureName Containers-DisposableClientVM`,
-      returned `RestartNeeded: True`; `pending.xml` + `RebootPending` staged).
-      After the machine restarts, `WindowsSandbox.exe` is available and this
-      becomes buildable. Plan: run each LLM-generated CodeAct PowerShell
-      script inside a fresh Windows Sandbox instance (ephemeral, disposable —
-      exactly the T3 throwaway-environment model §6 wants), with only a
-      declared working directory mapped in via a `.wsb` config. Fallback if
-      Sandbox proves impractical: rescope `CodeActIntent` to drop
-      Windows-specific operations so a Linux container could hold it.
+- [x] **`CodeActIntent` containment — disposable Windows Sandbox** —
+      2026-09-10, `a284d1d`. Windows Sandbox enabled + reboot done same day.
+      Each LLM-generated PowerShell script now runs inside a fresh Sandbox
+      VM: only a single per-run dir is mapped in at `C:\shared` (the sole
+      host path it can reach), and the VM plus everything it did is discarded
+      when the window closes — the T3 throwaway-environment model §6 wants.
+      `_sandbox_available()` (exe present + ≥3 GB free RAM, fresh per call);
+      when unavailable, falls through to the pre-containment visible host
+      PowerShell window and the response says plainly it is running
+      uncontained. Completion sentinel written to `C:\shared` so the process
+      supervisor observes it as before. Known limit: a fresh Sandbox has no
+      `winget`, so winget-based install steps fail inside it (the response
+      says so). `validator.py`/`executor.py` untouched. 26 tests (10 new).
+      NOT verified: a live Sandbox boot + run — needs ~5 GB free (a VM boot
+      is ~1.5-2 GB and this machine has crashed under memory pressure);
+      3.75 GB free at build time. Stated open, same as the npm Docker
+      round-trip.
 
 **Do not start S5 or S6 before this is real.** That's not a stylistic
 preference — it's `CONTAINMENT_ARCHITECTURE.md` §7's explicit corrected
