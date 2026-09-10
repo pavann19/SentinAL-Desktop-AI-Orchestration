@@ -273,15 +273,23 @@ the pre-action snapshot that rolls back a failed plan (`16c7f8e`). All
 built and unit-tested; they are waiting for a caller that passes
 `autonomous=True`. The event bus is that caller.
 
-- [ ] **Event bus — increment 1: time triggers, notify-only.** A resident
-      poll loop (like `process_supervisor`, started from `main.py`'s
-      lifecycle) that fires the `scheduled_tasks.due_at` rows SchedulerIntent
-      already persists but currently never acts on (its handler openly says
-      "I don't yet send active notifications"). On a due row it **notifies**
-      via the existing telemetry websocket — it does NOT execute anything.
-      No new heavy dependency (an `asyncio` sleep-poll, not `APScheduler`).
-      This is the safe first slice: it structurally cannot take an unwanted
-      action because it only sends messages.
+- [x] **Event bus — increment 1: time triggers, notify-only** — 2026-09-10,
+      `a64a82b`. `agentic_core/event_bus.py`: one resident `asyncio` loop
+      started from `main.py`'s lifecycle next to `process_supervisor`,
+      mirroring its loop/start/stop shape (poll SQLite via `to_thread`, a
+      raising callback logged+swallowed, sweep errors don't kill the loop,
+      `CancelledError` stops cleanly, idempotent start). Every 30 s
+      (`SENTINAL_EVENT_BUS_POLL_SECONDS`, master switch
+      `SENTINAL_EVENT_BUS_ENABLED`) it fires the `scheduled_tasks.due_at`
+      rows SchedulerIntent persists but its handler openly can't deliver.
+      `memory_hook.py` additive: nullable `notified_at` column (PRAGMA-guarded
+      ALTER), `get_due_scheduled_tasks(now)`, `mark_scheduled_task_notified`
+      (does NOT complete the row). `main.py`'s `on_reminder_due` ONLY pushes a
+      `reminder_due` telemetry message — no pipeline, no action — same
+      invariant `on_watch_resolved` has. No new dependency (sleep-poll, not
+      `APScheduler`). 13 tests; 54 pass across event bus + supervisor +
+      api_wrapper + pipeline, no regressions. `validator.py`/`executor.py`
+      untouched.
 - [ ] **Event bus — increment 2: autonomous action execution.** A trigger
       forms a background goal and runs it through the pipeline with
       `autonomous=True`, so the broker denies T2/T3 and the tighter budget
