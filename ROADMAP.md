@@ -331,14 +331,27 @@ and `event_bus.make_event_handler()` is the caller.
 - [ ] Procedural memory: learned task recipes cached and reused.
 - [ ] `PHASE_TASK_BOARD.md`'s **P2-4** (MCP tool contracts) — explicitly
       scoped to capability schemas only, not the event bus.
-- [~] `PHASE_TASK_BOARD.md`'s **P2-5** (risk-tiered policy engine:
-      auto/notify/confirm/forbid). The S4 capability broker is the tier
-      decision; the **autonomous** enforcement half is done (`850678b` —
-      `autonomous=True` denies T2/T3). Still open: the **direct-human**
-      enforcement half — nothing at the backend acts on
-      `requires_confirmation` for a `autonomous=False` request, because
-      there is no two-phase confirm channel through `process_command()`
-      yet. That channel belongs here.
+- [x] `PHASE_TASK_BOARD.md`'s **P2-5** (risk-tiered policy engine:
+      auto/notify/confirm/forbid) — both enforcement halves done.
+      **Autonomous** half: `850678b` — `process_command(autonomous=True)`
+      denies T2/T3 outright. **Direct-human** half: `f4365a0` —
+      `agentic_core/confirmation.py` + `process_command(prompt, *,
+      confirm_token=None)`. When `SENTINAL_REQUIRE_CONFIRMATION` is on, a
+      T2/T3 direct-human request returns `execution="PendingConfirmation"`
+      with a one-time, TTL-bound token fingerprinted to that exact
+      prompt+plan (a token issued for "delete A" cannot confirm "delete B"
+      even with the same phrasing); resending with the token runs it. Off
+      by default — behaviour unchanged (the benchmark's FileDeletion tasks
+      would otherwise get PendingConfirmation instead of executing); a real
+      deployment sets it on. In-memory store (a half-confirmed irreversible
+      action must not survive a restart). REST `/api/command` takes an
+      optional `confirm_token`. 15 tests (token lifecycle incl. single-use
+      / expiry / request-binding; process_command enabled→pending→resend→run,
+      cross-request token rejected, T0 never challenged, autonomous still
+      Blocked-not-pending). The **WebSocket** `confirmation_required` /
+      `confirm` message flow through `execute_agent_task` is a deferred
+      follow-up — default-off means nothing is worse meanwhile, and the
+      REST path is the complete testable core.
 
 ## S7 — World context and drift detection (deferred, further out)
 Per `CONTAINMENT_ARCHITECTURE.md` §10.3/§10.4: a live environment model
