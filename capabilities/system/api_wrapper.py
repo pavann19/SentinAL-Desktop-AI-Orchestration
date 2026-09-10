@@ -8,6 +8,7 @@
 import asyncio
 import os
 import re
+import time
 from typing import Any
 
 from agentic_core.tracing import traced_step
@@ -390,6 +391,7 @@ async def process_command(prompt: str, *, autonomous: bool = False,
     from agentic_core.validator import validate_steps
 
     # 1. Initialize output structure
+    _t0 = time.monotonic()
     output = {
         "input": prompt,
         "steps": [],
@@ -511,6 +513,7 @@ async def process_command(prompt: str, *, autonomous: bool = False,
                 output["plan_source"] = _plan_source_of(graph)
                 _remember_interaction(prompt, output)
                 _record_procedural_outcome(prompt, graph, output)
+                _record_capability_outcomes(output, _t0)
                 return output
 
             # ── STAGE 2: VALIDATION ──
@@ -604,7 +607,20 @@ async def process_command(prompt: str, *, autonomous: bool = False,
         output["response"] = f"Pipeline Integration Error: {e!s}"
 
     _remember_interaction(prompt, output)
+    _record_capability_outcomes(output, _t0)
     return output
+
+
+def _record_capability_outcomes(output: dict, t0: float | None = None) -> None:
+    """S7 Half B: record one capability outcome per distinct intent in this
+    run (verified = whole-run success). No-op unless SENTINAL_ENV_MODEL_ENABLED;
+    never raises."""
+    try:
+        from agentic_core.world_model import record_run
+        latency_ms = (time.monotonic() - t0) * 1000.0 if t0 is not None else None
+        record_run(output, latency_ms=latency_ms)
+    except Exception:
+        pass
 
 
 def _remember_interaction(prompt: str, output: dict) -> None:

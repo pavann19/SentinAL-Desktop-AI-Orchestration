@@ -171,6 +171,24 @@ class MemoryManager:
                 )
             """)
 
+            # S7 world model (Half B): one row per executed capability per run —
+            # verified (did the run succeed), failure_category, whole-command
+            # latency, containment tier. A sustained drop in one capability's
+            # rolling success rate is the drift signal (an app updated its UI, a
+            # site redesigned) — independent of everything else. S7 produces the
+            # signal; acting on it (targeted re-learning) is S8.
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS capability_outcomes (
+                    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ts               REAL NOT NULL,
+                    intent           TEXT NOT NULL,
+                    verified         INTEGER NOT NULL,
+                    failure_category TEXT,
+                    latency_ms       REAL,
+                    tier             TEXT
+                )
+            """)
+
             self.conn.commit()
 
     # ── Scheduled Tasks / Reminders ───────────────────────────────────────────
@@ -415,6 +433,66 @@ class MemoryManager:
                 (now - max_age_seconds,)
             )
             after = self.cursor.execute("SELECT COUNT(*) FROM env_state").fetchone()[0]
+            self.conn.commit()
+        return before - after
+
+    def add_capability_outcome(self, ts: float, intent: str, verified: bool,
+                               failure_category: str | None = None,
+                               latency_ms: float | None = None,
+                               tier: str | None = None) -> None:
+        """Append one capability outcome (S7 Half B)."""
+        with self._lock:
+            self.cursor.execute(
+                """INSERT INTO capability_outcomes
+                     (ts, intent, verified, failure_category, latency_ms, tier)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (ts, intent, 1 if verified else 0, failure_category, latency_ms, tier)
+            )
+            self.conn.commit()
+
+    def recent_capability_outcomes(self, intent: str | None = None,
+                                   limit: int = 5000) -> list:
+        """Newest-first outcomes, optionally filtered to one intent."""
+        with self._lock:
+            if intent is None:
+                self.cursor.execute(
+                    """SELECT ts, intent, verified, failure_category, latency_ms, tier
+                       FROM capability_outcomes ORDER BY id DESC LIMIT ?""",
+                    (limit,)
+                )
+            else:
+                self.cursor.execute(
+                    """SELECT ts, intent, verified, failure_category, latency_ms, tier
+                       FROM capability_outcomes WHERE intent = ?
+                       ORDER BY id DESC LIMIT ?""",
+                    (intent, limit)
+                )
+            rows = self.cursor.fetchall()
+        return [
+            {"ts": r[0], "intent": r[1], "verified": bool(r[2]),
+             "failure_category": r[3], "latency_ms": r[4], "tier": r[5]}
+            for r in rows
+        ]
+
+    def prune_capability_outcomes(self, max_rows: int, max_age_seconds: float,
+                                  now: float | None = None) -> int:
+        """Drop outcomes beyond the row cap or older than the age cap. Returns
+        the number removed."""
+        import time as _t
+        now = _t.time() if now is None else now
+        with self._lock:
+            before = self.cursor.execute("SELECT COUNT(*) FROM capability_outcomes").fetchone()[0]
+            self.cursor.execute(
+                """DELETE FROM capability_outcomes WHERE id NOT IN (
+                       SELECT id FROM capability_outcomes ORDER BY id DESC LIMIT ?
+                   )""",
+                (max(1, max_rows),)
+            )
+            self.cursor.execute(
+                "DELETE FROM capability_outcomes WHERE ts < ?",
+                (now - max_age_seconds,)
+            )
+            after = self.cursor.execute("SELECT COUNT(*) FROM capability_outcomes").fetchone()[0]
             self.conn.commit()
         return before - after
 

@@ -334,3 +334,23 @@ class TestProceduralOutcomeRecording:
         from capabilities.system.api_wrapper import _plan_source_of
         assert _plan_source_of(self._graph(plan_source="procedural")) == "procedural"
         assert _plan_source_of(self._graph()) == "planner"
+
+
+class TestCapabilityOutcomeRecording:
+    """_record_capability_outcomes() forwards a completed run to the world
+    model's drift tracker; disabled/non-terminal runs write nothing."""
+
+    def test_terminal_run_is_forwarded(self):
+        from capabilities.system.api_wrapper import _record_capability_outcomes
+        seen = {}
+        with patch("agentic_core.world_model.record_run",
+                   side_effect=lambda out, **kw: seen.update(out=out, kw=kw)):
+            _record_capability_outcomes(
+                {"execution": "Success", "steps": [{"intent": "SchedulerIntent"}]}, t0=None)
+        assert seen["out"]["execution"] == "Success"
+        assert "latency_ms" in seen["kw"]
+
+    def test_record_helper_never_raises(self):
+        from capabilities.system.api_wrapper import _record_capability_outcomes
+        with patch("agentic_core.world_model.record_run", side_effect=RuntimeError("boom")):
+            _record_capability_outcomes({"execution": "Failed", "steps": []}, t0=None)

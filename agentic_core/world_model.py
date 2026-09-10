@@ -25,11 +25,17 @@ import logging
 import time
 
 from config.world_model import (
+    DRIFT_BASELINE,
+    DRIFT_DROP,
+    DRIFT_MIN_SAMPLE,
+    DRIFT_WINDOW,
     ENV_MAX_PROC_NAMES,
     ENV_MODEL_ENABLED,
     ENV_RETAIN_HOURS,
     ENV_RETAIN_ROWS,
     ENV_SAMPLE_MIN_INTERVAL_SECONDS,
+    OUTCOME_RETAIN_DAYS,
+    OUTCOME_RETAIN_ROWS,
 )
 
 _logger = logging.getLogger("WorldModel")
@@ -202,3 +208,115 @@ def changes_since(seconds: float, now: float | None = None) -> dict:
         "apps_closed": sorted(old_apps - new_apps),
         "foreground_switches": switches,
     }
+
+
+# ── Half B: capability outcome recording + drift detection ─────────────────
+
+def record_outcome(intent: str, verified: bool, *, failure_category: str | None = None,
+                   latency_ms: float | None = None, tier: str | None = None,
+                   now: float | None = None) -> bool:
+    """Record one capability outcome. No-op (False) unless ENV_MODEL_ENABLED.
+    Never raises."""
+    if not ENV_MODEL_ENABLED or not intent:
+        return False
+    try:
+        ts = time.time() if now is None else now
+        m = _memory()
+        m.add_capability_outcome(ts, intent, verified, failure_category, latency_ms, tier)
+        m.prune_capability_outcomes(OUTCOME_RETAIN_ROWS, OUTCOME_RETAIN_DAYS * 86400.0, now=ts)
+        return True
+    except Exception as e:
+        _logger.debug(f"record_outcome failed (non-fatal): {e}")
+        return False
+
+
+def record_run(output: dict, *, latency_ms: float | None = None,
+               now: float | None = None) -> int:
+    """Record one outcome per DISTINCT intent in a completed run. `verified`
+    is the whole-run success. Skips non-terminal runs (Blocked / Pending /
+    Error) — those are upstream rejections, not capability performance.
+    Returns the number of rows written."""
+    if not ENV_MODEL_ENABLED:
+        return 0
+    execution = (output or {}).get("execution")
+    if execution not in ("Success", "Failed"):
+        return 0
+    verified = execution == "Success"
+    fc = output.get("failure_category")
+    tier = output.get("capability_tier")
+    seen = []
+    for s in output.get("steps") or []:
+        if isinstance(s, dict):
+            it = s.get("intent")
+            if it and it != "UnknownIntent" and it not in seen:
+                seen.append(it)
+    written = 0
+    for it in seen:
+        if record_outcome(it, verified, failure_category=fc,
+                          latency_ms=latency_ms, tier=tier, now=now):
+            written += 1
+    return written
+
+
+def capability_health(intent: str, window: int | None = None) -> dict:
+    """Rolling success rate for one capability vs. its own baseline.
+    {} when disabled. `drifted` is True only when both sides have at least
+    DRIFT_MIN_SAMPLE outcomes and the rolling rate is DRIFT_DROP or more
+    below the baseline rate."""
+    if not ENV_MODEL_ENABLED or not intent:
+        return {}
+    win = DRIFT_WINDOW if window is None else window
+    try:
+        rows = _memory().recent_capability_outcomes(intent, limit=OUTCOME_RETAIN_ROWS)
+    except Exception as e:
+        _logger.debug(f"capability_health read failed (non-fatal): {e}")
+        return {}
+    if not rows:
+        return {"intent": intent, "n": 0, "drifted": False, "reason": "no outcomes"}
+
+    chrono = list(reversed(rows))  # oldest -> newest
+    baseline = chrono[:DRIFT_BASELINE]
+    recent = chrono[-win:]
+
+    def _rate(rs):
+        return (sum(1 for r in rs if r["verified"]) / len(rs)) if rs else 0.0
+
+    b_rate, r_rate = _rate(baseline), _rate(recent)
+    drifted = (
+        len(baseline) >= DRIFT_MIN_SAMPLE
+        and len(recent) >= DRIFT_MIN_SAMPLE
+        and (b_rate - r_rate) >= DRIFT_DROP
+    )
+    return {
+        "intent": intent,
+        "n": len(chrono),
+        "rate": round(r_rate, 3),
+        "window_n": len(recent),
+        "baseline_rate": round(b_rate, 3),
+        "baseline_n": len(baseline),
+        "drop": round(b_rate - r_rate, 3),
+        "drifted": drifted,
+        "reason": (
+            f"rolling {r_rate:.2f} vs baseline {b_rate:.2f} over {len(recent)} recent"
+            if drifted else "within tolerance"
+        ),
+    }
+
+
+def drift_report() -> list[dict]:
+    """Every capability currently flagged as drifted, worst drop first.
+    [] when disabled."""
+    if not ENV_MODEL_ENABLED:
+        return []
+    try:
+        rows = _memory().recent_capability_outcomes(None, limit=OUTCOME_RETAIN_ROWS)
+    except Exception as e:
+        _logger.debug(f"drift_report read failed (non-fatal): {e}")
+        return []
+    intents = []
+    for r in rows:
+        if r["intent"] not in intents:
+            intents.append(r["intent"])
+    flagged = [h for i in intents if (h := capability_health(i)).get("drifted")]
+    flagged.sort(key=lambda h: h.get("drop", 0.0), reverse=True)
+    return flagged

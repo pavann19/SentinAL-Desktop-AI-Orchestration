@@ -18,3 +18,17 @@ ENV_RETAIN_HOURS = float(os.getenv("SENTINAL_ENV_RETAIN_HOURS", "6.0"))
 
 # Cap the stored process-name list so a busy machine can't bloat a row.
 ENV_MAX_PROC_NAMES = int(os.getenv("SENTINAL_ENV_MAX_PROC_NAMES", "400"))
+
+# ── Half B: drift detection ───────────────────────────────────────────────
+# Rolling window (most recent N outcomes for one intent) compared against a
+# baseline (its earliest N outcomes). A sustained drop is drift.
+DRIFT_WINDOW = int(os.getenv("SENTINAL_DRIFT_WINDOW", "20"))
+DRIFT_BASELINE = int(os.getenv("SENTINAL_DRIFT_BASELINE", "20"))
+# Need at least this many outcomes on BOTH sides before a verdict — avoids
+# flagging drift on two unlucky failures.
+DRIFT_MIN_SAMPLE = int(os.getenv("SENTINAL_DRIFT_MIN_SAMPLE", "8"))
+# Rolling success rate must be at least this far below baseline to flag.
+DRIFT_DROP = float(os.getenv("SENTINAL_DRIFT_DROP", "0.25"))
+
+OUTCOME_RETAIN_ROWS = int(os.getenv("SENTINAL_OUTCOME_RETAIN_ROWS", "5000"))
+OUTCOME_RETAIN_DAYS = float(os.getenv("SENTINAL_OUTCOME_RETAIN_DAYS", "30.0"))
