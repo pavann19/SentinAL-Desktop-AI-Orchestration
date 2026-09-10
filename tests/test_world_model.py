@@ -143,3 +143,30 @@ def test_changes_since_window_excludes_old_samples(model):
     model.sample_tick(now=7999.0, force=True)
     # a 100 s window ending just after the newer sample catches only it -> {}
     assert model.changes_since(100, now=8005.0) == {}
+
+
+# ── A3: format_for_prompt ─────────────────────────────────────────────────
+
+def test_format_for_prompt_has_advisory_framing_and_content(model):
+    model.sample_tick(now=9000.0, force=True)
+    out = model.format_for_prompt()
+    assert out.startswith("[CURRENT ENVIRONMENT]")
+    assert "ignore it" in out
+    assert "code.exe" in out
+
+
+def test_format_for_prompt_empty_when_no_sample(model):
+    assert model.format_for_prompt() == ""
+
+
+def test_format_for_prompt_empty_when_disabled(model, monkeypatch):
+    model.sample_tick(force=True)
+    monkeypatch.setattr(model, "ENV_MODEL_ENABLED", False)
+    assert model.format_for_prompt() == ""
+
+
+def test_format_for_prompt_caps_length(model):
+    big = {"active_app": "x.exe", "active_title": "t" * 300,
+           "open_apps": [f"app{i}.exe" for i in range(200)], "process_count": 200}
+    out = model.format_for_prompt(big)
+    assert len(out) <= 600 + len("... [context truncated]")

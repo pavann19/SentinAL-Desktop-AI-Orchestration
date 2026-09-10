@@ -139,6 +139,18 @@ def _recall_recipe(prompt: str, *, autonomous: bool = False):
         return None
 
 
+def _world_context(prompt: str) -> str:
+    """Advisory snapshot of the current digital environment (foreground window,
+    open apps) for the planner prompt. '' when the world model is off, empty,
+    or anything goes wrong — planning proceeds identically without it.
+    `prompt` is accepted for symmetry / future relevance filtering."""
+    try:
+        from agentic_core.world_model import format_for_prompt
+        return format_for_prompt()
+    except Exception:
+        return ""
+
+
 def _plan_hint(prompt: str) -> str:
     """Advisory step-shape from a very similar past successful goal, formatted
     for the planner prompt. '' when semantic memory is off, has no close match,
@@ -211,6 +223,16 @@ class GoalGraphPlanner:
             hint = _plan_hint(prompt)
             if hint:
                 plan_prompt = f"{plan_prompt}\n\n{hint}"
+
+            # S7 A3: advisory current-environment context (foreground window,
+            # open apps) so the planner can resolve deictic references. Same
+            # discipline as the plan hint — advisory, every returned step is
+            # still allowlisted / clamped / cycle-checked. '' unless
+            # SENTINAL_ENV_MODEL_ENABLED and a sample exists.
+            world = _world_context(prompt)
+            if world:
+                plan_prompt = f"{plan_prompt}\n\n{world}"
+
             response = llm.invoke([("system", plan_prompt)])
             steps_data = _safe_parse_plan_json(response.content)
 

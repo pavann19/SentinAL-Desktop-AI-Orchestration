@@ -254,3 +254,43 @@ class TestProceduralReplay:
             graph = planner.plan_goal("do a and do b")
         assert isinstance(graph, GoalGraph)
         assert len(graph.nodes) >= 1
+
+
+# ── S7 A3: advisory current-environment context ────────────────────────────
+
+class TestWorldContextInPlannerPrompt:
+    def _llm(self):
+        resp = MagicMock()
+        resp.content = '[{"step_id":"step_1","intent":"ApplicationLaunchIntent","target":"x","depends_on":[]}]'
+        m = MagicMock()
+        m.invoke.return_value = resp
+        return m
+
+    def test_world_context_is_appended_when_present(self):
+        llm = self._llm()
+        with patch("config.settings.BrainConfig.get_routed_llm", return_value=llm), \
+             patch("agentic_core.procedural_memory.recall_recipe", return_value=None), \
+             patch("agentic_core.world_model.format_for_prompt",
+                   return_value="[CURRENT ENVIRONMENT] foreground: notepad.exe"):
+            planner.plan_goal("open a and close it")
+        sent = llm.invoke.call_args[0][0][0][1]
+        assert "[CURRENT ENVIRONMENT]" in sent
+
+    def test_no_world_context_leaves_prompt_clean(self):
+        llm = self._llm()
+        with patch("config.settings.BrainConfig.get_routed_llm", return_value=llm), \
+             patch("agentic_core.procedural_memory.recall_recipe", return_value=None), \
+             patch("agentic_core.world_model.format_for_prompt", return_value=""):
+            planner.plan_goal("open a and close it")
+        sent = llm.invoke.call_args[0][0][0][1]
+        assert "[CURRENT ENVIRONMENT]" not in sent
+
+    def test_world_context_failure_does_not_break_planning(self):
+        llm = self._llm()
+        with patch("config.settings.BrainConfig.get_routed_llm", return_value=llm), \
+             patch("agentic_core.procedural_memory.recall_recipe", return_value=None), \
+             patch("agentic_core.world_model.format_for_prompt",
+                   side_effect=RuntimeError("boom")):
+            graph = planner.plan_goal("open a and close it")
+        assert isinstance(graph, GoalGraph)
+        assert len(graph.nodes) >= 1

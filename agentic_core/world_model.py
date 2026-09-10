@@ -152,6 +152,28 @@ def current_state() -> dict:
     }
 
 
+def format_for_prompt(state: dict | None = None, *, max_apps: int = 12) -> str:
+    """A short, clearly-labelled advisory block for the planner prompt (S7 A3).
+    '' when the model is off or empty. Framed as context, not instruction —
+    the planner still decides."""
+    st = current_state() if state is None else state
+    if not st:
+        return ""
+    active = st.get("active_app") or ""
+    title = (st.get("active_title") or "")[:80]
+    apps = [a for a in st.get("open_apps", []) if a][:max_apps]
+    lines = [
+        "[CURRENT ENVIRONMENT] Advisory only — use it to resolve references "
+        "like 'this window' / 'close it'; ignore it if the goal is unrelated.",
+    ]
+    if active:
+        lines.append(f"- foreground: {active}" + (f" ({title})" if title else ""))
+    if apps:
+        lines.append(f"- open apps: {', '.join(apps)}")
+    out = "\n".join(lines)
+    return out[:600] + "... [context truncated]" if len(out) > 600 else out
+
+
 def changes_since(seconds: float, now: float | None = None) -> dict:
     """What changed between the oldest sample inside the window and the newest:
     apps opened/closed and how many times the foreground window switched.
