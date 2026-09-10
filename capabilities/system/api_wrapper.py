@@ -304,6 +304,62 @@ def _derive_expected_state(step: dict) -> dict | None:
     return None
 
 
+def _paths_for_step(step: dict) -> list[str]:
+    """
+    The host filesystem path(s) a step is about to write to, when that is
+    reliably derivable from the step dict — for the S4 pre-action snapshot.
+    Returns [] when the write target can't be known in advance (arbitrary
+    shell, GUI actions, CodeAct — the same unpredictability
+    _derive_expected_state() already declines to guess at).
+
+    Reuses the exact resolution _derive_expected_state() uses so the snapshot
+    covers the path the executor actually touches, not a differently-resolved
+    one.
+    """
+    if not isinstance(step, dict):
+        return []
+    intent = step.get("intent")
+    target = str(step.get("target", "") or "").strip()
+
+    if intent == "FileDeletionIntent" and target:
+        full = os.path.abspath(target) if os.path.isabs(target) else os.path.abspath(os.path.join(os.getcwd(), target))
+        return [full]
+
+    if intent == "ProjectScaffoldIntent":
+        project_name = str(step.get("project_name", "") or "").strip()
+        if not project_name:
+            return []
+        location = str(step.get("location", "") or "").strip()
+        base = location if location else os.getcwd()
+        return [os.path.abspath(os.path.join(base, project_name))]
+
+    if intent == "GeneralizedOSIntent":
+        actions = step.get("actions")
+        if isinstance(actions, list) and len(actions) == 1 and isinstance(actions[0], dict):
+            a = actions[0]
+            if str(a.get("type", "") or "").lower().strip() == "shell":
+                payload = str(a.get("payload", "") or "").strip()
+                value = str(a.get("value", "") or "").strip()
+                if value:
+                    cv = os.path.expandvars(value)
+                    if " " in cv and not cv.startswith(('"', "'")):
+                        cv = f'"{cv}"'
+                    command = f"{payload} {cv}".strip()
+                else:
+                    command = payload
+                tgt = _mkdir_target_from_command(command)
+                return [tgt] if tgt else []
+        return []
+
+    if intent in ("DataModelingIntent", "AcademicResearchIntent"):
+        # These append a timestamped file to DATA_DIR — snapshot the directory
+        # (entry manifest), so rollback removes exactly the file the step added.
+        from config.paths import DATA_DIR
+        return [DATA_DIR]
+
+    return []
+
+
 async def process_command(prompt: str) -> dict[str, Any]:
     """
     Async pipeline entry point. Wraps the synchronous executor in a thread
@@ -399,6 +455,7 @@ async def process_command(prompt: str) -> dict[str, Any]:
                 output["replanned"] = goal_observed["replanned"]
                 output["results"] = goal_observed.get("results")
                 output["budget"] = goal_observed.get("budget")
+                output["snapshots"] = goal_observed.get("snapshots")
                 return output
 
             # ── STAGE 2: VALIDATION ──
@@ -508,6 +565,11 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
        When it's spent, the plan stops cleanly — remaining nodes are marked
        skipped, not executed. Defaults to the direct-human ceiling; S6 passes a
        tighter autonomous one.
+    6. S4 snapshot: before a step with a derivable write target runs, the prior
+       state of that path is captured. On plan SUCCESS the captures are
+       discarded; on ANY failure (a step failed, budget spent, cancelled,
+       validation denied mid-plan) they are restored, newest first — a
+       half-done plan does not leave half-done filesystem changes.
     """
     from agentic_core.budget import FAILURE_CATEGORY_BUDGET_EXCEEDED, budget_for
     from agentic_core.critic import critic
@@ -520,6 +582,7 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
     )
     from agentic_core.goal_graph import GoalGraph
     from agentic_core.planner import planner
+    from agentic_core.snapshot import capture, new_snapshot
     from agentic_core.validator import validate_steps
 
     if budget is None:
@@ -554,6 +617,17 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
         }
 
     budget.start()
+    plan_snapshot = new_snapshot(graph.goal_description or "plan")
+
+    def _finish(payload: dict, *, ok: bool) -> dict:
+        """Discard captures on success, restore them on any failure, then
+        attach the snapshot summary to the result."""
+        if ok:
+            plan_snapshot.discard()
+        else:
+            plan_snapshot.restore()
+        payload["snapshots"] = plan_snapshot.summary()
+        return payload
 
     for node in ordered_nodes:
         # ── S4 BUDGET GATE: stop the plan cleanly if its ceiling is spent ─────
@@ -564,7 +638,7 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
                     pending.status = "skipped"
             results.append({"step_id": node.step_id, "status": "skipped",
                             "detail": f"Plan budget: {budget_reason}"})
-            return {
+            return _finish({
                 "validation": "Approved",
                 "execution": "Failed",
                 "response": f"Stopped: {budget_reason}. Remaining steps were not run.",
@@ -573,12 +647,12 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
                 "results": results,
                 "budget": budget.snapshot(),
                 "graph": graph.to_dict(),
-            }
+            }, ok=False)
 
         # Check cancellation before starting node
         if cancel_event and cancel_event.is_set():
             graph.mark_node_failed(node.step_id, "Cancelled by user/system")
-            return {
+            return _finish({
                 "validation": "Approved",
                 "execution": "Failed",
                 "response": "Execution cancelled by user.",
@@ -586,7 +660,7 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
                 "replanned": replanned_any,
                 "budget": budget.snapshot(),
                 "graph": graph.to_dict(),
-            }
+            }, ok=False)
 
         # Check if node was blocked by a failed parent dependency
         if node.status == "blocked":
@@ -604,7 +678,7 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
         is_valid, validation_msg, _ = validate_steps([resolved_step])
         if not is_valid:
             graph.mark_node_failed(node.step_id, f"Validation denied: {validation_msg}")
-            return {
+            return _finish({
                 "validation": "Denied",
                 "execution": "Blocked",
                 "response": f"Step '{node.step_id}' blocked by security validation: {validation_msg}",
@@ -612,7 +686,7 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
                 "replanned": replanned_any,
                 "budget": budget.snapshot(),
                 "graph": graph.to_dict(),
-            }
+            }, ok=False)
 
         # Attach expected_state if not already attached
         if "expected_state" not in resolved_step or not resolved_step["expected_state"]:
@@ -620,6 +694,11 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
             if derived:
                 resolved_step["expected_state"] = derived
                 node.expected_state = derived
+
+        # ── S4 SNAPSHOT: capture the prior state of this step's write target ──
+        # (no-op for steps with no derivable target — read-only, GUI, arbitrary
+        # shell). Idempotent per path across replans of the same node.
+        capture(plan_snapshot, _paths_for_step(resolved_step))
 
         # ── EXECUTION & OBSERVATION PASS ──────────────────────────────────────
         node.status = "running"
@@ -661,6 +740,10 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
                     resolved_step["expected_state"] = derived
                     node.expected_state = derived
 
+            # A replan may point the step at a new path — capture that too
+            # (idempotent for a path already snapshotted).
+            capture(plan_snapshot, _paths_for_step(resolved_step))
+
             result_str, snapshot_diff, step_obs = _run_and_observe([resolved_step], cancel_event)
             budget.charge_action()
             observation = None
@@ -697,7 +780,7 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
             break
 
     all_completed = graph.is_complete() and not graph.has_failures()
-    return {
+    return _finish({
         "validation": "Approved",
         "execution": "Success" if all_completed else "Failed",
         "response": overall_response,
@@ -706,5 +789,5 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
         "results": results,
         "budget": budget.snapshot(),
         "graph": graph.to_dict(),
-    }
+    }, ok=all_completed)
 

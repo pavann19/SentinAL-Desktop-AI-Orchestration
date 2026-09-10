@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import pytest
 
 from capabilities.system import postcondition_observer as pco
-from capabilities.system.api_wrapper import _derive_expected_state, _site_label
+from capabilities.system.api_wrapper import _derive_expected_state, _paths_for_step, _site_label
 from capabilities.system.postcondition_observer import observe_postcondition
 
 
@@ -651,6 +651,53 @@ class TestDeriveExpectedStateRobustness:
         assert _derive_expected_state(
             {"intent": "FileDeletionIntent", "target": None}
         ) is None
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# _paths_for_step — which steps the S4 snapshot mechanism can protect
+# ══════════════════════════════════════════════════════════════════════════════
+class TestPathsForStep:
+    def test_file_deletion_target_is_snapshotted(self):
+        paths = _paths_for_step({"intent": "FileDeletionIntent", "target": r"C:\tmp\doc.txt"})
+        assert paths == [os.path.abspath(r"C:\tmp\doc.txt")]
+
+    def test_file_deletion_resolves_relative_like_the_executor(self):
+        paths = _paths_for_step({"intent": "FileDeletionIntent", "target": "sub/x.txt"})
+        assert paths == [os.path.abspath(os.path.join(os.getcwd(), "sub/x.txt"))]
+
+    def test_project_scaffold_target_dir_is_snapshotted(self):
+        paths = _paths_for_step({
+            "intent": "ProjectScaffoldIntent", "project_name": "app", "location": r"C:\projects",
+        })
+        assert paths == [os.path.abspath(os.path.join(r"C:\projects", "app"))]
+
+    def test_generalized_os_mkdir_target_is_snapshotted(self):
+        paths = _paths_for_step({
+            "intent": "GeneralizedOSIntent",
+            "actions": [{"type": "shell", "payload": "mkdir", "value": r"C:\tmp\new-dir"}],
+        })
+        assert paths == [os.path.abspath(r"C:\tmp\new-dir")]
+
+    def test_generalized_os_arbitrary_shell_is_not_snapshottable(self):
+        assert _paths_for_step({
+            "intent": "GeneralizedOSIntent",
+            "actions": [{"type": "shell", "payload": "taskkill /IM notepad.exe /F"}],
+        }) == []
+
+    def test_data_writers_snapshot_the_data_dir(self):
+        from config.paths import DATA_DIR
+        assert _paths_for_step({"intent": "DataModelingIntent", "target": "sales.csv"}) == [DATA_DIR]
+        assert _paths_for_step({"intent": "AcademicResearchIntent", "target": "paper.pdf"}) == [DATA_DIR]
+
+    def test_read_only_and_gui_intents_have_nothing_to_snapshot(self):
+        for intent in ("ConversationalIntent", "InformationRetrievalIntent",
+                       "WebNavigationIntent", "DictationIntent", "MediaControlIntent",
+                       "CodeActIntent"):
+            assert _paths_for_step({"intent": intent, "target": "x"}) == []
+
+    def test_non_dict_returns_empty(self):
+        assert _paths_for_step("nope") == []
+        assert _paths_for_step(None) == []
 
 
 # ══════════════════════════════════════════════════════════════════════════════

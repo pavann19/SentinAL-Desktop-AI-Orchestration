@@ -4,6 +4,7 @@ End-to-end integration tests for S5 Planner + Critic split, Goal Graph execution
 security validation boundary enforcement, and postcondition reflection.
 """
 
+import os
 from unittest.mock import patch
 import pytest
 
@@ -307,6 +308,66 @@ class TestGoalGraphRunsUnderABudget:
         assert graph.nodes["step_1"].status == "completed"
         assert graph.nodes["step_2"].status == "completed"
         assert graph.nodes["step_3"].status == "skipped"
+
+    def test_failed_plan_rolls_back_an_earlier_steps_file_deletion(self, tmp_path, monkeypatch):
+        """The S4 gate: step 1 deletes a real file, step 2 fails — the plan
+        restores step 1's filesystem effect rather than leaving it half-done."""
+        import agentic_core.snapshot as snap_mod
+        store = tmp_path / "snap_store"
+        store.mkdir()
+        monkeypatch.setattr(snap_mod, "snapshot_root", lambda: str(store))
+
+        victim = tmp_path / "important.txt"
+        victim.write_text("must survive a failed plan")
+
+        graph = GoalGraph("delete then fail")
+        graph.add_node(GoalNode(step_id="step_1", intent="FileDeletionIntent",
+                                target=str(victim), prompt="delete it"))
+        graph.add_node(GoalNode(step_id="step_2", intent="InformationRetrievalIntent",
+                                target="something", prompt="then this",
+                                depends_on=["step_1"]))
+
+        def fake_run_and_observe(steps, cancel_event):
+            step = steps[0]
+            if step.get("intent") == "FileDeletionIntent":
+                os.remove(step["target"])                 # step 1 really deletes it
+                return "Deleted.", {}, [_obs(True, tier="none")]
+            return "ERROR: step 2 blew up", {}, [_obs(False, tier="process")]  # step 2 fails
+
+        with patch("agentic_core.executor._run_and_observe", side_effect=fake_run_and_observe):
+            res = execute_goal_graph_observed(graph, None, PlanBudget(max_actions=9, max_wall_seconds=999))
+
+        assert res["execution"] == "Failed"
+        assert res["snapshots"]["taken"] == 1
+        assert res["snapshots"]["restored"] == 1
+        # the file step 1 deleted is back, with its original contents
+        assert victim.exists()
+        assert victim.read_text() == "must survive a failed plan"
+
+    def test_successful_plan_discards_snapshots(self, tmp_path, monkeypatch):
+        import agentic_core.snapshot as snap_mod
+        store = tmp_path / "snap_store2"
+        store.mkdir()
+        monkeypatch.setattr(snap_mod, "snapshot_root", lambda: str(store))
+
+        victim = tmp_path / "gone.txt"
+        victim.write_text("this one is supposed to be deleted")
+
+        graph = GoalGraph("delete, succeed")
+        graph.add_node(GoalNode(step_id="step_1", intent="FileDeletionIntent",
+                                target=str(victim), prompt="delete it"))
+
+        def fake_run_and_observe(steps, cancel_event):
+            os.remove(steps[0]["target"])
+            return "Deleted.", {}, [_obs(True, tier="none")]
+
+        with patch("agentic_core.executor._run_and_observe", side_effect=fake_run_and_observe):
+            res = execute_goal_graph_observed(graph, None, PlanBudget(max_actions=9, max_wall_seconds=999))
+
+        assert res["execution"] == "Success"
+        assert res["snapshots"]["taken"] == 1
+        assert res["snapshots"]["restored"] == 0    # discarded, not restored
+        assert not victim.exists()                  # the intended deletion stands
 
     @pytest.mark.asyncio
     async def test_process_command_surfaces_the_budget_snapshot(self):
