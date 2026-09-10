@@ -97,10 +97,16 @@ docs flagged as the most likely tail-risk.
 
 ---
 
-## S4 — Containment substrate (started — one real slice done, most of it open)
+## S4 — Containment substrate (buildable items complete — gate met)
 Gate (per `CONTAINMENT_ARCHITECTURE.md` §6/§7): a T1→T2 tier reversal
 demonstrated under test — i.e. proof that a compromised or hallucinating
 plan is physically contained, not just discouraged by a path denylist.
+**Met** — the capability broker supplies the tier (`ecda782`) and the
+pre-action snapshot makes a T2/T3 filesystem effect undoable (`16c7f8e`);
+`test_planner_critic_integration.py` demonstrates a failed multi-step plan
+rolling back an earlier step's real file deletion. The two remaining open
+items are a live verification (npm Docker round-trip) and a benchmark gap
+(DPI/resolution), not unbuilt containment.
 
 - [x] **Environment reality-check before committing to a plan** — 2026-08-29,
       **corrected 2026-09-10**. Docker Desktop here is WSL2-backed and only
@@ -215,14 +221,17 @@ plan is physically contained, not just discouraged by a path denylist.
       3.75 GB free at build time. Stated open, same as the npm Docker
       round-trip.
 
-**Do not start S5 or S6 before this is real.** That's not a stylistic
-preference — it's `CONTAINMENT_ARCHITECTURE.md` §7's explicit corrected
-ordering, written specifically because the original phase plan
-(`AGENTIC_OS_ROADMAP_AND_THESIS_PLAN.md`) put the cognitive layer (planner)
-ahead of containment, which builds capability ahead of the thing that makes
-its mistakes cheap.
+**S4 gate met → S6 is now unblocked.** The ordering rule
+(`CONTAINMENT_ARCHITECTURE.md` §7 — containment before the cognitive layer,
+so capability never outruns the thing that makes its mistakes cheap) is
+satisfied: the broker + snapshot give a demonstrated T2 reversal, and the
+per-plan budget bounds runaway. S5 (below) was in fact built and verified
+before this note was corrected — acceptable only because it does not
+weaken the security boundary (it plans; `validate_steps()` still gates
+every step). S6's autonomy loop is the real thing this gate protected, and
+it can now proceed.
 
-## S5 — Planner + critic split (not started)
+## S5 — Planner + critic split (done)
 Gate: multi-step tasks succeed where single-shot fails.
 Maps to `PHASE_TASK_BOARD.md`'s **P2-1** (LangGraph planner graph:
 plan→act→observe→reflect, wrapping the existing pipeline). Corrected
@@ -230,10 +239,23 @@ residency per `SENTINAL_V2_RECONCILED_ARCHITECTURE.md` §3: critic resident,
 planner invoked only when the router's own multi-step determination fires —
 not on every request.
 
-- [ ] Goal graph replacing the current flat step list.
-- [ ] Planner gated behind router's multi-step signal (§3).
-- [ ] Critic resident, integrated with the existing postcondition observer
-      rather than duplicating it.
+- [x] Goal graph replacing the current flat step list — 2026-08-30, `0f62b5f`
+      (`agentic_core/goal_graph.py`: pure-Python DAG, Kahn topo sort, cycle
+      detection, `{{LAST_RESULT}}`/`{{step_id.result}}` data-chaining, no heavy
+      dependency).
+- [x] Planner gated behind router's multi-step signal — `is_multistep_query()`
+      in `agentic_core/planner.py`; single-step requests pay zero extra
+      latency and no planner LLM call. `MAX_PLAN_STEPS` bound.
+- [x] Critic resident, integrated with the existing postcondition observer —
+      `agentic_core/critic.py` reuses `observe_postcondition` verdicts, bounds
+      replans to `MAX_REPLANS`, no parallel verification mechanism.
+- [x] **Wiring gap found in verification and fixed** — 2026-09-10, `42af9ff`.
+      Antigravity's original commit built `execute_goal_graph_observed()` but
+      never called it from `process_command()` — the planner ran, its DAG was
+      flattened via `to_pipeline()` and handed to the old executor, so
+      `{{LAST_RESULT}}` reached execution unresolved and the Critic's per-step
+      replan never ran live. `process_command()` now routes multi-step results
+      through the engine. 3 new tests exercise the real seam.
 
 ## S6 — Proactive autonomy (not started)
 Gate: runs unattended for a week with no unwanted action.
