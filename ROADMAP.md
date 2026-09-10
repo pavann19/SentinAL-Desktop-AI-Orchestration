@@ -327,7 +327,24 @@ and `event_bus.make_event_handler()` is the caller.
       week-soak gate on increment 2 has actually been run — a second trigger
       source is only worth adding once the autonomous execution path it
       feeds is trusted.
-- [ ] Semantic memory tier + retrieval.
+- [~] **Semantic memory — increment 1: retrieval by meaning.** `2e86cdd` —
+      `agentic_core/semantic_memory.py`. Reuses the router's already-loaded
+      `all-MiniLM-L6-v2` (no second model, no new dependency, no vector
+      server per `SENTINAL_V2_RECONCILED_ARCHITECTURE.md` §7). Embeddings
+      stored as float32 BLOBs in a new `memory_semantic` SQLite table;
+      `retrieve()` is a brute-force cosine scan over the most-recent N rows
+      (`SENTINAL_SEMANTIC_MEMORY_MAX_ROWS`, default 5000). `remember()`
+      called from `api_wrapper._remember_interaction()` after both the
+      flat-path and goal-graph returns; retrieved context is folded into
+      `processor.py`'s two target/action extraction points. Never raises;
+      no-op when the router is in keyword-fallback mode. Off by default
+      behind `SENTINAL_SEMANTIC_MEMORY_ENABLED` — the retrieved context
+      feeds the LLM prompt and can shift intent extraction, so opt in then
+      flip once validated. 12 hermetic tests with a stubbed deterministic
+      embedder; `validator.py`/`executor.py` untouched; `main.py` gained no
+      new lint issue.
+      **Open:** increment 2 — surface retrieved recipes in the planner and
+      measure the benchmark delta with the flag on.
 - [ ] Procedural memory: learned task recipes cached and reused.
 - [ ] `PHASE_TASK_BOARD.md`'s **P2-4** (MCP tool contracts) — explicitly
       scoped to capability schemas only, not the event bus.
