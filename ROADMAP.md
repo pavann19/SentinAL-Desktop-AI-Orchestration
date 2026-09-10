@@ -257,24 +257,48 @@ not on every request.
       replan never ran live. `process_command()` now routes multi-step results
       through the engine. 3 new tests exercise the real seam.
 
-## S6 — Proactive autonomy (not started)
+## S6 — Proactive autonomy (unblocked — S4 gate met; not yet started)
 Gate: runs unattended for a week with no unwanted action.
 Maps to `PHASE_TASK_BOARD.md`'s **P2-2** (semantic memory / local vector
 store) and **P2-3** (procedural memory / cached task recipes), reframed
 per `SENTINAL_V2_RECONCILED_ARCHITECTURE.md` §5/§7: event bus is
-`watchdog` + `APScheduler`, not MCP; local knowledge-graph memory
-(bi-temporal `graph_nodes`/`graph_edges`) folds into the existing SQLite
-database via `memory_hook.py`, not a new server.
+`watchdog` + `APScheduler` (or lighter), not MCP; local knowledge-graph
+memory (bi-temporal `graph_nodes`/`graph_edges`) folds into the existing
+SQLite database via `memory_hook.py`, not a new server.
 
-- [ ] Event bus for background goals under budget + tier policy (needs S4's
-      budgets to exist first).
+**What S4 already provides for this:** the capability broker's
+`autonomous=True` path (T2/T3 denied outright — `ecda782`), the tighter
+autonomous `PlanBudget` (12 actions / 120s vs 24 / 300s — `4c8b654`), and
+the pre-action snapshot that rolls back a failed plan (`16c7f8e`). All
+built and unit-tested; they are waiting for a caller that passes
+`autonomous=True`. The event bus is that caller.
+
+- [ ] **Event bus — increment 1: time triggers, notify-only.** A resident
+      poll loop (like `process_supervisor`, started from `main.py`'s
+      lifecycle) that fires the `scheduled_tasks.due_at` rows SchedulerIntent
+      already persists but currently never acts on (its handler openly says
+      "I don't yet send active notifications"). On a due row it **notifies**
+      via the existing telemetry websocket — it does NOT execute anything.
+      No new heavy dependency (an `asyncio` sleep-poll, not `APScheduler`).
+      This is the safe first slice: it structurally cannot take an unwanted
+      action because it only sends messages.
+- [ ] **Event bus — increment 2: autonomous action execution.** A trigger
+      forms a background goal and runs it through the pipeline with
+      `autonomous=True`, so the broker denies T2/T3 and the tighter budget
+      applies. This is where the "week unattended, no unwanted action" gate
+      actually bites — needs a soak test, not just unit tests. Separately
+      gated from increment 1.
+- [ ] **Event bus — increment 3: `watchdog` filesystem triggers** (a file
+      appears in a watched folder). After increments 1–2 are solid.
 - [ ] Semantic memory tier + retrieval.
 - [ ] Procedural memory: learned task recipes cached and reused.
 - [ ] `PHASE_TASK_BOARD.md`'s **P2-4** (MCP tool contracts) — explicitly
       scoped to capability schemas only, not the event bus.
 - [ ] `PHASE_TASK_BOARD.md`'s **P2-5** (risk-tiered policy engine:
-      auto/notify/confirm/forbid in the validator) — natural companion to
-      S4's capability broker; likely belongs partly in S4, partly here.
+      auto/notify/confirm/forbid) — the S4 capability broker is the tier
+      half of this; the enforcement half (nothing at the backend acts on
+      `requires_confirmation` yet — a two-phase confirm channel) belongs
+      here, alongside the event bus.
 
 ## S7 — World context and drift detection (deferred, further out)
 Per `CONTAINMENT_ARCHITECTURE.md` §10.3/§10.4: a live environment model
