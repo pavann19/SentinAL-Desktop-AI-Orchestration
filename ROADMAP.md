@@ -290,12 +290,29 @@ built and unit-tested; they are waiting for a caller that passes
       `APScheduler`). 13 tests; 54 pass across event bus + supervisor +
       api_wrapper + pipeline, no regressions. `validator.py`/`executor.py`
       untouched.
-- [ ] **Event bus — increment 2: autonomous action execution.** A trigger
-      forms a background goal and runs it through the pipeline with
-      `autonomous=True`, so the broker denies T2/T3 and the tighter budget
-      applies. This is where the "week unattended, no unwanted action" gate
-      actually bites — needs a soak test, not just unit tests. Separately
-      gated from increment 1.
+- [~] **Event bus — increment 2: autonomous action execution** — machinery
+      built 2026-09-10, `850678b`. `process_command(prompt, *, autonomous=False)`
+      gained the flag: when `autonomous=True` the capability broker's decision
+      is ENFORCED — a plan whose highest tier is T2/T3 is denied outright
+      ("no human -> can't confirm -> deny", which the broker already encodes),
+      nothing runs, and the multi-step path uses `budget_for(autonomous=True)`
+      (12 actions / 120 s). `validate_steps()` still runs first and
+      unconditionally. `scheduled_tasks` gains a `kind` column
+      ('reminder' default | 'goal'); `event_bus.make_event_handler()` runs a
+      due `kind='goal'` row via `process_command(autonomous=True)` — but only
+      when `SENTINAL_AUTONOMOUS_GOALS_ENABLED` (default **off**), and **nothing
+      creates a `'goal'` row yet** (no user-facing path — that's a later
+      increment). So this is inert on a fresh install, twice over. 24 tests
+      (broker-enforced T3 block with executor never called; direct-human T3
+      still only flagged; autonomous T0 runs; validator still gates a
+      system32 goal; autonomous multi-step uses the tighter budget;
+      `make_event_handler` reminder-vs-goal branch incl. disabled-degrades-to-
+      notify and a raising goal still reporting). `validator.py`/`executor.py`
+      untouched; `main.py` gained no new lint issue.
+      **Still open — the actual S6 gate:** a real week-long unattended soak
+      with `SENTINAL_AUTONOMOUS_GOALS_ENABLED=true` and real `'goal'` rows.
+      Unit tests prove the containment logic; they cannot prove "no unwanted
+      action over a week." Not claimed as passed.
 - [ ] **Event bus — increment 3: `watchdog` filesystem triggers** (a file
       appears in a watched folder). After increments 1–2 are solid.
 - [ ] Semantic memory tier + retrieval.
