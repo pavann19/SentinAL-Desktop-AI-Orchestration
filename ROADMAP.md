@@ -365,7 +365,38 @@ and `event_bus.make_event_handler()` is the caller.
       **Open:** the benchmark delta with the flag on (multi-step pass rate,
       steps/plan, planner latency) — a deliberate measurement run, not yet
       done on this machine.
-- [ ] Procedural memory: learned task recipes cached and reused.
+- [~] **Procedural memory: deterministic recipe replay.** `9c7edb2` —
+      `agentic_core/procedural_memory.py`. Where increment 2 hints, this
+      replaces: a multi-step goal that is a near-verbatim match for one that
+      has succeeded organically `PROC_MIN_SUCCESSES` (3) times with the same
+      plan structure replays the stored `GoalGraph` and skips the planner
+      LLM. `_canonical()`/`_fingerprint()` reduce a graph to its structural
+      node shape (volatile run state stripped, so pre-run and post-run
+      forms hash identically). Eligibility gate: >= 3 successes, 0
+      failures, last success within `PROC_MAX_AGE_DAYS` (30), cosine >=
+      `PROC_MIN_SIM` (0.75 — stricter than the 0.55 plan-hint and 0.35
+      loose-recall floors). `record_failure()` retires a recipe on a single
+      failed replay. New `memory_procedural` table (fingerprint PK, SQLite
+      upsert). `planner.plan_goal()` replays before the LLM branch;
+      **never for an autonomous goal** (`autonomous` threaded
+      `process_command` -> `extract_intent` -> planner `context`) — a
+      background goal always gets a fresh plan. A replayed graph is still
+      re-validated at load (allowlist / step-count / cycle) and again
+      per-step by `validate_steps()` downstream — a recipe is a plan shape,
+      never an execution grant. `api_wrapper._record_procedural_outcome()`
+      reinforces a successful structure and retires a recipe whose own
+      replay failed; `plan_source` is surfaced on the response. Own flag
+      `SENTINAL_PROCEDURAL_MEMORY_ENABLED`, default **off** (it changes
+      execution by skipping an LLM call — not folded into the semantic
+      memory flag). `validator.py`/`executor.py`/`main.py` untouched;
+      `main.py` no new lint. 12 procedural-memory + 4 planner-replay + 4
+      api_wrapper outcome tests, stubbed deterministic embedder.
+      **Deferred follow-up:** slot/parameter templatisation (reuse a recipe
+      for a goal with different literal targets); this cut matches only
+      near-verbatim repeats.
+      **Open:** the flag-on benchmark delta (planner-LLM call count, planner
+      latency, multi-step pass rate) — a deliberate measurement run, not yet
+      done on this machine.
 - [ ] `PHASE_TASK_BOARD.md`'s **P2-4** (MCP tool contracts) — explicitly
       scoped to capability schemas only, not the event bus.
 - [x] `PHASE_TASK_BOARD.md`'s **P2-5** (risk-tiered policy engine:
