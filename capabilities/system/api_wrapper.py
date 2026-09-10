@@ -379,11 +379,18 @@ async def process_command(prompt: str) -> dict[str, Any]:
             # exactly as before, so this adds zero latency/behavior change for the
             # dominant case.
             if len(steps) > 1:
+                from agentic_core.budget import budget_for
                 from agentic_core.goal_graph import GoalGraph
+
+                # Direct human command -> the direct-human budget. A future S6
+                # background caller would build budget_for(autonomous=True) here.
+                plan_budget = budget_for(autonomous=False)
 
                 with traced_step("execute_goal_graph", step_count=len(steps)):
                     graph = GoalGraph.from_pipeline(steps, goal_description=prompt)
-                    goal_observed = await asyncio.to_thread(execute_goal_graph_observed, graph)
+                    goal_observed = await asyncio.to_thread(
+                        execute_goal_graph_observed, graph, None, plan_budget,
+                    )
 
                 output["validation"] = goal_observed["validation"]
                 output["execution"] = goal_observed["execution"]
@@ -391,6 +398,7 @@ async def process_command(prompt: str) -> dict[str, Any]:
                 output["failure_category"] = goal_observed["failure_category"]
                 output["replanned"] = goal_observed["replanned"]
                 output["results"] = goal_observed.get("results")
+                output["budget"] = goal_observed.get("budget")
                 return output
 
             # ── STAGE 2: VALIDATION ──
@@ -486,7 +494,7 @@ async def process_command(prompt: str) -> dict[str, Any]:
     return output
 
 
-def execute_goal_graph_observed(graph: Any, cancel_event=None) -> dict[str, Any]:
+def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = None) -> dict[str, Any]:
     """
     S5 Goal Graph Execution Engine: Plan -> Act -> Observe -> Reflect (Critic).
     Executes a GoalGraph node-by-node in dependency-respecting topological order.
@@ -496,7 +504,12 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None) -> dict[str, Any]
     2. Postcondition observer checks real OS state after each step.
     3. Resident Critic evaluates the observation and bounds replans to MAX_REPLANS.
     4. Data chaining ({{LAST_RESULT}}, {{step_id.result}}) is resolved dynamically as parent steps complete.
+    5. S4 budget: the whole plan runs under a PlanBudget (action count + wall time).
+       When it's spent, the plan stops cleanly — remaining nodes are marked
+       skipped, not executed. Defaults to the direct-human ceiling; S6 passes a
+       tighter autonomous one.
     """
+    from agentic_core.budget import FAILURE_CATEGORY_BUDGET_EXCEEDED, budget_for
     from agentic_core.critic import critic
     from agentic_core.executor import (
         FAILURE_CATEGORY_CANCELLED,
@@ -508,6 +521,9 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None) -> dict[str, Any]
     from agentic_core.goal_graph import GoalGraph
     from agentic_core.planner import planner
     from agentic_core.validator import validate_steps
+
+    if budget is None:
+        budget = budget_for(autonomous=False)
 
     if not isinstance(graph, GoalGraph):
         if isinstance(graph, list):
@@ -537,7 +553,28 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None) -> dict[str, Any]
             "replanned": False,
         }
 
+    budget.start()
+
     for node in ordered_nodes:
+        # ── S4 BUDGET GATE: stop the plan cleanly if its ceiling is spent ─────
+        budget_reason = budget.check()
+        if budget_reason:
+            for pending in graph.nodes.values():
+                if pending.status in ("pending", "running"):
+                    pending.status = "skipped"
+            results.append({"step_id": node.step_id, "status": "skipped",
+                            "detail": f"Plan budget: {budget_reason}"})
+            return {
+                "validation": "Approved",
+                "execution": "Failed",
+                "response": f"Stopped: {budget_reason}. Remaining steps were not run.",
+                "failure_category": FAILURE_CATEGORY_BUDGET_EXCEEDED,
+                "replanned": replanned_any,
+                "results": results,
+                "budget": budget.snapshot(),
+                "graph": graph.to_dict(),
+            }
+
         # Check cancellation before starting node
         if cancel_event and cancel_event.is_set():
             graph.mark_node_failed(node.step_id, "Cancelled by user/system")
@@ -547,6 +584,7 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None) -> dict[str, Any]
                 "response": "Execution cancelled by user.",
                 "failure_category": FAILURE_CATEGORY_CANCELLED,
                 "replanned": replanned_any,
+                "budget": budget.snapshot(),
                 "graph": graph.to_dict(),
             }
 
@@ -572,6 +610,7 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None) -> dict[str, Any]
                 "response": f"Step '{node.step_id}' blocked by security validation: {validation_msg}",
                 "failure_category": FAILURE_CATEGORY_PIPELINE_ERROR,
                 "replanned": replanned_any,
+                "budget": budget.snapshot(),
                 "graph": graph.to_dict(),
             }
 
@@ -585,6 +624,7 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None) -> dict[str, Any]
         # ── EXECUTION & OBSERVATION PASS ──────────────────────────────────────
         node.status = "running"
         result_str, snapshot_diff, step_obs = _run_and_observe([resolved_step], cancel_event)
+        budget.charge_action()
         observation = None
         if step_obs:
             first_obs = step_obs[0]
@@ -595,6 +635,15 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None) -> dict[str, Any]
 
         # ── BOUNDED REPLAN ON POSTCONDITION MISMATCH ──────────────────────────
         while critic.should_replan(node, verdict):
+            # A replan attempt is another action — do not start one the budget
+            # cannot pay for. The node's replan_count still bounds this loop
+            # (MAX_REPLANS) independently.
+            if budget.would_exceed_actions():
+                verdict = critic.evaluate_step(
+                    node, f"ERROR plan action budget exhausted before replan ({budget.actions_used}/{budget.max_actions})",
+                )
+                break
+
             replanned_any = True
             graph = planner.replan_failed_node(graph, node.step_id, verdict.feedback)
             node = graph.nodes[node.step_id]
@@ -613,6 +662,7 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None) -> dict[str, Any]
                     node.expected_state = derived
 
             result_str, snapshot_diff, step_obs = _run_and_observe([resolved_step], cancel_event)
+            budget.charge_action()
             observation = None
             if step_obs:
                 first_obs = step_obs[0]
@@ -654,6 +704,7 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None) -> dict[str, Any]
         "failure_category": final_failure_category if not all_completed else FAILURE_CATEGORY_SUCCESS,
         "replanned": replanned_any,
         "results": results,
+        "budget": budget.snapshot(),
         "graph": graph.to_dict(),
     }
 

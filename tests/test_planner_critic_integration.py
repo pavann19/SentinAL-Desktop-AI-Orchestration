@@ -4,11 +4,12 @@ End-to-end integration tests for S5 Planner + Critic split, Goal Graph execution
 security validation boundary enforcement, and postcondition reflection.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 import pytest
 
+from agentic_core.budget import FAILURE_CATEGORY_BUDGET_EXCEEDED, PlanBudget
 from agentic_core.goal_graph import GoalGraph, GoalNode
-from agentic_core.processor import extract_goal_graph, extract_intent
+from agentic_core.processor import extract_intent
 from capabilities.system.api_wrapper import execute_goal_graph_observed, process_command
 from capabilities.system.postcondition_observer import Observation
 
@@ -228,3 +229,101 @@ class TestProcessCommandRoutesToGoalGraphEngine:
         ):
             output = await process_command("what time is it")
         assert "attempts" in output
+
+
+# ── S4 per-plan budget (action + wall-time ceiling) ──────────────────────────
+# The goal-graph engine runs the whole plan under a PlanBudget. When it is
+# spent, the plan stops cleanly: remaining nodes are marked skipped, not run,
+# and the result's failure_category is FAILURE_CATEGORY_BUDGET_EXCEEDED.
+
+class TestGoalGraphRunsUnderABudget:
+
+    def _linear_graph(self, n: int) -> GoalGraph:
+        g = GoalGraph(f"{n}-step plan")
+        prev = None
+        for i in range(1, n + 1):
+            g.add_node(GoalNode(
+                step_id=f"step_{i}",
+                intent="ApplicationLaunchIntent",
+                target="notepad",
+                prompt=f"step {i}",
+                depends_on=[prev] if prev else [],
+            ))
+            prev = f"step_{i}"
+        return g
+
+    def test_action_budget_stops_the_plan_and_skips_remaining_nodes(self):
+        graph = self._linear_graph(5)
+        tight = PlanBudget(max_actions=2, max_wall_seconds=999)
+
+        def fake_run_and_observe(steps, cancel_event):
+            return "ok", {}, [_obs(True, tier="none")]
+
+        with patch("agentic_core.executor._run_and_observe", side_effect=fake_run_and_observe):
+            res = execute_goal_graph_observed(graph, None, tight)
+
+        assert res["failure_category"] == FAILURE_CATEGORY_BUDGET_EXCEEDED
+        assert res["execution"] == "Failed"
+        assert res["budget"]["actions_used"] == 2          # exactly the ceiling was spent
+        # step_1 and step_2 ran; step_3..5 were skipped, not executed.
+        assert graph.nodes["step_1"].status == "completed"
+        assert graph.nodes["step_2"].status == "completed"
+        assert graph.nodes["step_3"].status == "skipped"
+        assert graph.nodes["step_5"].status == "skipped"
+
+    def test_a_plan_within_budget_completes_normally(self):
+        graph = self._linear_graph(3)
+        roomy = PlanBudget(max_actions=10, max_wall_seconds=999)
+
+        def fake_run_and_observe(steps, cancel_event):
+            return "ok", {}, [_obs(True, tier="none")]
+
+        with patch("agentic_core.executor._run_and_observe", side_effect=fake_run_and_observe):
+            res = execute_goal_graph_observed(graph, None, roomy)
+
+        assert res["execution"] == "Success"
+        assert res["failure_category"] != FAILURE_CATEGORY_BUDGET_EXCEEDED
+        assert res["budget"]["actions_used"] == 3
+        assert all(n.status == "completed" for n in graph.nodes.values())
+
+    def test_wall_time_budget_stops_the_plan(self, monkeypatch):
+        import agentic_core.budget as budget_mod
+        clock = {"t": 0.0}
+        monkeypatch.setattr(budget_mod.time, "monotonic", lambda: clock["t"])
+
+        graph = self._linear_graph(4)
+        b = PlanBudget(max_actions=99, max_wall_seconds=10)
+
+        def fake_run_and_observe(steps, cancel_event):
+            clock["t"] += 6.0   # each step "takes" 6s of wall time
+            return "ok", {}, [_obs(True, tier="none")]
+
+        with patch("agentic_core.executor._run_and_observe", side_effect=fake_run_and_observe):
+            res = execute_goal_graph_observed(graph, None, b)
+
+        assert res["failure_category"] == FAILURE_CATEGORY_BUDGET_EXCEEDED
+        # step_1 ran (t 0->6, still under 10 at the loop-top check for step_2),
+        # step_2 ran (t 6->12), step_3's loop-top check sees 12 > 10 and stops.
+        assert graph.nodes["step_1"].status == "completed"
+        assert graph.nodes["step_2"].status == "completed"
+        assert graph.nodes["step_3"].status == "skipped"
+
+    @pytest.mark.asyncio
+    async def test_process_command_surfaces_the_budget_snapshot(self):
+        graph = GoalGraph("two step")
+        graph.add_node(GoalNode(step_id="step_1", intent="InformationRetrievalIntent",
+                                target="x", prompt="search x"))
+        graph.add_node(GoalNode(step_id="step_2", intent="InformationRetrievalIntent",
+                                target="y", prompt="search y", depends_on=["step_1"]))
+
+        def fake_run_and_observe(steps, cancel_event):
+            return "ok", {}, [_obs(True, tier="none")]
+
+        with patch("agentic_core.planner.is_multistep_query", return_value=True), \
+             patch("agentic_core.planner.planner.plan_goal", return_value=graph), \
+             patch("agentic_core.executor._run_and_observe", side_effect=fake_run_and_observe):
+            output = await process_command("search x and search y")
+
+        assert "budget" in output
+        assert output["budget"]["actions_used"] == 2
+        assert output["budget"]["autonomous"] is False
