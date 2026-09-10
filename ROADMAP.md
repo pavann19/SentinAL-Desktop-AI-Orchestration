@@ -97,16 +97,16 @@ docs flagged as the most likely tail-risk.
 
 ---
 
-## S4 — Containment substrate (buildable items complete — gate met)
+## S4 — Containment substrate (complete — gate met, live round-trip verified)
 Gate (per `CONTAINMENT_ARCHITECTURE.md` §6/§7): a T1→T2 tier reversal
 demonstrated under test — i.e. proof that a compromised or hallucinating
 plan is physically contained, not just discouraged by a path denylist.
 **Met** — the capability broker supplies the tier (`ecda782`) and the
 pre-action snapshot makes a T2/T3 filesystem effect undoable (`16c7f8e`);
 `test_planner_critic_integration.py` demonstrates a failed multi-step plan
-rolling back an earlier step's real file deletion. The two remaining open
-items are a live verification (npm Docker round-trip) and a benchmark gap
-(DPI/resolution), not unbuilt containment.
+rolling back an earlier step's real file deletion. The live container
+round-trip is now **verified** (below). The only remaining open item under
+S4 is a benchmark gap (DPI/resolution), not unbuilt containment.
 
 - [x] **Environment reality-check before committing to a plan** — 2026-08-29,
       **corrected 2026-09-10**. Docker Desktop here is WSL2-backed and only
@@ -143,30 +143,27 @@ items are a live verification (npm Docker round-trip) and a benchmark gap
       targets whichever interpreter environment is active); containing it
       needs a real `--target`/venv design decision, not a behavior change
       bolted on here.
-- [ ] **Live end-to-end round-trip NOT verified** — real container
-      execution was confirmed on this machine (a plain `python:3.12-slim`
-      container ran and returned expected output), and all script-
-      generation/fallback/availability-check logic is unit-tested (11 new
-      tests). But a full live `npm install <pkg>` through the actual
-      container was not completed: two live Docker Desktop starts on this
-      machine dropped available RAM from single-digit GB to under 1 GB
-      (0.66 GB / 94.6% used at the worst point, Docker self-terminated
-      once already under similar pressure earlier in this same session).
-      Stated as open rather than assumed — needs either more free RAM at
-      test time or a deliberately time-boxed retry.
-      **Verification path built** — `e30d410`,
-      `scripts/verify_s4_live_roundtrip.py`: runs the real
-      `docker run --rm -v <dir>:/workspace node:20-slim npm install is-number`
-      with a background RAM watchdog, asserts `npm_install()`'s own builder
-      selects the sandbox path, and checks `node_modules/<pkg>` materialises
-      in the HOST mount (the containment proof). Writes a JSON report to
-      `benchmarks/results/`, exits non-zero on failure. RAM measured this
-      session: ~4.0 GB free now; closing the desktop editor app frees
-      ~1.0–1.5 GB physical + ~2.2 GB commit → ~5.3 GB free → ~2.4 GB
-      headroom with Docker's WSL2 VM up (`.wslconfig` already caps it at
-      2 GB) — marginal but in range for one short run. Run the script once
-      from a plain terminal with the editor closed, then this box flips with
-      the report's real result.
+- [x] **Live end-to-end round-trip VERIFIED** — 2026-09-10 (report
+      `benchmarks/results/s4_live_roundtrip_20260910T185434Z.json`,
+      `overall_pass: true`). `scripts/verify_s4_live_roundtrip.py` (`e30d410`)
+      ran the real
+      `docker run --rm -v <hostdir>:/workspace -w /workspace node:20-slim npm install is-number`
+      end to end. All 7 checks green: daemon reachable; `npm_install()`'s own
+      builder selects the sandbox `docker run --rm -v ...` path; `node:20-slim`
+      pulled; the container install **exited 0 in 2.3 s**;
+      **`node_modules/is-number/package.json` materialised in the HOST mount**
+      — the containment proof, the npm install genuinely ran inside the
+      throwaway Linux container and wrote back only through the bind mount;
+      `--rm` honoured (no leftover container); no Linux-native `.node`
+      artifacts. RAM held: 2.32 GB free at start, **min 1.94 GB during the
+      install**, 1.95 GB at end (nowhere near the 0.66 GB that killed the
+      earlier attempts — the `.wslconfig` `memory=2GB` cap plus a freed
+      desktop app did it). Total wall time 17.5 s.
+      Prior status: a plain `python:3.12-slim` container had been confirmed,
+      and all script-generation/fallback/availability logic was unit-tested
+      (11 tests), but the full `npm install` had not completed because two
+      earlier Docker Desktop starts dropped free RAM under 1 GB and Docker
+      self-terminated. That is now resolved and measured, not assumed.
 - [x] **Pre-action filesystem snapshot + restore** — 2026-09-10, `16c7f8e`.
       Windows has no native copy-on-write overlay FS, so §6's T2 model ("real
       writes + pre-action snapshot -> restore snapshot") is implemented as
