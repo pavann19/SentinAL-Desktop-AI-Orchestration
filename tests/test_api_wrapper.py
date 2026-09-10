@@ -122,3 +122,84 @@ class TestCapabilityBrokerWiring:
         assert result["validation"] == "Denied"
         assert "capability_tier" in result
         assert "requires_confirmation" in result
+
+
+class TestAutonomousMode:
+    """S6 increment 2: process_command(prompt, autonomous=True) — the broker's
+    tier decision is ENFORCED (no human -> can't confirm -> T2/T3 denied),
+    the tighter autonomous budget applies, and validate_steps() still runs
+    first and unconditionally."""
+
+    @pytest.mark.asyncio
+    async def test_autonomous_t3_plan_is_blocked_and_nothing_runs(self):
+        from capabilities.system.api_wrapper import process_command
+        step = {"intent": "FileDeletionIntent", "target": "some_file.txt"}
+        with patch("agentic_core.processor.extract_intent", return_value=[step]), \
+             patch("agentic_core.executor.execute_pipeline_observed") as mock_exec:
+            result = await process_command("delete some_file.txt", autonomous=True)
+        assert result["execution"] == "Blocked"
+        assert result["validation"] == "Denied"
+        assert "containment policy" in result["response"].lower()
+        mock_exec.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_direct_human_t3_is_NOT_blocked_by_the_broker(self):
+        """Same T3 step, autonomous=False -> flagged, not blocked (regression:
+        the confirm flag path must be unchanged)."""
+        from capabilities.system.api_wrapper import process_command
+        step = {"intent": "FileDeletionIntent", "target": "some_file.txt"}
+        with patch("agentic_core.processor.extract_intent", return_value=[step]), \
+             patch(
+                 "agentic_core.executor.execute_pipeline_observed",
+                 return_value={"result": "Deleted.", "snapshot_diff": {}, "step_observations": [],
+                              "failure_category": "success", "attempts": 1, "replanned": False},
+             ):
+            result = await process_command("delete some_file.txt", autonomous=False)
+        assert result["validation"] == "Approved"
+        assert result["requires_confirmation"] is True
+        assert result["capability_tier"] == "T3"
+
+    @pytest.mark.asyncio
+    async def test_autonomous_t0_plan_runs(self):
+        from capabilities.system.api_wrapper import process_command
+        step = {"intent": "ConversationalIntent", "message": "hi", "speech_response": "hi"}
+        with patch("agentic_core.processor.extract_intent", return_value=[step]), \
+             patch(
+                 "agentic_core.executor.execute_pipeline_observed",
+                 return_value={"result": "hi", "snapshot_diff": {}, "step_observations": [],
+                              "failure_category": "success", "attempts": 1, "replanned": False},
+             ):
+            result = await process_command("say hi", autonomous=True)
+        assert result["execution"] == "Success"
+        assert result["autonomous"] is True
+
+    @pytest.mark.asyncio
+    async def test_autonomous_still_hits_the_validator_first(self):
+        """A goal that would touch system32 is blocked at validate_steps(),
+        not only at the broker — the security gate is unconditional."""
+        from capabilities.system.api_wrapper import process_command
+        step = {"intent": "ApplicationLaunchIntent", "target": r"C:\Windows\System32\cmd.exe"}
+        with patch("agentic_core.processor.extract_intent", return_value=[step]), \
+             patch("agentic_core.executor.execute_pipeline_observed") as mock_exec:
+            result = await process_command("launch cmd from system32", autonomous=True)
+        assert result["execution"] in ("Blocked",)
+        mock_exec.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_autonomous_multistep_uses_the_tighter_budget(self):
+        from capabilities.system.api_wrapper import process_command
+        from agentic_core.budget import budget_for
+        auto_actions = budget_for(autonomous=True).max_actions
+        graph_steps = [
+            {"intent": "ConversationalIntent", "message": "a", "step_id": "s1"},
+            {"intent": "ConversationalIntent", "message": "b", "step_id": "s2", "depends_on": ["s1"]},
+        ]
+        def fake_rao(steps, cancel_event):
+            from capabilities.system.postcondition_observer import Observation
+            return "ok", {}, [Observation(verified=True, tier_used="none", confidence=1.0,
+                                          latency_ms=1.0, detail="x")]
+        with patch("agentic_core.processor.extract_intent", return_value=graph_steps), \
+             patch("agentic_core.executor._run_and_observe", side_effect=fake_rao):
+            result = await process_command("do a then b", autonomous=True)
+        assert result["budget"]["autonomous"] is True
+        assert result["budget"]["max_actions"] == auto_actions

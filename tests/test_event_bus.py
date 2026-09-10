@@ -1,9 +1,11 @@
 """
 tests/test_event_bus.py
 
-Unit tests for the S6 event bus, increment 1 (time triggers, notify-only):
-  - agentic_core/memory_hook.py: get_due_scheduled_tasks / mark_scheduled_task_notified
-  - agentic_core/event_bus.py: _poll_once + the resident event_bus_loop
+Unit tests for the S6 event bus:
+  - increment 1 (time triggers, notify-only): get_due_scheduled_tasks /
+    mark_scheduled_task_notified, _poll_once, the resident event_bus_loop
+  - increment 2 (autonomous goals): the scheduled_tasks.kind column and
+    make_event_handler's reminder-vs-goal branch
 
 Real isolated SQLite (tmp_path), same fixture pattern as tests/test_scheduler.py.
 The loop is infinite, so loop tests run it with a tiny interval, sleep briefly,
@@ -19,7 +21,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import pytest
 
 import agentic_core.event_bus as eb
-from agentic_core.event_bus import _poll_once, event_bus_loop
+from agentic_core.event_bus import _poll_once, event_bus_loop, make_event_handler
 from agentic_core.memory_hook import MemoryManager
 
 
@@ -158,3 +160,68 @@ class TestEventBusLoop:
         with pytest.raises(asyncio.CancelledError):
             await task
         assert task.cancelled()
+
+
+class TestKindColumn:
+
+    def test_default_kind_is_reminder(self, mem):
+        _add(mem, "t1", "call mom", time.time() - 5)
+        due = mem.get_due_scheduled_tasks(time.time())
+        assert due[0]["kind"] == "reminder"
+
+    def test_goal_kind_round_trips(self, mem):
+        mem.register_scheduled_task("g1", "summarize downloads", time.time() - 5,
+                                    time.time(), kind="goal")
+        due = mem.get_due_scheduled_tasks(time.time())
+        assert due[0]["kind"] == "goal"
+
+
+class TestMakeEventHandler:
+
+    def _handler(self, *, autonomous_goals_on, run_goal=None):
+        self.broadcasts = []
+        self.goal_calls = []
+
+        async def broadcast(msg):
+            self.broadcasts.append(msg)
+
+        async def default_run_goal(desc):
+            self.goal_calls.append(desc)
+            return {"execution": "Success", "response": "did it", "capability_reason": "T1 ok"}
+
+        return make_event_handler(
+            broadcast=broadcast,
+            run_goal=run_goal or default_run_goal,
+            autonomous_goals_on=autonomous_goals_on,
+        )
+
+    @pytest.mark.asyncio
+    async def test_reminder_kind_only_notifies(self):
+        h = self._handler(autonomous_goals_on=True)
+        await h({"task_id": "t1", "description": "call mom", "due_at": 1.0, "kind": "reminder"})
+        assert self.goal_calls == []
+        assert self.broadcasts[0]["type"] == "reminder_due"
+
+    @pytest.mark.asyncio
+    async def test_goal_kind_runs_when_enabled(self):
+        h = self._handler(autonomous_goals_on=True)
+        await h({"task_id": "g1", "description": "tidy up", "kind": "goal"})
+        assert self.goal_calls == ["tidy up"]
+        assert self.broadcasts[0]["type"] == "autonomous_goal_result"
+        assert self.broadcasts[0]["execution"] == "Success"
+
+    @pytest.mark.asyncio
+    async def test_goal_kind_only_notifies_when_disabled(self):
+        h = self._handler(autonomous_goals_on=False)
+        await h({"task_id": "g1", "description": "tidy up", "kind": "goal"})
+        assert self.goal_calls == []                       # NOT run
+        assert self.broadcasts[0]["type"] == "reminder_due"  # degraded to notify
+
+    @pytest.mark.asyncio
+    async def test_a_raising_goal_still_broadcasts_a_result(self):
+        async def boom(_desc):
+            raise RuntimeError("goal blew up")
+        h = self._handler(autonomous_goals_on=True, run_goal=boom)
+        await h({"task_id": "g1", "description": "x", "kind": "goal"})
+        assert self.broadcasts[0]["type"] == "autonomous_goal_result"
+        assert self.broadcasts[0]["execution"] == "Error"

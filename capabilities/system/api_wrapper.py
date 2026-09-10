@@ -360,10 +360,22 @@ def _paths_for_step(step: dict) -> list[str]:
     return []
 
 
-async def process_command(prompt: str) -> dict[str, Any]:
+async def process_command(prompt: str, *, autonomous: bool = False) -> dict[str, Any]:
     """
     Async pipeline entry point. Wraps the synchronous executor in a thread
     so it does not block the ASGI event loop (Fix 3.12).
+
+    autonomous=False (every direct caller — REST, voice, benchmark): the
+    capability broker's tier/confirmation decision is surfaced but NOT
+    enforced (there is no confirmation-provision channel; blocking a T3
+    request would break FileDeletionIntent etc.).
+
+    autonomous=True (S6 event bus running a background goal — no human in the
+    loop): the broker's decision IS enforced. A plan whose highest tier is
+    T2 or T3 is denied outright ("no human -> cannot confirm -> deny", which
+    the broker already encodes), nothing runs, and the multi-step path runs
+    under the tighter autonomous PlanBudget. validate_steps() still runs
+    first and unconditionally either way.
     """
     from agentic_core.executor import (
         FAILURE_CATEGORY_POSTCONDITION_MISMATCH,
@@ -395,23 +407,31 @@ async def process_command(prompt: str) -> dict[str, Any]:
                 return output
 
             # ── STAGE 1a: CAPABILITY BROKER — risk-tier decision (S4) ──────────
-            # Surfaces the containment tier and whether a HITL confirmation is
-            # needed, for any consumer (HUD, future S6 autonomy layer) that wants
-            # to gate on it. Non-blocking here on purpose: every caller today is
-            # a direct human command (autonomous=False), and there is no
-            # confirmation-provision channel yet — hard-blocking a T3 request
-            # would just break FileDeletionIntent etc. The broker's deny path is
-            # the autonomous=True case (S6), which no current caller hits.
+            # Surfaces the containment tier + confirmation need for any consumer
+            # that wants to gate on it. For a direct human command
+            # (autonomous=False) it is informational only — non-blocking,
+            # because there is no confirmation-provision channel and blocking a
+            # T3 request would break FileDeletionIntent etc. For an autonomous
+            # background goal (autonomous=True, S6 event bus) it is ENFORCED:
+            # a denied decision stops here, nothing runs.
             #
-            # Runs before validate_steps() only because it is purely
-            # informational at this point — it never loosens or overrides the
-            # validator's own allow/deny, which still runs below and wins.
+            # Runs before validate_steps() — it never loosens the validator's
+            # own allow/deny, which still runs below and wins.
             from agentic_core.capability_broker import grant_all
 
-            grant_decision = grant_all(steps, autonomous=False)
+            grant_decision = grant_all(steps, autonomous=autonomous)
             output["capability_tier"] = grant_decision.tier
             output["requires_confirmation"] = grant_decision.requires_confirmation
             output["capability_reason"] = grant_decision.reason
+            output["autonomous"] = autonomous
+
+            if autonomous and not grant_decision.allowed:
+                output["validation"] = "Denied"
+                output["execution"] = "Blocked"
+                output["response"] = (
+                    f"Autonomous goal blocked by containment policy: {grant_decision.reason}"
+                )
+                return output
 
             # ── STAGE 1b: S5 GOAL GRAPH ROUTING (multi-step only) ──────────────
             # Fix [S5-wire]: execute_goal_graph_observed() — the critic-integrated,
@@ -438,9 +458,9 @@ async def process_command(prompt: str) -> dict[str, Any]:
                 from agentic_core.budget import budget_for
                 from agentic_core.goal_graph import GoalGraph
 
-                # Direct human command -> the direct-human budget. A future S6
-                # background caller would build budget_for(autonomous=True) here.
-                plan_budget = budget_for(autonomous=False)
+                # An autonomous background goal runs under the tighter
+                # autonomous ceilings (12 actions / 120 s vs 24 / 300 s).
+                plan_budget = budget_for(autonomous=autonomous)
 
                 with traced_step("execute_goal_graph", step_count=len(steps)):
                     graph = GoalGraph.from_pipeline(steps, goal_description=prompt)

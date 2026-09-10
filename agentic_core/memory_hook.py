@@ -97,21 +97,33 @@ class MemoryManager:
             cols = {r[1] for r in self.cursor.execute("PRAGMA table_info(scheduled_tasks)").fetchall()}
             if "notified_at" not in cols:
                 self.cursor.execute("ALTER TABLE scheduled_tasks ADD COLUMN notified_at REAL")
+            # S6 event bus (increment 2): kind distinguishes a plain reminder
+            # (default — the event bus just notifies) from an autonomous goal
+            # (the event bus runs it through process_command(autonomous=True),
+            # only when SENTINAL_AUTONOMOUS_GOALS_ENABLED). Nothing sets 'goal'
+            # yet — there is no user-facing way to create one; increment 2
+            # ships the execution capability, inert by default.
+            if "kind" not in cols:
+                self.cursor.execute(
+                    "ALTER TABLE scheduled_tasks ADD COLUMN kind TEXT NOT NULL DEFAULT 'reminder'"
+                )
 
             self.conn.commit()
 
     # ── Scheduled Tasks / Reminders ───────────────────────────────────────────
 
     def register_scheduled_task(self, task_id: str, description: str,
-                                due_at: float | None, created_at: float) -> None:
+                                due_at: float | None, created_at: float,
+                                kind: str = "reminder") -> None:
         """Persists a new task/reminder. due_at is None for a plain to-do
-        item with no specific time attached."""
+        item with no specific time attached. kind is 'reminder' (default) or
+        'goal' (S6 increment 2 — an autonomous goal the event bus may run)."""
         with self._lock:
             self.cursor.execute(
                 """INSERT OR REPLACE INTO scheduled_tasks
-                   (task_id, description, due_at, created_at, completed, completed_at)
-                   VALUES (?, ?, ?, ?, 0, NULL)""",
-                (task_id, description, due_at, created_at)
+                   (task_id, description, due_at, created_at, completed, completed_at, kind)
+                   VALUES (?, ?, ?, ?, 0, NULL, ?)""",
+                (task_id, description, due_at, created_at, kind)
             )
             self.conn.commit()
 
@@ -165,7 +177,7 @@ class MemoryManager:
         and an already-notified row are all excluded."""
         with self._lock:
             self.cursor.execute(
-                """SELECT task_id, description, due_at, created_at
+                """SELECT task_id, description, due_at, created_at, kind
                    FROM scheduled_tasks
                    WHERE completed = 0
                      AND due_at IS NOT NULL
@@ -176,7 +188,8 @@ class MemoryManager:
             )
             rows = self.cursor.fetchall()
         return [
-            {"task_id": r[0], "description": r[1], "due_at": r[2], "created_at": r[3]}
+            {"task_id": r[0], "description": r[1], "due_at": r[2], "created_at": r[3],
+             "kind": r[4] if len(r) > 4 else "reminder"}
             for r in rows
         ]
 

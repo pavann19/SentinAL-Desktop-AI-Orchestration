@@ -99,6 +99,51 @@ async def event_bus_loop(on_event=None, memory: MemoryManager | None = None,
         await asyncio.sleep(tick)
 
 
+def make_event_handler(*, broadcast, run_goal, autonomous_goals_on: bool):
+    """
+    Builds the event bus's on_event callback with the S6 kind-branch:
+
+      kind == 'reminder' (default)            -> broadcast a 'reminder_due' msg
+      kind == 'goal' AND autonomous_goals_on  -> await run_goal(description),
+                                                 broadcast 'autonomous_goal_result'
+      kind == 'goal' AND not enabled          -> broadcast 'reminder_due'
+                                                 (degrades safe)
+
+    broadcast(msg: dict)  -> awaitable, pushes to the telemetry clients.
+    run_goal(desc: str)   -> awaitable returning the pipeline result dict.
+
+    Kept here rather than inline in main.py's lifespan so the branch is
+    unit-testable without booting the app.
+    """
+    async def on_event(task: dict) -> None:
+        kind = str(task.get("kind") or "reminder").lower()
+        if kind == "goal" and autonomous_goals_on:
+            try:
+                result = await run_goal(task.get("description", ""))
+            except Exception as e:  # a raising goal must not strand the bus
+                result = {"execution": "Error", "response": f"autonomous goal raised: {e}"}
+            await broadcast({
+                "type": "autonomous_goal_result",
+                "task_id": task.get("task_id"),
+                "description": task.get("description"),
+                "execution": result.get("execution"),
+                "response": result.get("response"),
+                "capability_reason": result.get("capability_reason"),
+                "timestamp": time.time(),
+            })
+            return
+        await broadcast({
+            "type": "reminder_due",
+            "task_id": task.get("task_id"),
+            "description": task.get("description"),
+            "due_at": task.get("due_at"),
+            "kind": kind,
+            "timestamp": time.time(),
+        })
+
+    return on_event
+
+
 def start_event_bus(on_event=None, memory: MemoryManager | None = None) -> asyncio.Task:
     """Starts the single global event-bus task. Idempotent."""
     global _bus_task

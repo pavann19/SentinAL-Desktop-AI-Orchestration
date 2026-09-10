@@ -145,20 +145,20 @@ async def lifespan(app: FastAPI):
         print(f"[RELIABILITY ERROR] Process supervisor failed to start: {e}")
         stop_supervisor = None
 
-    # ── EVENT BUS (S6 increment 1 — time triggers, notify-only) ──
-    # Fires the scheduled_tasks.due_at reminders SchedulerIntent persists but
-    # its handler openly says it can't yet deliver. Like on_watch_resolved
-    # above, on_reminder_due ONLY notifies — it does not run the pipeline or
-    # take an action. A trigger that executes autonomously is a separate,
-    # gated increment.
-    async def on_reminder_due(task: dict):
-        msg = {
-            "type": "reminder_due",
-            "task_id": task.get("task_id"),
-            "description": task.get("description"),
-            "due_at": task.get("due_at"),
-            "timestamp": time.time(),
-        }
+    # ── EVENT BUS (S6 — time triggers) ──
+    # Fires the scheduled_tasks.due_at rows SchedulerIntent persists but its
+    # handler openly says it can't yet deliver.
+    #   kind == 'reminder' (default, increment 1): ONLY notify — like
+    #     on_watch_resolved above, no pipeline, no action.
+    #   kind == 'goal' (increment 2): run it through the pipeline with
+    #     autonomous=True (broker denies T2/T3, tighter budget), but ONLY when
+    #     SENTINAL_AUTONOMOUS_GOALS_ENABLED. Off by default; nothing currently
+    #     creates a 'goal' row, so this path is inert on a fresh install.
+    _autonomous_goals_on = os.getenv(
+        "SENTINAL_AUTONOMOUS_GOALS_ENABLED", "false"
+    ).strip().lower() not in ("0", "false", "no", "")
+
+    async def _broadcast_telemetry(msg: dict):
         for client in list(active_telemetry_clients):
             if client.client_state == WebSocketState.CONNECTED:
                 try:
@@ -166,10 +166,22 @@ async def lifespan(app: FastAPI):
                 except Exception:
                     active_telemetry_clients.discard(client)
 
+    async def _run_autonomous_goal(description: str):
+        from capabilities.system.api_wrapper import process_command
+        return await process_command(description, autonomous=True)
+
     try:
-        from agentic_core.event_bus import start_event_bus, stop_event_bus
-        start_event_bus(on_event=on_reminder_due)
-        print("[SRE] Event bus started (notify-only).")
+        from agentic_core.event_bus import (
+            make_event_handler,
+            start_event_bus,
+            stop_event_bus,
+        )
+        start_event_bus(on_event=make_event_handler(
+            broadcast=_broadcast_telemetry,
+            run_goal=_run_autonomous_goal,
+            autonomous_goals_on=_autonomous_goals_on,
+        ))
+        print(f"[SRE] Event bus started (autonomous goals: {'ON' if _autonomous_goals_on else 'off'}).")
     except Exception as e:
         print(f"[RELIABILITY ERROR] Event bus failed to start: {e}")
         stop_event_bus = None
