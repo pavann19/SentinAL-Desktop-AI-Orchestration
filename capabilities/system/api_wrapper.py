@@ -606,19 +606,30 @@ async def process_command(prompt: str, *, autonomous: bool = False,
 
 
 def _remember_interaction(prompt: str, output: dict) -> None:
-    """S6 semantic memory (increment 1): embed this request for retrieval by
-    meaning. No-op unless SENTINAL_SEMANTIC_MEMORY_ENABLED; never raises; skips
-    error/blocked outcomes so the store isn't polluted with non-events."""
+    """S6 semantic memory: embed this request for retrieval by meaning. No-op
+    unless SENTINAL_SEMANTIC_MEMORY_ENABLED; never raises; skips error/blocked
+    outcomes so the store isn't polluted with non-events.
+
+    Increment 2: for a SUCCESSFUL multi-step run, also records the step-shape
+    ([{intent, target}, ...]) so the planner can be shown how a similar past
+    goal was decomposed. Single-step and failed runs record no plan."""
     if output.get("execution") not in ("Success", "Failed"):
         return
     try:
         from agentic_core.semantic_memory import remember
         steps = output.get("steps") or []
         first = steps[0] if steps and isinstance(steps[0], dict) else {}
+        plan = None
+        if output.get("execution") == "Success" and len(steps) > 1:
+            plan = [
+                {"intent": s.get("intent"), "target": s.get("target")}
+                for s in steps if isinstance(s, dict)
+            ]
         remember(prompt, {
             "intent": first.get("intent"),
             "target": first.get("target"),
             "result": output.get("response"),
+            "plan": plan,
         })
     except Exception:
         pass

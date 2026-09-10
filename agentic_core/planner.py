@@ -128,6 +128,18 @@ def _deterministic_plan_fallback(prompt: str) -> GoalGraph:
     return graph
 
 
+def _plan_hint(prompt: str) -> str:
+    """Advisory step-shape from a very similar past successful goal, formatted
+    for the planner prompt. '' when semantic memory is off, has no close match,
+    or anything goes wrong — planning proceeds identically without it."""
+    try:
+        from agentic_core.semantic_memory import format_plan_hint, recall_plan
+        plan = recall_plan(prompt)
+        return format_plan_hint(plan) if plan else ""
+    except Exception:
+        return ""
+
+
 class GoalGraphPlanner:
     """
     Goal Graph Planner (P3 Cognition Plane).
@@ -165,6 +177,16 @@ class GoalGraphPlanner:
                 f"Decompose this goal into a JSON array of step objects with step_id, "
                 f"intent, target, prompt, depends_on, and speech_response."
             )
+
+            # S6 semantic memory (increment 2): if a very similar past goal
+            # succeeded, show the planner its step-shape as an ADVISORY prior.
+            # Hint-only — the LLM still generates the plan, and every step it
+            # returns is still intent-allowlisted / step-count-clamped /
+            # cycle-checked below, so a stale or bad hint cannot smuggle a
+            # capability or an unbounded plan. No-op unless the flag is on.
+            hint = _plan_hint(prompt)
+            if hint:
+                plan_prompt = f"{plan_prompt}\n\n{hint}"
             response = llm.invoke([("system", plan_prompt)])
             steps_data = _safe_parse_plan_json(response.content)
 

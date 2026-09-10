@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
@@ -31,6 +32,9 @@ ENABLED = os.getenv("SENTINAL_SEMANTIC_MEMORY_ENABLED", "false").strip().lower()
 K = int(os.getenv("SENTINAL_SEMANTIC_MEMORY_K", "3"))
 MIN_SIM = float(os.getenv("SENTINAL_SEMANTIC_MEMORY_MIN_SIM", "0.35"))
 MAX_ROWS = int(os.getenv("SENTINAL_SEMANTIC_MEMORY_MAX_ROWS", "5000"))
+# Reusing a past plan SKELETON is only safe when the new goal is genuinely
+# close — a higher bar than surfacing loose context. Separate knob (increment 2).
+PLAN_MIN_SIM = float(os.getenv("SENTINAL_SEMANTIC_MEMORY_PLAN_MIN_SIM", "0.55"))
 
 _EMB_DTYPE = np.float32
 
@@ -72,6 +76,28 @@ def _memory():
     return _mem
 
 
+def _plan_json(plan) -> str | None:
+    """Serialise a step-shape list ([{intent, target}, ...]) to a compact JSON
+    string, or None if there's nothing usable. Targets are truncated but
+    {{...}} data-chaining placeholders are kept verbatim."""
+    if not plan or not isinstance(plan, (list, tuple)):
+        return None
+    rows = []
+    for s in plan:
+        if not isinstance(s, dict):
+            continue
+        rows.append({
+            "intent": s.get("intent"),
+            "target": (str(s.get("target", ""))[:120] or None),
+        })
+    if not rows:
+        return None
+    try:
+        return json.dumps(rows, separators=(",", ":"))
+    except Exception:
+        return None
+
+
 def remember(text: str, meta: dict | None = None) -> None:
     """Embed and store one interaction. No-op when disabled or model-less."""
     if not ENABLED:
@@ -88,6 +114,7 @@ def remember(text: str, meta: dict | None = None) -> None:
             target=meta.get("target"),
             result=(str(meta.get("result"))[:200] if meta.get("result") is not None else None),
             ts=float(meta.get("ts", time.time())),
+            plan=_plan_json(meta.get("plan")),
         )
     except Exception as e:
         _logger.debug(f"remember failed (non-fatal): {e}")
@@ -126,9 +153,53 @@ def retrieve(query: str, k: int | None = None, min_similarity: float | None = No
     scored.sort(key=lambda t: t[0], reverse=True)
     return [
         {"text": r["text"], "intent": r["intent"], "target": r["target"],
-         "result": r["result"], "ts": r["ts"], "similarity": round(sim, 3)}
+         "result": r["result"], "ts": r["ts"], "plan": r.get("plan"),
+         "similarity": round(sim, 3)}
         for sim, r in scored[:k]
     ]
+
+
+def recall_plan(goal: str, min_similarity: float | None = None) -> list[dict] | None:
+    """The step-shape of the most similar SUCCESSFUL past multi-step goal,
+    above the (higher) plan-reuse similarity floor — or None. Used only as a
+    hint to the planner; never authoritative. Never raises."""
+    if not ENABLED:
+        return None
+    floor = PLAN_MIN_SIM if min_similarity is None else min_similarity
+    try:
+        hits = retrieve(goal, k=5, min_similarity=floor)
+    except Exception:
+        return None
+    for h in hits:
+        raw = h.get("plan")
+        if not raw:
+            continue
+        try:
+            steps = json.loads(raw)
+        except Exception:
+            continue
+        if isinstance(steps, list) and steps:
+            return steps
+    return None
+
+
+def format_plan_hint(plan: list[dict]) -> str:
+    """A short, clearly-labelled prior for the planner prompt. Framed so the
+    LLM treats it as advisory, not a template to obey."""
+    if not plan:
+        return ""
+    lines = [
+        "[SIMILAR PAST PLAN] A comparable past goal was decomposed as below. "
+        "Reuse this structure only if it fits the current goal; otherwise ignore it.",
+    ]
+    for i, s in enumerate(plan[:10], 1):
+        if not isinstance(s, dict):
+            continue
+        intent = s.get("intent") or "?"
+        target = (s.get("target") or "")
+        lines.append(f"{i}. {intent} -> {target}"[:150])
+    out = "\n".join(lines)
+    return out[:800] + "... [hint truncated]" if len(out) > 800 else out
 
 
 def format_for_prompt(results: list[dict]) -> str:

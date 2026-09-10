@@ -141,3 +141,61 @@ def test_replan_failed_node_increments_replan_count():
     assert updated_graph.nodes["step_1"].replan_count == 1
     assert updated_graph.nodes["step_1"].target == "notepad"
     assert updated_graph.nodes["step_1"].status == "pending"
+
+
+# ── S6 semantic memory (increment 2): advisory plan hint ─────────────────────
+
+class TestSemanticPlanHint:
+    """recall_plan() feeds the planner an advisory step-shape from a similar
+    past success. Hint-only: it must reach the prompt, must be absent when
+    there's no match, and must never bypass intent-allowlisting."""
+
+    _RESP = MagicMock()
+    _RESP.content = (
+        '[{"step_id":"step_1","intent":"ApplicationLaunchIntent","target":"notepad","depends_on":[]}]'
+    )
+
+    def _mock_llm(self):
+        m = MagicMock()
+        m.invoke.return_value = self._RESP
+        return m
+
+    def test_hint_is_injected_into_the_plan_prompt(self):
+        llm = self._mock_llm()
+        with patch("config.settings.BrainConfig.get_routed_llm", return_value=llm), \
+             patch("agentic_core.semantic_memory.recall_plan",
+                   return_value=[{"intent": "ApplicationLaunchIntent", "target": "notepad"}]):
+            planner.plan_goal("open notepad and open calculator")
+        sent = llm.invoke.call_args[0][0][0][1]
+        assert "[SIMILAR PAST PLAN]" in sent
+        assert "ignore it" in sent
+
+    def test_no_hint_when_recall_returns_none(self):
+        llm = self._mock_llm()
+        with patch("config.settings.BrainConfig.get_routed_llm", return_value=llm), \
+             patch("agentic_core.semantic_memory.recall_plan", return_value=None):
+            planner.plan_goal("open notepad and open calculator")
+        sent = llm.invoke.call_args[0][0][0][1]
+        assert "[SIMILAR PAST PLAN]" not in sent
+
+    def test_recall_plan_raising_does_not_break_planning(self):
+        llm = self._mock_llm()
+        with patch("config.settings.BrainConfig.get_routed_llm", return_value=llm), \
+             patch("agentic_core.semantic_memory.recall_plan",
+                   side_effect=RuntimeError("boom")):
+            graph = planner.plan_goal("open notepad and open calculator")
+        assert isinstance(graph, GoalGraph)
+        assert len(graph.nodes) >= 1
+
+    def test_hint_cannot_smuggle_a_non_allowlisted_intent(self):
+        # LLM echoes a bogus intent back as a step; the allowlist check must
+        # still rewrite it to GeneralizedOSIntent regardless of the hint.
+        resp = MagicMock()
+        resp.content = '[{"step_id":"step_1","intent":"HackIntent","target":"x","depends_on":[]}]'
+        llm = MagicMock()
+        llm.invoke.return_value = resp
+        with patch("config.settings.BrainConfig.get_routed_llm", return_value=llm), \
+             patch("agentic_core.semantic_memory.recall_plan",
+                   return_value=[{"intent": "HackIntent", "target": "x"}]):
+            graph = planner.plan_goal("do a and do b")
+        assert graph.nodes["step_1"].intent == "GeneralizedOSIntent"

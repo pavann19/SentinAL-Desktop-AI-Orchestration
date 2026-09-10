@@ -147,3 +147,66 @@ def test_format_for_prompt_has_header_and_respects_cap(store):
     out = store.format_for_prompt(rows)
     assert out.startswith("[RELEVANT PAST CONTEXT]")
     assert len(out) <= 1000 + len("... [context truncated]")
+
+
+# ---------------------------------------------------------------------------
+# increment 2 — plan storage + recall_plan + format_plan_hint
+# ---------------------------------------------------------------------------
+_PLAN = [
+    {"intent": "ApplicationLaunchIntent", "target": "notepad"},
+    {"intent": "GeneralizedOSIntent", "target": "type {{LAST_RESULT}}"},
+]
+
+
+def test_plan_round_trips_through_storage(store):
+    mm = store._memory()
+    mm.add_semantic_memory("g", b"\x00\x00\x00\x00", "I", "t", "r", 1.0,
+                           plan='[{"intent":"X","target":"y"}]')
+    row = mm.recent_semantic_memories(limit=1)[0]
+    assert row["plan"] == '[{"intent":"X","target":"y"}]'
+
+
+def test_old_schema_row_reads_plan_none(store):
+    mm = store._memory()
+    mm.add_semantic_memory("g", b"\x00\x00\x00\x00", "I", "t", "r", 1.0)
+    assert mm.recent_semantic_memories(limit=1)[0]["plan"] is None
+
+
+def test_remember_stores_plan_and_recall_plan_returns_it(store):
+    store.remember("open notepad create file folder", {"plan": _PLAN})
+    got = store.recall_plan("open notepad create file folder", min_similarity=0.1)
+    assert got == [
+        {"intent": "ApplicationLaunchIntent", "target": "notepad"},
+        {"intent": "GeneralizedOSIntent", "target": "type {{LAST_RESULT}}"},
+    ]
+
+
+def test_recall_plan_respects_the_higher_plan_floor(store):
+    # shares 3/4 tokens -> cosine 0.75: above default 0.35, below a 0.9 floor
+    store.remember("open notepad create file", {"plan": _PLAN})
+    assert store.retrieve("open notepad create folder", min_similarity=0.3)
+    assert store.recall_plan("open notepad create folder", min_similarity=0.9) is None
+
+
+def test_recall_plan_skips_rows_without_a_plan(store):
+    store.remember("open notepad create file folder", {"result": "done"})  # no plan
+    assert store.recall_plan("open notepad create file folder", min_similarity=0.1) is None
+
+
+def test_recall_plan_noop_when_disabled(tmp_path, monkeypatch):
+    monkeypatch.setenv("SENTINAL_SEMANTIC_MEMORY_ENABLED", "false")
+    mod = importlib.reload(sm)
+    monkeypatch.setattr(mod, "_model", lambda: _FakeModel())
+    assert mod.recall_plan("anything") is None
+    importlib.reload(sm)
+
+
+def test_format_plan_hint_is_advisory_and_capped(store):
+    out = store.format_plan_hint([{"intent": "X", "target": "y" * 400}] * 20)
+    assert out.startswith("[SIMILAR PAST PLAN]")
+    assert "ignore it" in out
+    assert len(out) <= 800 + len("... [hint truncated]")
+
+
+def test_format_plan_hint_empty_is_blank(store):
+    assert store.format_plan_hint([]) == ""

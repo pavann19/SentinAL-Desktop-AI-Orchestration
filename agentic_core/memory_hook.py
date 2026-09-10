@@ -125,6 +125,14 @@ class MemoryManager:
                     ts        REAL NOT NULL
                 )
             """)
+            # S6 semantic memory (increment 2): plan holds the JSON step-shape
+            # ([{intent, target}, ...]) of a SUCCESSFUL multi-step run, so the
+            # planner can be shown how a similar past goal was decomposed.
+            # NULL for single-step and failed runs, and for rows written by
+            # increment 1. Additive migration — same PRAGMA-first pattern.
+            sem_cols = {r[1] for r in self.cursor.execute("PRAGMA table_info(memory_semantic)").fetchall()}
+            if "plan" not in sem_cols:
+                self.cursor.execute("ALTER TABLE memory_semantic ADD COLUMN plan TEXT")
 
             self.conn.commit()
 
@@ -224,14 +232,16 @@ class MemoryManager:
     # ── Semantic Memory (S6 increment 1) ─────────────────────────────────────
 
     def add_semantic_memory(self, text: str, embedding_blob: bytes, intent: str | None,
-                            target: str | None, result: str | None, ts: float) -> None:
+                            target: str | None, result: str | None, ts: float,
+                            plan: str | None = None) -> None:
         """Stores one embedded interaction. embedding_blob is a raw float32
-        array (np.ndarray.tobytes())."""
+        array (np.ndarray.tobytes()). plan is a JSON string of the step-shape
+        for a successful multi-step run, else None (increment 2)."""
         with self._lock:
             self.cursor.execute(
-                """INSERT INTO memory_semantic (text, embedding, intent, target, result, ts)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                (text, embedding_blob, intent, target, result, ts)
+                """INSERT INTO memory_semantic (text, embedding, intent, target, result, ts, plan)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (text, embedding_blob, intent, target, result, ts, plan)
             )
             self.conn.commit()
 
@@ -240,14 +250,14 @@ class MemoryManager:
         scan so an old, large store can't make retrieval slow."""
         with self._lock:
             self.cursor.execute(
-                """SELECT text, embedding, intent, target, result, ts
+                """SELECT text, embedding, intent, target, result, ts, plan
                    FROM memory_semantic ORDER BY id DESC LIMIT ?""",
                 (limit,)
             )
             rows = self.cursor.fetchall()
         return [
             {"text": r[0], "embedding": r[1], "intent": r[2], "target": r[3],
-             "result": r[4], "ts": r[5]}
+             "result": r[4], "ts": r[5], "plan": r[6] if len(r) > 6 else None}
             for r in rows
         ]
 
