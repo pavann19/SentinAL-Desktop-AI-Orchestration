@@ -512,6 +512,50 @@ camera/mic (own governance section required, §10.3), not screenshots.
 
 ---
 
+## S8 — Skill-learning pipeline → procedural memory (S4 overlay now verified)
+Per `CONTAINMENT_ARCHITECTURE.md` §10.2/§10.4: observe → abstract →
+replay-validate in the containment overlay → register at T1 → monitor →
+demote. **Gate:** first learned skill promoted, monitored, demotable.
+Unblocked now that S4's live container overlay is verified (`1174e1a`).
+
+- [x] **S8-1 — typed-slot abstraction.** `1b2b7ed`,
+      `agentic_core/skill_abstraction.py` (pure, stdlib). `abstract_skill()`
+      takes ≥2 successful concrete runs that share a plan *shape* (intent +
+      dependency edges per node; targets ignored — deliberately looser than
+      `procedural_memory`'s literal fingerprint) and generalises the varying
+      target spans into typed slots: common prefix/suffix → frame, varying
+      middle → `{slot}`, type inferred (path/url/app/number/query/text),
+      records whether the value is recoverable from the prompt. Returns a
+      template `{fingerprint, skeleton[target_template], slots[],
+      postcondition_kind, origin:"learned", n_instances}`.
+      `fill_skeleton()` materialises it back to pipeline steps. Never raises.
+      9 tests.
+- [x] **S8-2 — learned-skill registry + lifecycle.** `1b2b7ed`,
+      `agentic_core/skill_registry.py` + `learned_skills` /
+      `learned_skill_events` tables + `config/skills.py`. Lifecycle
+      candidate → (validated) → active → demoted / retired. Invariants in
+      code: `origin` always "learned", `tier` always T1 (§10.2 step 4);
+      `activate()` refuses a skill not validated or below
+      `SKILL_CONFIDENCE_FLOOR` (0.6); a retired skill can't be activated;
+      every transition audit-logged. `register_candidate()` idempotent —
+      refreshes the recipe + instance count, never state/tier/confidence.
+      Inert data until S8-4. 11 tests. `validator.py`/`executor.py`/
+      `main.py` untouched.
+- [ ] **S8-3 — replay-validation gate.** Given a candidate skill, generate
+      2–3 held-out slot fillings and run each **through the verified S4
+      overlay** (the `node:20-slim` container path); `mark_validated()` with
+      the pass rate. Now buildable — the overlay is verified.
+- [ ] **S8-4 — promotion + planner use.** `activate()` a cleanly-validated
+      skill; `planner.plan_goal()` gains a skill-match check (mirror
+      `_recall_recipe`) behind `SENTINAL_LEARNED_SKILLS_ENABLED` (default
+      off), never for `autonomous=True`.
+- [ ] **S8-5 — monitoring → demotion.** `world_model.capability_health()`
+      (S7 Half B) over the skill's own outcomes; rolling success below
+      `confidence − SKILL_DEMOTE_DROP` → `demote()`; below a floor →
+      `retire()`. Audit-logged.
+
+---
+
 ## Cross-cutting / not gated on the S-sequence
 
 These don't block or get blocked by S4–S7 — they're independent, and worth
