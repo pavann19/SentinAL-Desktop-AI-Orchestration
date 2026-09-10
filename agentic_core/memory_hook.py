@@ -134,6 +134,26 @@ class MemoryManager:
             if "plan" not in sem_cols:
                 self.cursor.execute("ALTER TABLE memory_semantic ADD COLUMN plan TEXT")
 
+            # S6 procedural memory: a recipe is the STRUCTURE of a multi-step
+            # plan that has succeeded organically several times. When a new goal
+            # is a near-verbatim match, the planner replays the stored graph
+            # instead of calling the planning LLM. fingerprint is a hash of the
+            # canonical node structure; graph_json is GoalGraph.to_dict() reduced
+            # to structural fields. success_count promotes; a single failed
+            # replay retires the recipe (failure_count > 0).
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS memory_procedural (
+                    fingerprint     TEXT PRIMARY KEY,
+                    goal_text       TEXT NOT NULL,
+                    embedding       BLOB NOT NULL,
+                    graph_json      TEXT NOT NULL,
+                    success_count   INTEGER NOT NULL DEFAULT 0,
+                    failure_count   INTEGER NOT NULL DEFAULT 0,
+                    created_ts      REAL NOT NULL,
+                    last_success_ts REAL NOT NULL
+                )
+            """)
+
             self.conn.commit()
 
     # ── Scheduled Tasks / Reminders ───────────────────────────────────────────
@@ -258,6 +278,74 @@ class MemoryManager:
         return [
             {"text": r[0], "embedding": r[1], "intent": r[2], "target": r[3],
              "result": r[4], "ts": r[5], "plan": r[6] if len(r) > 6 else None}
+            for r in rows
+        ]
+
+    # ── Procedural Memory (S6) ──────────────────────────────────────────────
+
+    def upsert_procedural_recipe(self, fingerprint: str, goal_text: str,
+                                 embedding_blob: bytes, graph_json: str,
+                                 ts: float) -> None:
+        """Records one organic success for a plan structure. First sight
+        inserts with success_count=1; a repeat bumps the count and refreshes
+        goal_text / embedding / last_success_ts to the most recent phrasing."""
+        with self._lock:
+            self.cursor.execute(
+                """INSERT INTO memory_procedural
+                     (fingerprint, goal_text, embedding, graph_json,
+                      success_count, failure_count, created_ts, last_success_ts)
+                   VALUES (?, ?, ?, ?, 1, 0, ?, ?)
+                   ON CONFLICT(fingerprint) DO UPDATE SET
+                     success_count   = success_count + 1,
+                     goal_text       = excluded.goal_text,
+                     embedding       = excluded.embedding,
+                     graph_json      = excluded.graph_json,
+                     last_success_ts = excluded.last_success_ts""",
+                (fingerprint, goal_text, embedding_blob, graph_json, ts, ts)
+            )
+            self.conn.commit()
+
+    def bump_procedural_failure(self, fingerprint: str) -> None:
+        """A replay of this recipe then failed. One failure retires it — the
+        recall gate refuses any recipe with failure_count > 0 until fresh
+        organic successes would re-promote a (re-fingerprinted) structure."""
+        with self._lock:
+            self.cursor.execute(
+                "UPDATE memory_procedural SET failure_count = failure_count + 1 WHERE fingerprint = ?",
+                (fingerprint,)
+            )
+            self.conn.commit()
+
+    def get_procedural_recipe(self, fingerprint: str) -> dict | None:
+        with self._lock:
+            self.cursor.execute(
+                """SELECT fingerprint, goal_text, embedding, graph_json,
+                          success_count, failure_count, created_ts, last_success_ts
+                   FROM memory_procedural WHERE fingerprint = ?""",
+                (fingerprint,)
+            )
+            r = self.cursor.fetchone()
+        if not r:
+            return None
+        return {"fingerprint": r[0], "goal_text": r[1], "embedding": r[2],
+                "graph_json": r[3], "success_count": r[4], "failure_count": r[5],
+                "created_ts": r[6], "last_success_ts": r[7]}
+
+    def recent_procedural_recipes(self, limit: int = 2000) -> list:
+        """Most-recently-successful recipes first, for a brute-force similarity
+        scan at recall time."""
+        with self._lock:
+            self.cursor.execute(
+                """SELECT fingerprint, goal_text, embedding, graph_json,
+                          success_count, failure_count, created_ts, last_success_ts
+                   FROM memory_procedural ORDER BY last_success_ts DESC LIMIT ?""",
+                (limit,)
+            )
+            rows = self.cursor.fetchall()
+        return [
+            {"fingerprint": r[0], "goal_text": r[1], "embedding": r[2],
+             "graph_json": r[3], "success_count": r[4], "failure_count": r[5],
+             "created_ts": r[6], "last_success_ts": r[7]}
             for r in rows
         ]
 

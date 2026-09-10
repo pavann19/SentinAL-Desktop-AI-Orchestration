@@ -370,10 +370,13 @@ def split_multistep(query: str) -> list:
 
     return final_steps[:3]  # Max 3 steps
 
-def extract_intent(prompt: str) -> list:
+def extract_intent(prompt: str, autonomous: bool = False) -> list:
     """
     Uses the Privacy Router to select the correct LLM, then extracts an execution
     pipeline from the user prompt. Returns a list of validated intent dictionaries.
+
+    `autonomous` is forwarded to the planner so procedural memory never replays
+    a cached recipe for a background goal (S6).
     """
     # ── DEMO GHOST PROTOCOL (Fix 1.4: gated behind SENTINAL_DEBUG env var) ────────
     # Only active when SENTINAL_DEBUG=true in .env. Disabled in production.
@@ -442,7 +445,7 @@ def extract_intent(prompt: str) -> list:
         # into a dependency-aware DAG (GoalGraph) with data-chaining.
         if is_multistep_query(prompt):
             print(f"[AUDIT] Multi-Step Goal detected for: '{prompt}'. Engaging S5 Goal Graph Planner.")
-            goal_graph = planner.plan_goal(prompt)
+            goal_graph = planner.plan_goal(prompt, context={"autonomous": autonomous})
             pipeline_steps = goal_graph.to_pipeline()
             if pipeline_steps:
                 print(f"[AUDIT] S5 Planner generated DAG with {len(pipeline_steps)} steps.")
@@ -452,7 +455,7 @@ def extract_intent(prompt: str) -> list:
         queries = split_multistep(prompt)
         if len(queries) > 1:
             print(f"[AUDIT] Multi-Step Splitter fallback: Parsed {len(queries)} steps: {queries}")
-            goal_graph = planner.plan_goal(prompt)
+            goal_graph = planner.plan_goal(prompt, context={"autonomous": autonomous})
             pipeline_steps = goal_graph.to_pipeline()
             if pipeline_steps and len(pipeline_steps) > 1:
                 return pipeline_steps

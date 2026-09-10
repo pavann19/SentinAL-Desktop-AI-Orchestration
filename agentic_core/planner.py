@@ -128,6 +128,17 @@ def _deterministic_plan_fallback(prompt: str) -> GoalGraph:
     return graph
 
 
+def _recall_recipe(prompt: str, *, autonomous: bool = False):
+    """A stored GoalGraph from a near-verbatim, repeatedly-successful past goal,
+    or None. '' of the planning world: proceeds identically without it on any
+    failure or when procedural memory is off."""
+    try:
+        from agentic_core.procedural_memory import recall_recipe
+        return recall_recipe(prompt, autonomous=autonomous)
+    except Exception:
+        return None
+
+
 def _plan_hint(prompt: str) -> str:
     """Advisory step-shape from a very similar past successful goal, formatted
     for the planner prompt. '' when semantic memory is off, has no close match,
@@ -168,6 +179,19 @@ class GoalGraphPlanner:
             return graph
 
         _logger.info(f"[Planner] Multi-step goal detected. Engaging Goal Graph Planner for: '{prompt}'")
+
+        # S6 procedural memory: if this goal is a near-verbatim match for one
+        # that has succeeded organically several times, replay the stored graph
+        # and skip the planning LLM entirely. The replayed graph is still
+        # re-validated here (allowlist / step-count / cycle) inside
+        # recall_recipe(), and again per-step by validate_steps() downstream —
+        # a recipe is a plan shape, never an execution grant. No-op unless
+        # SENTINAL_PROCEDURAL_MEMORY_ENABLED, and never for an autonomous goal.
+        autonomous = bool((context or {}).get("autonomous", False))
+        recipe = _recall_recipe(prompt, autonomous=autonomous)
+        if recipe is not None:
+            _logger.info(f"[Planner] Procedural memory hit — replaying stored recipe ({len(recipe.nodes)} steps)")
+            return recipe
 
         try:
             llm = BrainConfig.get_routed_llm(prompt, "Planner")

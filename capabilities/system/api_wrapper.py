@@ -402,7 +402,7 @@ async def process_command(prompt: str, *, autonomous: bool = False,
         with traced_step("pipeline.process_command", prompt_len=len(prompt)):
             # ── STAGE 1: INTENT EXTRACTION ──
             with traced_step("extract_intent", prompt_len=len(prompt)):
-                steps = extract_intent(prompt)
+                steps = extract_intent(prompt, autonomous=autonomous)
             output["steps"] = steps
 
             if any(s.get("intent") == "UnknownIntent" for s in steps):
@@ -508,7 +508,9 @@ async def process_command(prompt: str, *, autonomous: bool = False,
                 output["results"] = goal_observed.get("results")
                 output["budget"] = goal_observed.get("budget")
                 output["snapshots"] = goal_observed.get("snapshots")
+                output["plan_source"] = _plan_source_of(graph)
                 _remember_interaction(prompt, output)
+                _record_procedural_outcome(prompt, graph, output)
                 return output
 
             # ── STAGE 2: VALIDATION ──
@@ -631,6 +633,36 @@ def _remember_interaction(prompt: str, output: dict) -> None:
             "result": output.get("response"),
             "plan": plan,
         })
+    except Exception:
+        pass
+
+
+def _plan_source_of(graph: Any) -> str:
+    """'procedural' if this graph was replayed from a stored recipe, else
+    'planner'. Surfaced on the response for telemetry/debugging."""
+    try:
+        from agentic_core.procedural_memory import plan_source_of
+        return plan_source_of(graph)
+    except Exception:
+        return "planner"
+
+
+def _record_procedural_outcome(prompt: str, graph: Any, output: dict) -> None:
+    """S6 procedural memory: a successful multi-step run reinforces its plan
+    structure (promoting it toward replay eligibility); a failed run that was
+    ITSELF a recipe replay retires that recipe. No-op unless
+    SENTINAL_PROCEDURAL_MEMORY_ENABLED; never raises."""
+    try:
+        from agentic_core.procedural_memory import (
+            record_failure,
+            record_success,
+            recipe_fingerprint_of,
+        )
+        execution = output.get("execution")
+        if execution == "Success":
+            record_success(prompt, graph.to_dict())
+        elif execution == "Failed" and output.get("plan_source") == "procedural":
+            record_failure(recipe_fingerprint_of(graph))
     except Exception:
         pass
 

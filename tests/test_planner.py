@@ -199,3 +199,58 @@ class TestSemanticPlanHint:
                    return_value=[{"intent": "HackIntent", "target": "x"}]):
             graph = planner.plan_goal("do a and do b")
         assert graph.nodes["step_1"].intent == "GeneralizedOSIntent"
+
+
+# ── S6 procedural memory: deterministic recipe replay ───────────────────────
+
+class TestProceduralReplay:
+    """recall_recipe() REPLACES the planner LLM when it returns a graph, and is
+    bypassed entirely for an autonomous goal."""
+
+    def test_recipe_hit_skips_the_planner_llm(self):
+        recipe = GoalGraph(goal_description="g")
+        recipe.add_node(GoalNode(step_id="step_1", intent="ApplicationLaunchIntent", target="notepad"))
+        recipe.add_node(GoalNode(step_id="step_2", intent="GeneralizedOSIntent",
+                                 target="type hi", depends_on=["step_1"]))
+        with patch("config.settings.BrainConfig.get_routed_llm") as get_llm, \
+             patch("agentic_core.procedural_memory.recall_recipe", return_value=recipe):
+            out = planner.plan_goal("open notepad and type hi")
+        assert out is recipe
+        get_llm.assert_not_called()
+
+    def test_no_recipe_falls_through_to_the_llm(self):
+        resp = MagicMock()
+        resp.content = '[{"step_id":"step_1","intent":"ApplicationLaunchIntent","target":"notepad","depends_on":[]}]'
+        llm = MagicMock()
+        llm.invoke.return_value = resp
+        with patch("config.settings.BrainConfig.get_routed_llm", return_value=llm) as get_llm, \
+             patch("agentic_core.procedural_memory.recall_recipe", return_value=None):
+            planner.plan_goal("open notepad and open calc")
+        get_llm.assert_called_once()
+
+    def test_autonomous_goal_passes_autonomous_true_to_recall(self):
+        seen = {}
+
+        def _spy(prompt, *, autonomous=False):
+            seen["autonomous"] = autonomous
+            return None
+
+        resp = MagicMock()
+        resp.content = '[{"step_id":"step_1","intent":"ApplicationLaunchIntent","target":"x","depends_on":[]}]'
+        llm = MagicMock()
+        llm.invoke.return_value = resp
+        with patch("config.settings.BrainConfig.get_routed_llm", return_value=llm), \
+             patch("agentic_core.procedural_memory.recall_recipe", side_effect=_spy):
+            planner.plan_goal("do a and do b", context={"autonomous": True})
+        assert seen["autonomous"] is True
+
+    def test_recall_raising_does_not_break_planning(self):
+        resp = MagicMock()
+        resp.content = '[{"step_id":"step_1","intent":"ApplicationLaunchIntent","target":"x","depends_on":[]}]'
+        llm = MagicMock()
+        llm.invoke.return_value = resp
+        with patch("config.settings.BrainConfig.get_routed_llm", return_value=llm), \
+             patch("agentic_core.procedural_memory.recall_recipe", side_effect=RuntimeError("boom")):
+            graph = planner.plan_goal("do a and do b")
+        assert isinstance(graph, GoalGraph)
+        assert len(graph.nodes) >= 1

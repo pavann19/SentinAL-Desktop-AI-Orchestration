@@ -286,3 +286,51 @@ class TestDirectHumanConfirmChannel:
             result = await process_command("delete confirm_test_file.txt", autonomous=True)
         assert result["execution"] == "Blocked"
         mock_exec.assert_not_called()
+
+
+class TestProceduralOutcomeRecording:
+    """_record_procedural_outcome(): a successful multi-step run reinforces its
+    structure; a failed run that was itself a recipe replay retires it."""
+
+    def _graph(self, plan_source=None):
+        from agentic_core.goal_graph import GoalGraph, GoalNode
+        g = GoalGraph(goal_description="g")
+        n1 = GoalNode(step_id="step_1", intent="ApplicationLaunchIntent", target="notepad")
+        if plan_source:
+            n1.extra["_plan_source"] = plan_source
+            n1.extra["_recipe_fp"] = "deadbeef"
+        g.add_node(n1)
+        g.add_node(GoalNode(step_id="step_2", intent="GeneralizedOSIntent",
+                            target="type hi", depends_on=["step_1"]))
+        return g
+
+    def test_success_records_and_failed_replay_retires(self):
+        from capabilities.system.api_wrapper import _record_procedural_outcome
+        with patch("agentic_core.procedural_memory.record_success") as rs, \
+             patch("agentic_core.procedural_memory.record_failure") as rf:
+            _record_procedural_outcome("open notepad and type hi", self._graph(),
+                                       {"execution": "Success"})
+            rs.assert_called_once()
+            rf.assert_not_called()
+
+        with patch("agentic_core.procedural_memory.record_success") as rs, \
+             patch("agentic_core.procedural_memory.record_failure") as rf:
+            _record_procedural_outcome("open notepad and type hi",
+                                       self._graph(plan_source="procedural"),
+                                       {"execution": "Failed", "plan_source": "procedural"})
+            rs.assert_not_called()
+            rf.assert_called_once_with("deadbeef")
+
+    def test_failed_planner_sourced_run_records_nothing(self):
+        from capabilities.system.api_wrapper import _record_procedural_outcome
+        with patch("agentic_core.procedural_memory.record_success") as rs, \
+             patch("agentic_core.procedural_memory.record_failure") as rf:
+            _record_procedural_outcome("x", self._graph(),
+                                       {"execution": "Failed", "plan_source": "planner"})
+            rs.assert_not_called()
+            rf.assert_not_called()
+
+    def test_plan_source_of_reads_provenance(self):
+        from capabilities.system.api_wrapper import _plan_source_of
+        assert _plan_source_of(self._graph(plan_source="procedural")) == "procedural"
+        assert _plan_source_of(self._graph()) == "planner"
