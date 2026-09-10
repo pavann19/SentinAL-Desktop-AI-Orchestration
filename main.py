@@ -145,6 +145,35 @@ async def lifespan(app: FastAPI):
         print(f"[RELIABILITY ERROR] Process supervisor failed to start: {e}")
         stop_supervisor = None
 
+    # ── EVENT BUS (S6 increment 1 — time triggers, notify-only) ──
+    # Fires the scheduled_tasks.due_at reminders SchedulerIntent persists but
+    # its handler openly says it can't yet deliver. Like on_watch_resolved
+    # above, on_reminder_due ONLY notifies — it does not run the pipeline or
+    # take an action. A trigger that executes autonomously is a separate,
+    # gated increment.
+    async def on_reminder_due(task: dict):
+        msg = {
+            "type": "reminder_due",
+            "task_id": task.get("task_id"),
+            "description": task.get("description"),
+            "due_at": task.get("due_at"),
+            "timestamp": time.time(),
+        }
+        for client in list(active_telemetry_clients):
+            if client.client_state == WebSocketState.CONNECTED:
+                try:
+                    await safe_send_json(client, msg)
+                except Exception:
+                    active_telemetry_clients.discard(client)
+
+    try:
+        from agentic_core.event_bus import start_event_bus, stop_event_bus
+        start_event_bus(on_event=on_reminder_due)
+        print("[SRE] Event bus started (notify-only).")
+    except Exception as e:
+        print(f"[RELIABILITY ERROR] Event bus failed to start: {e}")
+        stop_event_bus = None
+
     def on_stt_wake():
         conversation_manager.start_session()
         wake_text = wake_engine.get_wake_response(state_manager.get_snapshot())
@@ -233,6 +262,12 @@ async def lifespan(app: FastAPI):
             print("[SRE] Process supervisor stopped.")
     except Exception as e:
         print(f"[RELIABILITY ERROR] Supervisor shutdown fault: {e}")
+    try:
+        if stop_event_bus is not None:
+            await stop_event_bus()
+            print("[SRE] Event bus stopped.")
+    except Exception as e:
+        print(f"[RELIABILITY ERROR] Event bus shutdown fault: {e}")
     try:
         stop_listening()
         from agentic_core.executor import memory

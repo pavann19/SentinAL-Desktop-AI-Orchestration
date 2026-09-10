@@ -89,6 +89,15 @@ class MemoryManager:
                     completed_at REAL
                 )
             """)
+            # S6 event bus (increment 1): notified_at records when the resident
+            # event-bus loop fired a "reminder due" notification for a row, so a
+            # due reminder is announced exactly once, not every poll tick.
+            # Additive migration — SQLite has no ADD COLUMN IF NOT EXISTS, so
+            # check PRAGMA first (older DBs created before this column exists).
+            cols = {r[1] for r in self.cursor.execute("PRAGMA table_info(scheduled_tasks)").fetchall()}
+            if "notified_at" not in cols:
+                self.cursor.execute("ALTER TABLE scheduled_tasks ADD COLUMN notified_at REAL")
+
             self.conn.commit()
 
     # ── Scheduled Tasks / Reminders ───────────────────────────────────────────
@@ -147,6 +156,37 @@ class MemoryManager:
                 """UPDATE scheduled_tasks SET completed = 1, completed_at = ?
                    WHERE task_id = ?""",
                 (completed_at, task_id)
+            )
+            self.conn.commit()
+
+    def get_due_scheduled_tasks(self, now: float) -> list:
+        """Rows whose due time has passed and that have NOT yet been notified —
+        the S6 event bus's per-tick work list. A completed row, an undated row,
+        and an already-notified row are all excluded."""
+        with self._lock:
+            self.cursor.execute(
+                """SELECT task_id, description, due_at, created_at
+                   FROM scheduled_tasks
+                   WHERE completed = 0
+                     AND due_at IS NOT NULL
+                     AND due_at <= ?
+                     AND notified_at IS NULL
+                   ORDER BY due_at, created_at""",
+                (now,)
+            )
+            rows = self.cursor.fetchall()
+        return [
+            {"task_id": r[0], "description": r[1], "due_at": r[2], "created_at": r[3]}
+            for r in rows
+        ]
+
+    def mark_scheduled_task_notified(self, task_id: str, notified_at: float) -> None:
+        """Stamps a row as announced so the event bus does not re-fire it. Does
+        not mark it completed — the user still has to act on the reminder."""
+        with self._lock:
+            self.cursor.execute(
+                "UPDATE scheduled_tasks SET notified_at = ? WHERE task_id = ?",
+                (notified_at, task_id)
             )
             self.conn.commit()
 
