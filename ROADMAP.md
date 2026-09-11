@@ -651,11 +651,22 @@ picking up opportunistically:
       with no flag every existing number is byte-identical. `ManifestError`
       on any structural problem (unknown kind, missing field, duplicate id).
       20 tests. `validator.py`/`executor.py`/`main.py`/`benchmarks/tasks.py`
-      untouched. **Still open:** this closes the *self-authored* half — a
-      third party can now add/audit tasks without Python — but the shipped
-      manifest is example content (`source: "example:*"`); populating
-      `third_party.json` with a genuine external corpus, and the
-      *single-Windows-machine* half, remain.
+      untouched. This closes the *self-authored* half — a third party can now
+      add/audit tasks without Python.
+      **`third_party.json` populated** — `039836a`. One genuinely external
+      task sourced from `microsoft/WindowsAgentArena`'s published evaluation
+      examples (`evaluation_examples_windows/examples/notepad`), cited
+      verbatim, verified against the real `%USERPROFILE%/Documents/draft.txt`
+      (loader gained `%ENV_VAR%` path expansion) with a cleanup teardown.
+      **Honest finding from the survey:** WindowsAgentArena's and OSWorld's
+      published task sets mostly assume a capability surface broader than
+      SentinAL's current intents (in-app editing, settings mutation,
+      multi-file reorganisation, browser-internal state) — most tasks
+      surveyed weren't fairly testable against what SentinAL can actually
+      attempt, so only the one that was got added rather than force-fitting a
+      larger set with mismatched verification. More lands the same way as
+      capabilities grow. The *single-Windows-machine* half of the original
+      limitation remains.
 - [x] **Repo hygiene** — `.gitignore` now covers the whole `data/` runtime
       directory instead of three incomplete per-file entries; stray
       AI-authored planning files (`Gemini_plans/`,
