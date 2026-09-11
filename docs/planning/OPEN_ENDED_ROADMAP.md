@@ -26,18 +26,46 @@ its own allowlist, or rewrite its own promotion criteria.
 
 ---
 
-## Current position (as of S8-2)
+## Current position (as of S8-5 / S9-4)
 
-| Axis | Level | Where |
+| Axis | Level | Where | Session hours |
+|---|---|---|---|
+| A1 Temporal horizon | **L1** | multi-step DAG plans (S5); S10 (standing goals) scoped, not built | 0h — scope only |
+| A2 Capability genesis | **L1→L2** | learned recipes (S6); typed-slot skills, registry, replay-validation, matcher, monitor all built (S8-1..5) | **~0h45m** |
+| A3 Reasoning depth | **L1** | classify → DAG plan → execute → critic replan (S5) | 0h |
+| A4 Cognitive architecture | **L1** | single planner + critic split | 0h |
+| A5 World model | **L1→L2** | process/window snapshot + change detection + planner context (S7 A1–A3); no project inference | **~0h25m** |
+| A6 Value alignment | **L0** | literal instruction-following; risk tiers + HITL for T2/T3 | 0h |
+| A7 Assurance | **L1** | unit + property/fuzz tests; drift detection (S7 Half B) + skill demotion (S8-5) + shadow-eval/fixed-criteria review (S9) now feed it; no machine-checked proofs | **~0h20m** |
+| A8 Identity & rapport | **L1** | semantic memory (S6); no persistent persona or relationship model | 0h |
+
+## Session time log
+
+Derived from `git log` commit timestamps (the most honest source available —
+not a stopwatch). This **undercounts** true effort: gaps *before* a block's
+first commit (thinking, drafting, multiple tool calls) aren't visible, and
+two long idle gaps (5h23m, 8h50m — clearly breaks, not work) are excluded
+from the totals below.
+
+| Block | Elapsed | Axis / track |
 |---|---|---|
-| A1 Temporal horizon | **L1** | multi-step DAG plans (S5); no cross-session goals yet |
-| A2 Capability genesis | **L1→L2** | learned recipes (S6); typed-slot skills in progress (S8-1/2) |
-| A3 Reasoning depth | **L1** | classify → DAG plan → execute → critic replan (S5) |
-| A4 Cognitive architecture | **L1** | single planner + critic split |
-| A5 World model | **L1→L2** | process/window snapshot + change detection (S7); no project inference |
-| A6 Value alignment | **L0** | literal instruction-following; risk tiers + HITL for T2/T3 |
-| A7 Assurance | **L1** | unit + property/fuzz tests; no machine-checked proofs |
-| A8 Identity & rapport | **L1** | semantic memory (S6); no persistent persona or relationship model |
+| S4 completion (broker, budgets, Windows Sandbox, snapshot/restore, live-verify script + result) | ~1h50m | S-track (foundational, pre-axis) |
+| S6 (event bus incr. 1–2, P2-4 contracts, P2-5 confirm channel, semantic + procedural memory) | ~1h35m | S-track |
+| S7 A1 + A2 (env sampler, read API) | ~11m | **A5** |
+| S7 A3 (planner context wiring) | ~4m | **A5** |
+| S7 Half B (drift detection) | ~7m | **A7** (monitoring signal) |
+| External benchmark manifest format + `by_source` scoring | ~7m | S-track |
+| S8-1 + S8-2 (typed-slot abstraction, skill registry) | ~9m | **A2** |
+| `OPEN_ENDED_ROADMAP.md` authored + S9/Beyond-S9 sections added to `ROADMAP.md` | ~16m | meta / planning |
+| S8-3..5 + S9-1..4 combined (replay-validation, matcher, monitor, versioned change store, proposer, shadow-eval, review) — not separable from commit timestamps alone | ~13m | **A2** (S8 share) + **A7** (S9 share, self-tuning under fixed criteria) |
+| `third_party.json` real external task + `%ENV_VAR%` loader support | ~0m (same commit burst) | S-track |
+| Repo hygiene (`docs/`, `scripts/` reorg) | ~12m | meta |
+
+**Total active this session (breaks excluded): ~4h32m.** Roughly 1h30m of
+that is directly attributable to an A-axis (A2 ~45m, A5 ~25m, A7 ~20m,
+speculatively split further above); the remainder is S1–S9 foundational work
+and planning/meta, which this doc explicitly treats as a separate,
+already-milestone-tracked layer beneath the axes.
 
 ---
 
