@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "waa_notepad_draft",
+    "source": "windows-agent-arena:notepad/366de66e-cbae-4d72-b042-26390db2b145-WOS (microsoft/WindowsAgentArena, evaluation_examples_windows/examples/notepad)",
+    "category": "external_app_and_file",
+    "prompt": "Please open Notepad, create a new file named \"draft.txt\", type \"This is a draft.\", and save it to the Documents folder.",
+    "verify": {"kind": "file_contains", "path": "%USERPROFILE%/Documents/draft.txt", "text": "This is a draft."},
+    "teardown": {"kind": "delete_path", "path": "%USERPROFILE%/Documents/draft.txt"},
+    "settle_seconds": 12.0,
+    "tags": ["gui", "filesystem", "multi-step"]
+  }
+]

@@ -27,7 +27,11 @@ success report.
 | `verify_adapted` | no | set `true` when the originating benchmark's own checker was **not** portable and one of the kinds below was substituted — recorded in the task notes, not hidden |
 
 `{scratch}` anywhere in a path is replaced with a fresh per-run temp directory
-(same one the built-in file tasks use; cleaned up after the run).
+(same one the built-in file tasks use; cleaned up after the run). A
+`%ENV_VAR%` in a path (e.g. `%USERPROFILE%\Documents`) is expanded the normal
+Windows way — use this when a source task's own prompt names a real user
+folder rather than a throwaway one; pair it with a `teardown: delete_path` so
+the task removes only what it created.
 
 ## `verify` kinds
 

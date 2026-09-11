@@ -193,9 +193,34 @@ def test_shipped_example_manifest_loads_and_is_well_formed():
     assert all(getattr(t, "source", "").startswith("example:") for t in tasks)
 
 
-def test_shipped_third_party_manifest_is_empty_list():
+def test_shipped_third_party_manifest_loads_real_tasks():
     p = os.path.join(REPO, "benchmarks", "external", "manifests", "third_party.json")
-    assert el.load_external_tasks(p) == []
+    tasks = el.load_external_tasks(p)
+    assert len(tasks) >= 1
+    for t in tasks:
+        # not example content, and cites a real, checkable origin
+        assert not t.source.startswith("example:")
+        assert "/" in t.source or "github" in t.source.lower()
+        assert "%USERPROFILE%" not in t.prompt  # only in verify/teardown paths
+
+
+def test_resolve_expands_env_vars(monkeypatch):
+    monkeypatch.setenv("SENTINAL_TEST_VAR", "C:/somewhere")
+    assert el._resolve("%SENTINAL_TEST_VAR%/file.txt") == "C:/somewhere/file.txt"
+    assert el._resolve("plain/path") == "plain/path"
+
+
+def test_env_var_path_is_usable_in_a_real_verify(tmp_path):
+    import os as _os
+    monkeypatch_dir = str(tmp_path)
+    _os.environ["SENTINAL_TEST_VAR"] = monkeypatch_dir
+    try:
+        t = el.load_external_tasks(_write(tmp_path, [
+            {"id": "e1", "source": "s", "category": "c", "prompt": "x",
+             "verify": {"kind": "file_absent", "path": "%SENTINAL_TEST_VAR%/nope.txt"}}]))[0]
+        assert t.verify({}) is True  # the expanded path genuinely doesn't exist
+    finally:
+        _os.environ.pop("SENTINAL_TEST_VAR", None)
 
 
 # ── run_benchmark.py wiring ──────────────────────────────────────────────

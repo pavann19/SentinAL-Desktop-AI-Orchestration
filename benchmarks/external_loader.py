@@ -57,8 +57,11 @@ class ManifestError(ValueError):
 # ── {scratch} binding ─────────────────────────────────────────────────────────
 
 def _resolve(value: Any) -> Any:
-    if isinstance(value, str) and "{scratch}" in value:
-        return value.replace("{scratch}", _scratch_dir())
+    if isinstance(value, str):
+        if "{scratch}" in value:
+            value = value.replace("{scratch}", _scratch_dir())
+        if "%" in value:
+            value = os.path.expandvars(value)  # e.g. %USERPROFILE%\Documents
     return value
 
 
