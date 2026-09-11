@@ -613,7 +613,7 @@ tier, the allowlist, the promotion criteria themselves. The cognition plane
 
 ## Beyond S9 — forward phases (scoped, NOT started)
 
-These are captured for direction only. See `OPEN_ENDED_ROADMAP.md` for the
+These are captured for direction only. See `docs/planning/OPEN_ENDED_ROADMAP.md` for the
 same ground reframed as open-ended capability **axes** (A1–A8) with maturity
 ladders. **Do not implement any of S10–S16 without an explicit decision** —
 they each introduce a new risk category and each has a hard prerequisite,
