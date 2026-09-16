@@ -8,7 +8,6 @@ from __future__ import annotations
 import logging
 import os
 import re
-from typing import Any
 
 from agentic_core.goal_graph import GoalGraph, GoalNode
 from config.constants import ALLOWLIST_INTENTS
@@ -61,9 +60,7 @@ def is_multistep_query(prompt: str) -> bool:
                 words = part.split()
                 if not words:
                     continue
-                if any(part.startswith(v) or (len(words) > 1 and words[0] in _ACTION_VERBS) for v in _ACTION_VERBS):
-                    action_parts_count += 1
-                elif len(words) >= 2:
+                if any(part.startswith(v) or (len(words) > 1 and words[0] in _ACTION_VERBS) for v in _ACTION_VERBS) or len(words) >= 2:
                     action_parts_count += 1
 
             if action_parts_count >= 2:

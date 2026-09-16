@@ -76,8 +76,8 @@ def _foreground_window() -> tuple[str, str]:
         title = win32gui.GetWindowText(hwnd) or ""
         app = ""
         try:
-            import win32process  # type: ignore
             import psutil  # type: ignore
+            import win32process  # type: ignore
             _, pid = win32process.GetWindowThreadProcessId(hwnd)
             if pid:
                 app = psutil.Process(pid).name()
@@ -169,8 +169,10 @@ def format_for_prompt(state: dict | None = None, *, max_apps: int = 12) -> str:
     title = (st.get("active_title") or "")[:80]
     apps = [a for a in st.get("open_apps", []) if a][:max_apps]
     lines = [
-        "[CURRENT ENVIRONMENT] Advisory only — use it to resolve references "
-        "like 'this window' / 'close it'; ignore it if the goal is unrelated.",
+        (
+            "[CURRENT ENVIRONMENT] Advisory only — use it to resolve references "
+            "like 'this window' / 'close it'; ignore it if the goal is unrelated."
+        ),
     ]
     if active:
         lines.append(f"- foreground: {active}" + (f" ({title})" if title else ""))

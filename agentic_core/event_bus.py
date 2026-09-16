@@ -82,12 +82,9 @@ async def event_bus_loop(on_event=None, memory: MemoryManager | None = None,
     if not ENABLED:
         _logger.info("Event bus disabled (SENTINAL_EVENT_BUS_ENABLED=false) — loop idle.")
         while True:
-            try:
-                # S7 world model still samples even with the reminder sweep off.
-                await asyncio.to_thread(_env_sample)
-                await asyncio.sleep(tick)
-            except asyncio.CancelledError:
-                raise
+            # S7 world model still samples even with the reminder sweep off.
+            await asyncio.to_thread(_env_sample)
+            await asyncio.sleep(tick)
 
     _logger.info(f"Event bus started (every {tick}s, notify-only)")
 

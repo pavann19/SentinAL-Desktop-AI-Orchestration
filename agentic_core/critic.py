@@ -6,17 +6,15 @@
 from __future__ import annotations
 
 import logging
-import os
 from dataclasses import dataclass
-from typing import Any
 
 from agentic_core.executor import (
+    _CANCELLATION_MESSAGE,
     FAILURE_CATEGORY_CANCELLED,
     FAILURE_CATEGORY_PIPELINE_ERROR,
     FAILURE_CATEGORY_POSTCONDITION_MISMATCH,
     FAILURE_CATEGORY_SUCCESS,
     MAX_REPLANS,
-    _CANCELLATION_MESSAGE,
 )
 from agentic_core.goal_graph import GoalNode
 from capabilities.system.postcondition_observer import Observation
@@ -80,21 +78,20 @@ class ResidentCritic:
             )
 
         # 3. Check postcondition observation
-        if observation is not None:
-            if not observation.verified and observation.tier_used != "none":
-                return CriticVerdict(
-                    approved=False,
-                    needs_replan=True,
-                    failure_category=FAILURE_CATEGORY_POSTCONDITION_MISMATCH,
-                    reason=(
-                        f"Postcondition mismatch on tier '{observation.tier_used}': "
-                        f"{observation.detail}"
-                    ),
-                    feedback=(
-                        f"Postcondition check failed on tier '{observation.tier_used}'. "
-                        f"Detail: {observation.detail}. Target state was not achieved."
-                    ),
-                )
+        if observation is not None and not observation.verified and observation.tier_used != "none":
+            return CriticVerdict(
+                approved=False,
+                needs_replan=True,
+                failure_category=FAILURE_CATEGORY_POSTCONDITION_MISMATCH,
+                reason=(
+                    f"Postcondition mismatch on tier '{observation.tier_used}': "
+                    f"{observation.detail}"
+                ),
+                feedback=(
+                    f"Postcondition check failed on tier '{observation.tier_used}'. "
+                    f"Detail: {observation.detail}. Target state was not achieved."
+                ),
+            )
 
         # 4. Success / Verified
         detail = observation.detail if observation else "Execution reported success with no errors."

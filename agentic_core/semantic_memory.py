@@ -189,8 +189,10 @@ def format_plan_hint(plan: list[dict]) -> str:
     if not plan:
         return ""
     lines = [
-        "[SIMILAR PAST PLAN] A comparable past goal was decomposed as below. "
-        "Reuse this structure only if it fits the current goal; otherwise ignore it.",
+        (
+            "[SIMILAR PAST PLAN] A comparable past goal was decomposed as below. "
+            "Reuse this structure only if it fits the current goal; otherwise ignore it."
+        ),
     ]
     for i, s in enumerate(plan[:10], 1):
         if not isinstance(s, dict):

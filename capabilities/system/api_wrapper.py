@@ -685,9 +685,9 @@ def _record_procedural_outcome(prompt: str, graph: Any, output: dict) -> None:
     SENTINAL_PROCEDURAL_MEMORY_ENABLED; never raises."""
     try:
         from agentic_core.procedural_memory import (
+            recipe_fingerprint_of,
             record_failure,
             record_success,
-            recipe_fingerprint_of,
         )
         execution = output.get("execution")
         if execution == "Success":
@@ -849,7 +849,7 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
 
         # ── EXECUTION & OBSERVATION PASS ──────────────────────────────────────
         node.status = "running"
-        result_str, snapshot_diff, step_obs = _run_and_observe([resolved_step], cancel_event)
+        result_str, _snapshot_diff, step_obs = _run_and_observe([resolved_step], cancel_event)
         budget.charge_action()
         observation = None
         if step_obs:
@@ -891,7 +891,7 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
             # (idempotent for a path already snapshotted).
             capture(plan_snapshot, _paths_for_step(resolved_step))
 
-            result_str, snapshot_diff, step_obs = _run_and_observe([resolved_step], cancel_event)
+            result_str, _snapshot_diff, step_obs = _run_and_observe([resolved_step], cancel_event)
             budget.charge_action()
             observation = None
             if step_obs:

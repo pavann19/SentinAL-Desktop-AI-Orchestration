@@ -3,11 +3,14 @@ from __future__ import annotations
 # processor.py
 # Intent Extraction Layer for SentinAL
 # Converts natural language into a JSON array of system actions.
-
 import json
 import logging
 import os
 import re
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from agentic_core.goal_graph import GoalGraph
 
 from agentic_core.capability_registry import registry
 from agentic_core.memory_hook import MemoryManager
@@ -421,7 +424,6 @@ def extract_intent(prompt: str, autonomous: bool = False) -> list:
         return fast_path
 
     try:
-        from agentic_core.goal_graph import GoalGraph, GoalNode
         from agentic_core.planner import is_multistep_query, planner
         from agentic_core.router import router
         
@@ -714,7 +716,7 @@ def extract_goal_graph(prompt: str) -> GoalGraph:
     for a user prompt. Single-step requests return a single-node graph,
     while multi-step requests return a decomposed DAG.
     """
-    from agentic_core.goal_graph import GoalGraph, GoalNode
+    from agentic_core.goal_graph import GoalGraph
     from agentic_core.planner import is_multistep_query, planner
 
     if is_multistep_query(prompt):

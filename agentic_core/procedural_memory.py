@@ -151,8 +151,8 @@ def _revalidate(graph):
     still allowlisted, step count within bound, no cycle. Returns the graph or
     None."""
     try:
-        from config.constants import ALLOWLIST_INTENTS
         from agentic_core.planner import MAX_PLAN_STEPS
+        from config.constants import ALLOWLIST_INTENTS
     except Exception:
         return None
     if not graph.nodes or len(graph.nodes) > MAX_PLAN_STEPS:
