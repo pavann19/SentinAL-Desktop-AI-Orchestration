@@ -265,9 +265,10 @@ def _run_install(cmd: list[str], label: str, cwd: str | None = None, script_body
             start_new_session=True
         )
 
+        watch_id = None
         try:
             from agentic_core.process_supervisor import register_watch
-            register_watch(
+            watch_id = register_watch(
                 label="dependency_install",
                 sentinel_path=sentinel_path,
                 pid=proc.pid,
@@ -278,9 +279,10 @@ def _run_install(cmd: list[str], label: str, cwd: str | None = None, script_body
 
         # Small wait to let the window open before the executor moves on
         time.sleep(2.0)
+        task_note = f"\nTask id: {watch_id} — poll it with process_supervisor.get_task_status()." if watch_id else ""
         return (
             f"✓ Launched visible terminal for: {label}\n"
-            f"Watch the PowerShell window for real-time progress."
+            f"Watch the PowerShell window for real-time progress.{task_note}"
         )
     except FileNotFoundError:
         # Fallback: powershell not found, try cmd. Not supervised — cmd has no

@@ -967,6 +967,40 @@ class MemoryManager:
             "status": row[6], "resolved_at": row[7], "detail": row[8],
         }
 
+    def list_recent_process_watches(self, limit: int = 50) -> list:
+        """Every pending watch (oldest first) followed by the most recently
+        resolved ones, newest first, capped at `limit` total. Background-task
+        polling surface: a caller wants 'what's running' before 'what finished
+        a while ago'."""
+        with self._lock:
+            self.cursor.execute(
+                """SELECT watch_id, label, sentinel_path, pid, expected_state,
+                          registered_at, status, resolved_at, detail
+                   FROM process_watches WHERE status = 'pending'
+                   ORDER BY registered_at"""
+            )
+            pending = self.cursor.fetchall()
+            remaining = max(0, limit - len(pending))
+            resolved = []
+            if remaining:
+                self.cursor.execute(
+                    """SELECT watch_id, label, sentinel_path, pid, expected_state,
+                              registered_at, status, resolved_at, detail
+                       FROM process_watches WHERE status != 'pending'
+                       ORDER BY resolved_at DESC LIMIT ?""",
+                    (remaining,)
+                )
+                resolved = self.cursor.fetchall()
+        rows = list(pending[:limit]) + list(resolved)
+        return [
+            {
+                "watch_id": r[0], "label": r[1], "sentinel_path": r[2],
+                "pid": r[3], "expected_state": r[4], "registered_at": r[5],
+                "status": r[6], "resolved_at": r[7], "detail": r[8],
+            }
+            for r in rows
+        ]
+
     def purge_resolved_watches(self, older_than_epoch: float) -> int:
         """Deletes resolved watches older than the given epoch. Returns the count
         removed. Keeps the table from growing without bound across sessions."""

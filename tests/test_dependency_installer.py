@@ -299,3 +299,31 @@ class TestRunInstallFallback:
         launch_cmd = mock_popen.call_args[0][0]
         assert "-File" not in launch_cmd
         assert "-Command" in launch_cmd
+
+
+class TestTaskIdSurfaced:
+    """S7-adjacent background-task-monitoring: the watch_id register_watch()
+    returns must reach the caller, not just live inside process_supervisor."""
+
+    @patch("agentic_core.process_supervisor.register_watch")
+    @patch("time.sleep")
+    @patch("subprocess.Popen")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.makedirs")
+    def test_watch_id_appears_in_result(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register):
+        mock_popen.return_value = MagicMock(pid=4242)
+        mock_register.return_value = "abc123watchid"
+        result = pip_install("requests")
+        assert "abc123watchid" in result
+
+    @patch("agentic_core.process_supervisor.register_watch")
+    @patch("time.sleep")
+    @patch("subprocess.Popen")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.makedirs")
+    def test_no_task_note_when_register_watch_fails(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register):
+        mock_popen.return_value = MagicMock(pid=4242)
+        mock_register.side_effect = RuntimeError("db down")
+        result = pip_install("requests")
+        assert "Launched visible terminal" in result
+        assert "Task id" not in result

@@ -206,3 +206,38 @@ class TestGenerateAndRunSandboxPath:
         result = generate_and_run("set up a project", self._mock_llm('Write-Host "hi"'))
         assert mock_popen.call_count == 2                # sandbox attempt, then host
         assert "directly on" in result and "full access" in result
+
+
+class TestTaskIdSurfaced:
+    """Background-task-monitoring: the watch_id register_watch() returns must
+    reach the caller for both the sandboxed and host-fallback launch paths."""
+
+    def _mock_llm(self, script_text):
+        llm = MagicMock()
+        llm.invoke.return_value = MagicMock(content=script_text)
+        return llm
+
+    @patch("agentic_core.process_supervisor.register_watch")
+    @patch("capabilities.developer.codeact_engine._sandbox_available", return_value=True)
+    @patch("time.sleep")
+    @patch("subprocess.Popen")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.makedirs")
+    def test_watch_id_in_sandbox_result(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_sb, mock_rw):
+        mock_popen.return_value = MagicMock(pid=1234)
+        mock_rw.return_value = "sandbox-watch-id"
+        result = generate_and_run("set up a react project with npm", self._mock_llm(
+            'Write-Host "=== SentinAL CodeAct: Starting mission ==="'))
+        assert "sandbox-watch-id" in result
+
+    @patch("capabilities.developer.codeact_engine._sandbox_available", return_value=False)
+    @patch("agentic_core.process_supervisor.register_watch")
+    @patch("time.sleep")
+    @patch("subprocess.Popen")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.makedirs")
+    def test_watch_id_in_host_result(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_rw, mock_sb):
+        mock_popen.return_value = MagicMock(pid=5678)
+        mock_rw.return_value = "host-watch-id"
+        result = generate_and_run("do a small thing", self._mock_llm('Write-Host "hi"'))
+        assert "host-watch-id" in result

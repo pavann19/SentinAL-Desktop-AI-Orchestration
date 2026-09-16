@@ -286,9 +286,10 @@ def generate_and_run(prompt: str, llm) -> str:
                 creationflags=subprocess.CREATE_NEW_CONSOLE,
                 start_new_session=True,
             )
+            watch_id = None
             try:
                 from agentic_core.process_supervisor import register_watch
-                register_watch(
+                watch_id = register_watch(
                     label="codeact",
                     sentinel_path=host_sentinel_path,
                     pid=proc.pid,
@@ -304,11 +305,12 @@ def generate_and_run(prompt: str, llm) -> str:
                 "will fail inside it — that's a containment limit, not a bug."
                 if "winget" in script.lower() else ""
             )
+            task_note = f" Task id: {watch_id}." if watch_id else ""
             return (
                 "I've started your request inside an isolated Windows Sandbox. It has its own "
                 f"throwaway copy of Windows; nothing it does can touch your machine except the "
                 f"one shared folder ({run_dir}). Close the Sandbox window when it's done — "
-                f"everything else in it is discarded.{winget_note}"
+                f"everything else in it is discarded.{winget_note}{task_note}"
             )
         except Exception as e:
             _logger.error(f"[CodeAct] Sandbox launch failed ({e}); falling back to host execution.")
@@ -325,9 +327,10 @@ def generate_and_run(prompt: str, llm) -> str:
             creationflags=subprocess.CREATE_NEW_CONSOLE,
             start_new_session=True,
         )
+        watch_id = None
         try:
             from agentic_core.process_supervisor import register_watch
-            register_watch(
+            watch_id = register_watch(
                 label="codeact",
                 sentinel_path=host_sentinel_path,
                 pid=proc.pid,
@@ -338,10 +341,11 @@ def generate_and_run(prompt: str, llm) -> str:
 
         time.sleep(1.5)
         print("[CodeAct] Visible host terminal launched (UNSANDBOXED).")
+        task_note = f" Task id: {watch_id}." if watch_id else ""
         return (
             "I've opened a terminal window and started executing your request. "
             "Windows Sandbox isn't available right now, so this is running directly on "
-            "your machine with full access to your files — watch the PowerShell window."
+            f"your machine with full access to your files — watch the PowerShell window.{task_note}"
         )
     except Exception as e:
         _logger.error(f"[CodeAct] Launch failed: {e}")

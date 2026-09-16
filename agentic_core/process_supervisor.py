@@ -356,3 +356,33 @@ async def stop_supervisor() -> None:
         with contextlib.suppress(asyncio.CancelledError):
             await _supervisor_task
     _supervisor_task = None
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Background task status query — a caller that got a task_id back from a
+# capability (CodeAct, a visible install) can ask "how's it going" instead of
+# only ever being notified on completion via on_resolved(). Pure reads over
+# the same process_watches table the supervisor already polls and resolves;
+# adds no new execution path, no new authority, nothing this touches can run
+# anything — it only reports what the supervisor already knows.
+# ══════════════════════════════════════════════════════════════════════════════
+
+def get_task_status(watch_id: str, memory: MemoryManager | None = None) -> dict | None:
+    """One task's current record (pending or resolved), or None if unknown."""
+    mem = memory or _memory
+    try:
+        return mem.get_process_watch(watch_id)
+    except Exception as e:
+        _logger.warning(f"get_task_status failed for {watch_id[:8] if watch_id else '?'} (non-fatal): {e}")
+        return None
+
+
+def list_tasks(limit: int = 50, memory: MemoryManager | None = None) -> list[dict]:
+    """Pending tasks first (oldest first), then the most recently resolved,
+    capped at `limit`."""
+    mem = memory or _memory
+    try:
+        return mem.list_recent_process_watches(limit=limit)
+    except Exception as e:
+        _logger.warning(f"list_tasks failed (non-fatal): {e}")
+        return []
