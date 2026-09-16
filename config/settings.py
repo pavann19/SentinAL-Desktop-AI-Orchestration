@@ -8,6 +8,14 @@ from dotenv import load_dotenv
 # Load environment variables at module level
 load_dotenv()
 
+# SENTINAL_OFFLINE=1: skip the cloud LLM entirely (no key needed, no network
+# ping) and, if no local Ollama server is reachable either, fall back to a
+# deterministic mock so the pipeline stays runnable with nothing installed —
+# see agentic_core/mock_llm.py and scripts/offline_repl.py (a text REPL that
+# replaces the voice loop for this mode; STT/TTS/wake-word are never
+# imported by it, so nothing there needs stubbing to use this flag).
+OFFLINE = os.getenv("SENTINAL_OFFLINE", "false").strip().lower() not in ("0", "false", "no", "")
+
 
 def _is_rate_limit_error(exc: Exception) -> bool:
     """
@@ -85,7 +93,16 @@ class BrainConfig:
 
     @staticmethod
     def get_local_llm(num_predict: int = 1024):
-        """Returns a ChatOllama instance (local-first priority)."""
+        """Returns a ChatOllama instance (local-first priority). Under
+        SENTINAL_OFFLINE, checks Ollama is actually reachable FIRST — ChatOllama's
+        own constructor doesn't connect eagerly, so without this check a caller
+        would get an object that only fails once something tries to .invoke() it,
+        not a clean fallback."""
+        if OFFLINE:
+            from agentic_core.mock_llm import DeterministicMockLLM, ollama_reachable
+            if not ollama_reachable():
+                print("[BrainConfig] SENTINAL_OFFLINE: no local Ollama reachable — using deterministic mock LLM.")
+                return DeterministicMockLLM()
         from langchain_ollama import ChatOllama
         model_name = os.getenv("OLLAMA_MODEL", "llama3.2:latest")
         return ChatOllama(model=model_name, temperature=0, num_predict=num_predict)
@@ -115,6 +132,8 @@ class BrainConfig:
         key this is a plain ChatGroq, unchanged from before. With more than
         one, returns a _RotatingGroqLLM that fails over between them on a 429.
         """
+        if OFFLINE:
+            return None
         api_keys = BrainConfig._groq_api_keys()
         if not api_keys:
             return None
