@@ -4,19 +4,17 @@ Kept at the repo root (canonical, frequently cross-referenced): `README.md`,
 `ROADMAP.md`, `CONTAINMENT_ARCHITECTURE.md`. Everything else is grouped here
 by what it's for, not when it was written:
 
-- **`planning/`** — forward-looking design docs: the original
-  `AGENTIC_OS_ROADMAP_AND_THESIS_PLAN.md`, `PHASE_TASK_BOARD.md`,
-  `PHASE_A_FINETUNING_PLAN.md`, `SENTINAL_V2_RECONCILED_ARCHITECTURE.md`, and
-  `OPEN_ENDED_ROADMAP.md` (the A1–A8 capability-axis extension of `ROADMAP.md`).
-- **`reports/`** — point-in-time analysis and status snapshots:
-  `CODEBASE_ANALYSIS.md`, `ENGINEERING_REVIEW.md`, the `SentinAL_*_Report.md`
-  files, `THESIS_ACCURACY_SWEEP_PACK.md`, `STATE.md`, `OVERNIGHT_HANDOFF.md`.
-  These describe the project as of the date in the file, not as it is now —
-  check `ROADMAP.md` for current status.
-- **`dev-history/`** — internal development-process artifacts:
-  `MERGE_LOG.md`, `VERIFICATION_PROTOCOL.md`, and prior sessions' planning
-  prompts. **Local-`main`-only** — none of this belongs on `public-release`;
-  see the repo's standing rule on not disclosing AI-tool authorship.
+- **`planning/`** — forward-looking design docs kept in the public tree:
+  `OPEN_ENDED_ROADMAP.md` (the A1–A8 capability-axis extension of
+  `ROADMAP.md`). A handful of earlier internal planning drafts are kept
+  locally only (gitignored) and are not part of this repo.
+- **`reports/`** — point-in-time analysis and status snapshots kept in the
+  public tree: `ENGINEERING_REVIEW.md`, the `SentinAL_*_Report.md` files,
+  `OVERNIGHT_HANDOFF.md`. These describe the project as of the date in the
+  file, not as it is now — check `ROADMAP.md` for current status. A few
+  internal status-tracking docs are kept locally only (gitignored).
+- **`dev-history/`** — this repo doesn't publish internal
+  development-process artifacts; kept locally only (gitignored) if present.
 
 Utility/one-off scripts that used to sit at the repo root (`capture_ui.py`,
 `generate_ood_data.py`, `scan_mics.py`) now live in `scripts/`, alongside
