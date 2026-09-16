@@ -411,6 +411,25 @@ async def get_logs(request: Request):
     """// Diagnostic Log Retrieval — requires bearer token, rate-limited"""
     return _read_last_10_logs()
 
+@app.get("/api/tasks", dependencies=[Depends(require_api_token)])
+@limiter.limit("60/minute")
+async def list_tasks_endpoint(request: Request):
+    """// Background Task Status (list) — requires bearer token, rate-limited.
+    Pure read over process_supervisor's existing watch table; pending tasks
+    first, then the most recently resolved."""
+    from agentic_core.process_supervisor import list_tasks
+    return await asyncio.to_thread(list_tasks)
+
+@app.get("/api/tasks/{watch_id}", dependencies=[Depends(require_api_token)])
+@limiter.limit("60/minute")
+async def get_task_endpoint(watch_id: str, request: Request):
+    """// Background Task Status (single) — requires bearer token, rate-limited."""
+    from agentic_core.process_supervisor import get_task_status
+    task = await asyncio.to_thread(get_task_status, watch_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="task not found")
+    return task
+
 def _read_last_10_logs():
     """// Log File Reader Utility"""
     log_path = os.path.join("logs", "system_logs.json")
