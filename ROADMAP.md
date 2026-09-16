@@ -669,12 +669,18 @@ picking up opportunistically:
       launch sites now capture and surface `register_watch()`'s id
       ("Task id: ..." in the response) instead of discarding it — every
       existing test only substring-checks the response, so nothing broke.
-      15 new/changed tests; `validator.py`/`executor.py`/`main.py` untouched.
-      **Still open:** a REST poll endpoint (`GET /api/tasks[/{id}]`) — needs
-      `main.py` touched, which has stayed frozen all session; flagged for an
-      explicit go-ahead rather than done unasked. Live output tailing (the
-      sentinel only carries final status+detail, not incremental stdout) is
-      a separate, larger piece, noted as a fast-follow.
+      15 new/changed tests; `validator.py`/`executor.py`/`main.py` untouched
+      at that point.
+      **REST poll endpoint added** — `fee8b9d`, with explicit go-ahead to
+      touch `main.py` (the one deliberate exception to it staying frozen all
+      session). `GET /api/tasks` / `GET /api/tasks/{id}` — same
+      auth/rate-limit contract as every existing route, pure reads over
+      `process_watches`, 404 on an unknown id. 7 more tests via
+      `TestClient(main.app)` (the same pattern `test_api_auth.py` already
+      used); `main.py`'s ruff count confirmed unchanged (51 → 51).
+      **Still open:** live output tailing (the sentinel only carries final
+      status+detail, not incremental stdout) — separate, larger piece, a
+      fast-follow if wanted.
 - [~] **External benchmark** — `b0ee941` (see `benchmarks/external/`). Tasks are
       now DATA: `benchmarks/external/schema.md` defines a JSON manifest
       (id / source / category / prompt / declarative verify+setup+teardown),
