@@ -56,6 +56,18 @@ scipy>=1.13.0,<2.0.0
 kokoro-onnx>=0.4.0
 onnxruntime>=1.18.0,<2.0.0
 
+# ── Router embedding backend (optional) ───────────────────────────────────────
+# fastembed runs the router's all-MiniLM-L6-v2 model via ONNX Runtime instead
+# of sentence-transformers/torch — same checkpoint, numerically equivalent
+# output (measured cosine similarity 0.999999+ against the torch path), ~56%
+# less resident memory in isolation / ~16% less through the full router
+# (shared classifier + sklearn cost dilutes the gap) and a faster cold start.
+# Opt in with SENTINAL_EMBEDDING_BACKEND=onnx (default stays "torch" — see
+# agentic_core/embedding_backend.py). Reuses the onnxruntime pin above; no
+# new heavy dependency. sentence-transformers/torch remain required either
+# way (faster-whisper's STT fallback needs torch independent of the router).
+fastembed>=0.4.0
+
 # ── Utilities & Cache ─────────────────────────────────────────────────────────
 python-dotenv>=1.0.0,<2.0.0
 cachetools>=5.3.0,<6.0.0          # Fix 2.2: LRU cache for tts_service

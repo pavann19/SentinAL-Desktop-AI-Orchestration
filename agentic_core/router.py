@@ -600,10 +600,16 @@ class SemanticRouter:
         try:
             from pathlib import Path
 
-            from sentence_transformers import SentenceTransformer
             from sklearn.metrics.pairwise import cosine_similarity as _cos_sim
+
+            from agentic_core.embedding_backend import BACKEND as _EMB_BACKEND
+            from agentic_core.embedding_backend import build_embedder
             self._cos_sim = _cos_sim
-            self.model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
+            # Same-shape (N, 384) numpy output regardless of backend — see
+            # embedding_backend.py for the measured memory + numerical-
+            # equivalence case for the opt-in 'onnx' backend.
+            self.model = build_embedder()
+            print(f"[Router] Embedding backend: {_EMB_BACKEND}")
 
             # Fix (real-vs-synthetic accuracy gap): the previous classifier head was
             # trained ONLY on self-authored synthetic prompts - 98.35% on the synthetic
