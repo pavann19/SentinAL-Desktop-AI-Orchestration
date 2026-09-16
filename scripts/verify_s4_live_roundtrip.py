@@ -8,8 +8,8 @@ available memory under 1 GB and Docker self-terminated).
 
 This script performs that verification, once, with a memory watchdog so a
 tight run produces a report instead of an ambiguous crash. It is meant to be
-run from a plain terminal with Claude Desktop CLOSED (that frees ~1-1.5 GB
-physical + ~2.2 GB commit -- see the session notes).
+run from a plain terminal with other heavy background apps CLOSED (that frees
+~1-1.5 GB physical + ~2.2 GB commit -- see the session notes).
 
     python scripts/verify_s4_live_roundtrip.py
     python scripts/verify_s4_live_roundtrip.py --via-pipeline   # also drive the real npm_install()

@@ -1,13 +1,13 @@
 """
 Independent verification tests for eval/harness.py (P1-5).
 
-Written by Claude (integrator), NOT by Codex (the implementer), per
-VERIFICATION_PROTOCOL.md Gate 2: the agent that writes the code does not
+Written by the integrator, NOT by the implementer, per
+VERIFICATION_PROTOCOL.md Gate 2: whoever writes the code does not
 certify it. These tests exercise the harness's pass/fail LOGIC in isolation
 by monkeypatching process_command, so they do not depend on the live LLM
 pipeline (fast, deterministic, CI-safe) — but they are written against the
 ORIGINAL SPEC (_context_packs/P1-5_task_success_harness.md), not against
-whatever Codex happened to implement.
+whatever the implementation ended up doing.
 """
 import pytest
 

@@ -2,9 +2,9 @@
 Tests for P1-4: failure taxonomy + bounded replan on postcondition mismatch,
 implemented as an extension of agentic_core.executor.execute_pipeline_observed().
 
-Same process note as tests/test_executor_observed.py (P1-1): Claude is both
-implementer and test-author here (task never delegated, security-critical).
-A second-party review of P1-1 has been dispatched to Codex
+Same process note as tests/test_executor_observed.py (P1-1): the integrator is
+both implementer and test-author here (task never delegated, security-critical).
+A second-party review of P1-1 has been dispatched
 (_context_packs/P1-1_review_gate2_secondparty.md); the same review should
 eventually cover this P1-4 extension too since it lives in the same function.
 Flagged in STATE.md.
@@ -151,7 +151,7 @@ def test_no_replan_on_immediate_success(monkeypatch):
 # ── Pre-emptive hardening: observe_postcondition raising unexpectedly ──────
 
 def test_observe_postcondition_raising_does_not_lose_execute_pipeline_result(monkeypatch):
-    """The exact risk category flagged in the P1-1 review pack sent to Codex:
+    """The exact risk category flagged in the P1-1 review pack:
     if observe_postcondition() raises AFTER execute_pipeline() already ran
     (and may have mutated real system state), the wrapper must not crash and
     lose that already-completed result."""

@@ -3,14 +3,14 @@ Tests for agentic_core.executor.execute_pipeline_observed() (P1-1).
 
 PROCESS NOTE (logged honestly, not hidden): VERIFICATION_PROTOCOL.md's Gate 2
 requires independent tests written by a DIFFERENT party than the implementer.
-For every prior task (P1-5, P1-3, P1-2) that meant Codex/Antigravity wrote the
-code and Claude wrote the tests. For P1-1, Claude is the implementer (by
-design — this task touches security-critical agentic_core/executor.py and
-was deliberately NOT delegated). Claude cannot dispatch a synchronous
-independent-test-author mid-session the way Codex/Antigravity are dispatched
-via context packs (that requires Pavan to relay the work to another agent
-and back). So this test file is written by the same party as the
-implementation — a real, logged deviation from Gate 2's letter.
+For every prior task (P1-5, P1-3, P1-2) that meant a second-party reviewer
+wrote the code and the integrator wrote the tests. For P1-1, the integrator
+is also the implementer (by design — this task touches security-critical
+agentic_core/executor.py and was deliberately NOT delegated). There was no
+synchronous independent-test-author available mid-session the way a
+second-party review is normally dispatched via context packs (that requires
+relaying the work out and back). So this test file is written by the same
+party as the implementation — a real, logged deviation from Gate 2's letter.
 
 Mitigations applied to preserve Gate 2's INTENT (catching what the
 implementer assumes away) even without a second party:

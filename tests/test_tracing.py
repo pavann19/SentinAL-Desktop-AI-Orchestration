@@ -1,9 +1,9 @@
 """
 Independent verification tests for agentic_core/tracing.py (P1-3).
 
-Written by Claude (integrator), NOT by Codex (the implementer), per
+Written by the integrator, NOT by the implementer, per
 VERIFICATION_PROTOCOL.md Gate 2. Tests are written against the ORIGINAL
-SPEC (_context_packs/P1-3_tracing.md), not against Codex's implementation
+SPEC (_context_packs/P1-3_tracing.md), not against implementation
 details, and use a temp trace directory so they never touch the real
 logs/traces/ path or depend on the live LLM pipeline.
 """

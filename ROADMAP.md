@@ -260,7 +260,7 @@ not on every request.
       `agentic_core/critic.py` reuses `observe_postcondition` verdicts, bounds
       replans to `MAX_REPLANS`, no parallel verification mechanism.
 - [x] **Wiring gap found in verification and fixed** — 2026-09-10, `42af9ff`.
-      Antigravity's original commit built `execute_goal_graph_observed()` but
+      The original commit built `execute_goal_graph_observed()` but
       never called it from `process_command()` — the planner ran, its DAG was
       flattened via `to_pipeline()` and handed to the old executor, so
       `{{LAST_RESULT}}` reached execution unresolved and the Critic's per-step
