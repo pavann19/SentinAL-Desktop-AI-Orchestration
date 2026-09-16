@@ -639,6 +639,23 @@ picking up opportunistically:
 
 - [ ] **Installer/packaging** — no Docker image or installable package yet;
       installation is fully manual (`README.md` Known Limitations).
+- [~] **Background task monitoring** — `6eb36ac`. The watch/resolve machinery
+      (`process_watches`, sentinel polling, retention purge) already existed
+      in `process_supervisor.py`; what was missing was a way to query it and
+      the task id ever reaching the caller.
+      `memory_hook.list_recent_process_watches()` (pending first, then most
+      recently resolved) + `process_supervisor.get_task_status(id)` /
+      `list_tasks()` (pure reads, never raise) close that.
+      `dependency_installer._run_install()` and both `codeact_engine.py`
+      launch sites now capture and surface `register_watch()`'s id
+      ("Task id: ..." in the response) instead of discarding it — every
+      existing test only substring-checks the response, so nothing broke.
+      15 new/changed tests; `validator.py`/`executor.py`/`main.py` untouched.
+      **Still open:** a REST poll endpoint (`GET /api/tasks[/{id}]`) — needs
+      `main.py` touched, which has stayed frozen all session; flagged for an
+      explicit go-ahead rather than done unasked. Live output tailing (the
+      sentinel only carries final status+detail, not incremental stdout) is
+      a separate, larger piece, noted as a fast-follow.
 - [~] **External benchmark** — `b0ee941` (see `benchmarks/external/`). Tasks are
       now DATA: `benchmarks/external/schema.md` defines a JSON manifest
       (id / source / category / prompt / declarative verify+setup+teardown),
