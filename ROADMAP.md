@@ -639,6 +639,25 @@ picking up opportunistically:
 
 - [ ] **Installer/packaging** — no Docker image or installable package yet;
       installation is fully manual (`README.md` Known Limitations).
+- [~] **Router memory swap** — `35772f6`, `agentic_core/embedding_backend.py`.
+      Opt-in ONNX Runtime backend (`fastembed`'s export of the identical
+      `sentence-transformers/all-MiniLM-L6-v2` checkpoint) behind
+      `SENTINAL_EMBEDDING_BACKEND` (default `torch`, unchanged). Measured on
+      this machine: ~82 MB / ~33% faster cold start through the real router
+      singleton (~256 MB / ~56% in the embedding model alone, in isolation);
+      numerical equivalence to the torch path measured at cosine similarity
+      0.999999+ across 14 router-style phrases, so the trained classifier's
+      decision boundaries transfer without retraining. Same routing decision
+      confirmed live on both backends. `validator.py`/`executor.py`/
+      `main.py`/`benchmarks/tasks.py` untouched.
+      **Also found while measuring this:** this session's test runs had been
+      going through the global Python interpreter, not `venv/` — the global
+      env has a broken `huggingface-hub`/`sentence-transformers` combo that
+      silently drops the router into keyword-only fallback. `venv/` itself
+      is fine; this was a session process error, not a product bug. Fixed
+      going forward by running through `venv/Scripts/python.exe`.
+      **Still default-off**, same discipline as every other flag this
+      session — flip it once lived with.
 - [~] **Background task monitoring** — `6eb36ac`. The watch/resolve machinery
       (`process_watches`, sentinel polling, retention purge) already existed
       in `process_supervisor.py`; what was missing was a way to query it and
