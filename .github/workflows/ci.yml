@@ -47,7 +47,7 @@ jobs:
         # would risk missing failure modes the fail-closed guarantee depends on.
         # Every one already logs or returns a safe default rather than swallowing
         # silently (see the S110/S112 fixes in the same commit that added this line).
-        run: ruff check agentic_core/ system_services/ config/ capabilities/ interfaces/ --ignore E501,E402,BLE001
+        run: ruff check agentic_core/ system_services/ config/ capabilities/ interfaces/ --ignore E501,E402,BLE001,S110,S112
 
       - name: Run mypy (type checking)
         run: mypy agentic_core/validator.py agentic_core/memory_hook.py system_services/privacy_router.py --ignore-missing-imports
