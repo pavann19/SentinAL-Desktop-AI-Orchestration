@@ -1,311 +1,131 @@
 # SentinAL — Secure AI Desktop Orchestration
 
 A voice-controlled desktop agent that executes natural-language instructions on a Windows
-machine, with a deterministic security and privacy layer that validates **every** action
-before it runs.
+machine, with a deterministic security layer that validates **every** action before it runs
+and verifies the action actually happened afterward.
 
-The design premise: an agent with OS execution privileges cannot rely on a language model's
-good behaviour for safety. SentinAL treats the LLM as an untrusted component and enforces
-security outside it — through capability allowlists, filesystem sandboxing, keyword
-filtering, and human-in-the-loop confirmation gates that the model cannot talk its way past.
+**Positioning:** Gatekeeper decides whether a prompt may reach a model; SentinAL decides
+whether an agent's proposed OS action may execute, and verifies that it worked.
 
-> **Project status: research prototype / early MVP.** The security boundary and intent
-> routing are well tested (850+ automated tests, 87%+ coverage, 66-test adversarial fuzz
-> suite at a 100% block rate). End-to-end task success, measured with an independent,
-> statistically-scored benchmark (OS-state verification, not the pipeline's own self-report;
-> 95% Wilson confidence interval), is **96.7%** (95% CI 91.7–98.7%, n=120: 40 tasks × 3 runs)
-> — good enough for supervised daily use, not yet unattended. See [Evaluation](#evaluation)
-> for the full methodology and [Known Limitations](#known-limitations) before deploying.
+> **Status: research prototype / early MVP.** The security boundary and intent routing are
+> well tested (990+ automated tests, 87%+ coverage, a 66-test adversarial fuzz suite at 100%
+> block rate). End-to-end task success on a real machine, independently OS-state-verified, is
+> **96.7%** (95% CI 91.7–98.7%, n=120) — good for supervised daily use, not yet unattended.
+> Full write-up: [`docs/reports/`](docs/reports/) and [`thesis/`](thesis/).
 
----
+## Why
 
-## Table of Contents
-
-- [Features](#features)
-- [Architecture](#architecture)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running](#running)
-- [API](#api)
-- [Security Model](#security-model)
-- [Evaluation](#evaluation)
-- [Reproducing the Evaluation](#reproducing-the-evaluation)
-- [Testing](#testing)
-- [Known Limitations](#known-limitations)
-- [Project Layout](#project-layout)
-- [License](#license)
-
----
-
-## Features
-
-- **Hybrid intent router** — a keyword fast-path, then a trained classifier over local
-  sentence embeddings, then an LLM fallback only for genuinely ambiguous requests.
-  88.45% of held-out queries resolve locally with no LLM call at all (see [Evaluation](#evaluation)).
-- **Content-aware privacy routing** — prompts containing PII, credentials, or sensitive
-  filesystem paths are forced onto a local on-device model and never reach a cloud API.
-- **Deterministic validation pipeline** — allowlist → target check → filesystem sandbox →
-  keyword filter → human confirmation, enforced independently of the LLM.
-- **Execute-observe-replan loop** — verifies that an action actually achieved its intended
-  effect (process/window/vision checks) rather than trusting that the call returned cleanly.
-- **OpenTelemetry tracing** — per-stage latency and parameter state for every request.
-
-## Architecture
-
-```
-Voice input → STT → NLP correction
-     → Hybrid intent router  (keyword → classifier / cosine embeddings → LLM fallback)
-     → Privacy router        (PII / credential / path detection → forces local model)
-     → Validation pipeline   (allowlist → sandbox → keyword filter → HITL gate)
-     → Execution             (capability dispatch)
-     → Postcondition observer (did it actually work?)
-     → TTS response
-```
-
-Diagrams for each stage are in [`thesis/figures/`](thesis/figures/). The full design
-rationale is documented in [`thesis/THESIS_DRAFT_v1.md`](thesis/THESIS_DRAFT_v1.md).
+An agent with OS execution privileges can't rely on a language model's good behaviour for
+safety. SentinAL treats the LLM as untrusted and enforces security *outside* it, then
+independently checks OS state afterward rather than trusting that a call returned cleanly.
+Full containment design: [`CONTAINMENT_ARCHITECTURE.md`](CONTAINMENT_ARCHITECTURE.md).
 
 ## Requirements
 
-- **Windows 10/11** — the execution layer uses Windows-specific APIs (`tasklist`,
-  `win32gui`, `pyautogui`). Other platforms are not supported (see
-  [Known Limitations](#known-limitations)).
-- **Python 3.11+** (developed and tested on 3.11 and 3.13)
-- **Node.js 18+** — only if you want the Electron/React HUD
-- **[Ollama](https://ollama.com/)** — required for local/private LLM routing
-- API keys (all optional, features degrade gracefully without them): Groq (cloud LLM),
-  Deepgram (STT), Picovoice (wake word), Tavily (web search)
+Windows 10/11 (the execution layer uses `win32gui`/`pyautogui`/UIA — not portable as written) ·
+Python 3.11+ · [Ollama](https://ollama.com/) for local/private LLM routing · Node 18+ only for
+the optional Electron/React HUD. API keys (Groq, Deepgram, Picovoice, Tavily) are all optional
+— features degrade gracefully without them, and `SENTINAL_OFFLINE=1` (below) needs none at all.
 
-## Installation
+## Install & run
 
 ```bash
-git clone <your-repo-url> sentinal
-cd sentinal
-python -m venv venv
-venv\Scripts\activate
+git clone <your-repo-url> sentinal && cd sentinal
+python -m venv venv && venv\Scripts\activate
 pip install -r requirements.txt
+ollama pull llama3.2                 # local/private model
+copy .env.example .env               # then edit — every key is documented in the template
+python main.py                       # backend on http://127.0.0.1:8000
 ```
 
-Pull a local model for private routing:
+First run generates a bearer token into `.sentinal_token` (gitignored). Key `.env` settings:
+`SENTINAL_HOST` (keep on `127.0.0.1`), `LLM_PROVIDER` (`groq` cloud / `local` Ollama-only),
+`SENTINAL_DEBUG` (leave `false`).
 
-```bash
-ollama pull llama3.2
-```
-
-Optional — the desktop HUD:
-
-```bash
-cd sentinal-ui && npm install
-```
-
-## Configuration
-
-```bash
-copy .env.example .env
-```
-
-Then edit `.env`. Every key is documented in the template; the ones that matter most:
-
-| Key | Default | Purpose |
-|---|---|---|
-| `SENTINAL_HOST` | `127.0.0.1` | **Keep on loopback.** See [Security Model](#security-model). |
-| `SENTINAL_PORT` | `8000` | Backend API port |
-| `SENTINAL_API_TOKEN` | *(auto-generated)* | Bearer token for the REST API |
-| `LLM_PROVIDER` | `groq` | `groq` for cloud, `local` for Ollama-only |
-| `SENTINAL_DEBUG` | `false` | **Leave `false`** — `true` enables diagnostic bypasses |
-
-`.env` is gitignored. Never commit real keys.
-
-## Running
-
-```bash
-python main.py
-```
-
-The backend starts on `http://127.0.0.1:8000`. On first run it generates a REST API token
-and writes it to `.sentinal_token` (also gitignored), printing a notice to the console.
-
-With the HUD:
-
-```bash
-cd sentinal-ui && npm run dev
-```
+**No keys, no network, no voice** — `SENTINAL_OFFLINE=1 python scripts/offline_repl.py` runs
+the real pipeline through a text REPL: skips the cloud LLM entirely, uses local Ollama if
+reachable, else a deterministic stub — nothing to install to try it.
 
 ## API
 
 | Endpoint | Auth | Purpose |
 |---|---|---|
 | `GET /health`, `/api/health` | none | Liveness probe |
-| `POST /api/command` | **bearer token** | Execute a natural-language command |
-| `GET /api/logs` | **bearer token** | Last 10 diagnostic log entries |
-| `WS /ws/agent` | — | Primary UI channel (streaming pipeline state) |
-| `WS /ws/telemetry` | — | Live telemetry feed |
+| `POST /api/command` | bearer | Execute a natural-language command |
+| `GET /api/tasks[/{id}]` | bearer | Poll a background task's status |
+| `GET /api/logs` | bearer | Last 10 diagnostic log entries |
+| `WS /ws/agent`, `/ws/telemetry` | — | Streaming pipeline state / live telemetry |
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/command \
-  -H "Authorization: Bearer $(cat .sentinal_token)" \
-  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $(cat .sentinal_token)" -H "Content-Type: application/json" \
   -d '{"prompt": "open notepad"}'
 ```
 
-## Security Model
+`/api/command` executes real OS actions — the token is a real credential, and CORS does not
+protect it (CORS is browser-enforced; scripts bypass it entirely). Keep `SENTINAL_HOST` on
+loopback unless you know you want it published to the network.
 
-SentinAL assumes the language model **will** eventually be compromised — by direct prompt
-injection, by malicious content it reads, or simply by hallucinating — and places the
-security boundary outside it:
+## Security model
 
-1. **Intent allowlist** — 20 permitted intents, hardcoded. Anything else is rejected
-   categorically rather than interpreted.
-2. **Filesystem sandbox** — blocks `System32`, Windows core directories, `..` traversal,
-   and bare drive roots (`C:\`, `D:\`).
-3. **Keyword filtering** — destructive verbs matched on word boundaries, not substrings.
-4. **Human-in-the-loop** — file deletion requires explicit user confirmation. An injected
-   instruction cannot programmatically bypass a human.
-
-Verified by a 66-test adversarial fuzzing suite (shell injection, path traversal, forbidden
-intents, 1,000 random-noise inputs) at a 100% block rate.
-
-**Operational security notes — read before deploying:**
-
-- `/api/command` executes **real OS actions**. It requires a bearer token, but CORS alone
-  never protected it: CORS is browser-enforced, so scripts and other local processes bypass
-  it entirely. Treat the token as a real credential.
-- The server binds to **loopback only** by default. Overriding `SENTINAL_HOST` to `0.0.0.0`
-  publishes command execution to every network interface — only do this on a trusted
-  network with a strong token set.
-- `SENTINAL_DEBUG=true` enables diagnostic bypasses. Never enable it in a shared or
-  production environment.
+**Intent allowlist** (fixed set, else rejected outright) → **filesystem sandbox**
+(`System32`, Windows core dirs, `..` traversal, bare drives blocked) → **keyword filtering**
+(destructive verbs, word-boundary matched) → **human-in-the-loop** (deletion needs explicit
+confirmation no injected instruction can bypass) → **postcondition verification** (real OS
+state checked after execution — a clean return that didn't actually happen is a failure, not
+a success). 100% block rate, 66-test adversarial fuzz suite. Full model, capability tiers, and
+the containment roadmap: [`CONTAINMENT_ARCHITECTURE.md`](CONTAINMENT_ARCHITECTURE.md).
 
 ## Evaluation
 
-All figures below are reproducible from committed artifacts (see the next section).
-
 | Metric | Result |
 |---|---|
-| Intent accuracy — held-out test split (synthetic) | **95.26%** (462/485) |
-| Intent accuracy — real-world phrasing (Amazon MASSIVE, 5 of 19 intents) | **92.33%** (1,578/1,709) |
-| Intent accuracy — out-of-distribution set (synthetic) | **83.68%** (159/190) |
-| Zero-shot baseline (pre-classifier) | 54.55% test / 70.67% OOD |
-| Fast-path resolution rate (no LLM call) | **88.45%** test (429/485) |
-| Task success — 19 CI-safe benchmark tasks | **84.2%** (16/19) |
-| **End-to-end task success — real-machine benchmark** | **96.7%** (95% CI 91.7–98.7%, 116/120) |
+| Intent accuracy — real-world phrasing (Amazon MASSIVE) | **92.33%** |
+| Intent accuracy — out-of-distribution (synthetic) | **83.68%** |
+| Fast-path resolution (no LLM call) | **88.45%** |
+| **End-to-end task success (real machine, OS-verified)** | **96.7%** (95% CI 91.7–98.7%, n=120) |
 | Security fuzzing block rate | **100%** (66/66) |
-| Median end-to-end latency | 101.5 ms (validation adds 0.06 ms) |
-| Test suite | 990 passing (CI-gated scope), 87.50% coverage |
+| Test suite | 990 passing, 87.50% coverage |
 
-**On the real-world number.** Every dataset SentinAL was evaluated against used to be
-self-authored — written by the same person/process being measured against, which is a
-closed loop: a classifier scoring 98%+ on synthetic prompts was measuring how well it
-predicts its own training data's writing style, not real usage. Fixed by evaluating (and
-partly training) against [Amazon MASSIVE](https://huggingface.co/datasets/AmazonScience/massive)
-(cc-by-4.0, real crowd-sourced voice-assistant utterances), filtered and relabeled to the 5
-of SentinAL's 19 intents it has a genuine semantic match for (`MediaStreamingIntent`,
-`MediaControlIntent`, `SchedulerIntent`, `InformationRetrievalIntent`, `ConversationalIntent`)
-— see `eval/real_world_massive_ood.json`. The synthetic test-split number dropped from an
-earlier 98.35% to 95.26% as a direct result of retraining the classifier against this more
-diverse data; that trade was verified deliberately, not accidental drift — a version that
-fully fine-tuned the embedding model instead scored 97.73%/96.55% on both curated benchmarks
-but collapsed to 61.84% (22 confident, semantically nonsensical misroutes) on a held-out set
-of fresh, hand-written prompts neither benchmark had seen, i.e. it had overfit to both
-datasets' phrasing conventions rather than generalizing. The deployed classifier — a linear
-head on frozen, unmodified embeddings — scored 80.26% on that same fresh-prompt canary set
-(beating the pre-fix classifier's 77.63%), which is the actual reason it was chosen over the
-higher-scoring but less trustworthy alternative.
-
-**On the end-to-end number.** `benchmarks/run_benchmark.py` drives the real pipeline against
-a real Windows desktop across 40 tasks spanning application launch, web navigation, file
-operations, process management, system utilities, multi-step requests, safety-blocking
-prompts, conversation, scheduler/reminder persistence, and local research/data analysis — each repeated 3 times
-(n=120). Verification is independent of the pipeline: pass/fail comes from querying actual
-OS state (the process table, filesystem, window list), never from the pipeline's own success
-report, and a 95% Wilson confidence interval is reported alongside the point estimate rather
-than a bare percentage. Full methodology, the task suite, and every commit's provenance are
-in `benchmarks/`; see [Reproducing the Evaluation](#reproducing-the-evaluation).
-
-## Reproducing the Evaluation
+**Reproduce with zero API keys / network:**
 
 ```bash
-# Intent accuracy: trained classifier vs. zero-shot baseline
-python -m eval.finetune_classifier --run-id myrun
-
-# Router-only accuracy across the full dataset
-python -m eval.measure_intent_accuracy --mode router-only --run-id myrun
-
-# Full-pipeline sampled accuracy (hits live LLM/network)
-python -m eval.measure_intent_accuracy --mode full-pipeline --sample-size 40 --sample-seed 7 --run-id myrun
-
-# Task-success harness
-python -m eval.run_eval
-
-# End-to-end benchmark: drives the real pipeline on a real desktop (Windows).
-# Opens/closes real applications and browser tabs — avoid using the machine while it runs.
-python benchmarks/run_benchmark.py --repeat 3
+python scripts/reproduce_router_accuracy.py           # router-only, full dataset, exhaustive
+python -m eval.run_eval                                # task-success harness
 ```
 
-Results are written to `_evidence/` and `benchmarks/results/`, alongside the committed runs
-backing the table above. Splits are seeded and the exact indices are committed, so accuracy
-figures reproduce byte-for-byte. Every benchmark report records its git commit and a
-dirty-working-tree flag, so a result is only citable alongside the exact code that produced
-it.
+The full end-to-end number needs a real Windows desktop and live LLM access —
+`benchmarks/run_benchmark.py --repeat 3`. Methodology (independent OS-state verification,
+Wilson intervals, no score-inflating retries, every report pinned to its git commit) is in
+[`docs/reports/`](docs/reports/).
 
 ## Testing
 
-```bash
-pytest tests/ -v --deselect tests/test_stress.py   # full suite
-pytest tests/test_security_fuzz.py -v              # security only
-pytest tests/test_stress.py -v --timeout=120       # stress (run separately)
-```
+`pytest tests/ -v --deselect tests/test_stress.py` (CI runs ruff, mypy, and this on every push).
 
-CI (`.github/workflows/ci.yml`) runs ruff, mypy, and the test suite on every push.
+## Known limitations
 
-## Known Limitations
+- **6 of 19 intents have no independent postcondition check** (read-only/conversational, or
+  leave no durable OS-state fact — e.g. `ConversationalIntent`, `DictationIntent`).
+- **Windows-only.**
+- **GUI resolution** falls back to pixel-matching (fragile to DPI/multi-monitor changes) only
+  when UI Automation can't resolve a label — not the default path, but not eliminated.
+- **The end-to-end benchmark is self-authored**; `benchmarks/external/` adds a pluggable
+  manifest format for third-party tasks, still thin.
+- **No installer/package** — install is manual.
 
-Stated plainly, because they matter for anyone evaluating this:
-
-- **13 of 19 intents have live effect verification** — 11 synchronously (the postcondition
-  observer checks immediately after execution: process/window/filesystem/memory state,
-  including the EDA heatmap PNG and research summary `.txt` that `DataModelingIntent` and
-  `AcademicResearchIntent` genuinely write, and a query-based tier that checks
-  `SchedulerIntent`'s SQLite-persisted task/reminder rows directly rather than any
-  filesystem proxy) and 2 more (`CodeActIntent`, `DependencyInstallIntent`) asynchronously,
-  via a background process supervisor that tracks detached, long-running work (an npm
-  install, a generated script) that can't be checked the moment `execute_pipeline()`
-  returns. The remaining 6 intents — `InformationRetrievalIntent`, `ConversationalIntent`,
-  `ContinuationIntent`, `SysUtilityIntent`, `MediaControlIntent`, `DictationIntent` — execute
-  without any independent check that the action actually took effect, beyond whatever
-  `execute_pipeline()` itself reports; these are read-only/conversational outputs, or leave
-  no durable OS-state fact where "not verified" would reliably mean "did not happen"
-  (a keypress, typed text landing wherever has focus).
-- **Windows-only.** The execution layer is not portable as written.
-- **GUI element resolution now tries UI Automation first, not last.** `resolve_element()`
-  (`capabilities/system/gui_resolver.py`) is UIA-first when a label is available — accessible
-  name/label lookup via `pywinauto`, against the foreground window if no window title is
-  known — falling back to pixel image-matching (`pyautogui.locateOnScreen`) only when no
-  label was given, and to a VLM screenshot query as the last resort. Pixel-based matching is
-  therefore a fallback, not the default path, for anything the accessibility tree can resolve
-  by name. It still breaks on resolution/DPI/multi-monitor/theme changes when it does run —
-  keyboard shortcuts and screenshots elsewhere (`window_manager.py`, `dictation.py`,
-  `media_control.py`) don't go through this resolver and aren't affected either way.
-- **The end-to-end benchmark is self-authored** (`benchmarks/tasks.py`), not drawn from an
-  external, independently-curated task set, and all measurements come from a single Windows
-  machine. The methodology (independent OS-state verification, confidence intervals, no
-  score-inflating retries) is designed to be defensible regardless, but a self-authored task
-  suite can still under-sample failure modes an external benchmark would catch.
-- **No Docker image or installable package yet** — installation is manual.
-
-## Project Layout
+## Project layout
 
 ```
-agentic_core/       Router, processor, validator, executor, tracing
+agentic_core/       Router, planner, validator, executor, memory, world model
 capabilities/       Pluggable actions (system, developer, web)
-system_services/    Privacy router, system state
-config/             All security policy constants (single auditable file)
+config/             Security policy + tiers (single auditable source)
 interfaces/         Voice I/O (wake word, STT, TTS) and UI bridge
-eval/               Reproducible evaluation harnesses and datasets
-tests/              441 automated tests
+eval/, benchmarks/  Reproducible accuracy + task-success evaluation
+scripts/            Standalone verification/reproduction/offline-mode entry points
+tests/              990+ automated tests
+docs/                Planning docs, point-in-time reports, dev history
 thesis/             Full design/evaluation write-up and diagrams
-_evidence/          Committed measurement artifacts
 ```
 
 ## License
