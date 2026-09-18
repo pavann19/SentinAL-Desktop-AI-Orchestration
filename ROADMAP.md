@@ -711,11 +711,8 @@ picking up opportunistically:
       limitation remains.
 - [x] **Repo hygiene** — `.gitignore` now covers the whole `data/` runtime
       directory instead of three incomplete per-file entries; stray
-      AI-authored planning files (`Gemini_plans/`,
-      `_antigravity_prompt_postcondition_expansion.md`) and a scratch
-      script moved out of the repo; `main`'s README synced to
-      `public-release` (three sections had gone stale across prior
-      cherry-picks) — 2026-08-24.
+      scratch planning files and a scratch script moved out of the repo;
+      README refreshed (three sections had gone stale) — 2026-08-24.
 - [ ] **"format " false-positive** in the keyword filter — deferred to a
       future risk-tiered check (would live inside S4/S6's capability
       broker work above, not fixed standalone).

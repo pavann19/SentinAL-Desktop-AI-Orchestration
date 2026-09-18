@@ -6,9 +6,8 @@ then close the app and shut down the laptop.
 
 ## Done this session
 
-All local commits on `main`. **Nothing pushed.** No AI-authorship strings, no
-`Co-Authored-By` trailers. `validator.py` / `executor.py` / `main.py` byte-for-
-byte untouched throughout (verified after each change).
+All local commits on `main`. **Nothing pushed.** `validator.py` / `executor.py` /
+`main.py` byte-for-byte untouched throughout (verified after each change).
 
 | Commit | Contents |
 |---|---|
