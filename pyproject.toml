@@ -31,6 +31,7 @@ dependencies = [
     "uvicorn[standard]>=0.29.0,<1.0.0",
     "pydantic>=2.7.0,<3.0.0",
     "starlette>=0.37.0,<1.0.0",
+    "slowapi>=0.1.9,<1.0.0",
     "langchain>=0.2.0,<0.3.0",
     "langchain-core>=0.2.0,<0.3.0",
     "langchain-ollama>=0.1.0,<0.2.0",
@@ -44,6 +45,10 @@ dependencies = [
     # The training code itself is compatible across 1.5–1.8 (the removed
     # `multi_class` argument is no longer passed).
     "scikit-learn>=1.5.0,<2.0.0",
+    "pandas>=2.0.0,<3.0.0",
+    "matplotlib>=3.8.0,<4.0.0",
+    "pypdf>=5.0.0,<7.0.0",
+    "dateparser>=1.2.0,<2.0.0",
     "faster-whisper>=1.0.0,<2.0.0",
     "sounddevice>=0.4.7,<1.0.0",
     "soundfile>=0.12.1,<1.0.0",

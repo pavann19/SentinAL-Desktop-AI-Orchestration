@@ -1,8 +1,12 @@
 # SentinAL — Secure AI Desktop Orchestration
 
-A voice-controlled desktop agent that executes natural-language instructions on a Windows
-machine, with a deterministic security layer that validates **every** action before it runs
-and verifies the action actually happened afterward.
+An **agent-safety research project** built around a voice-controlled Windows desktop agent.
+Its deterministic control plane validates **every** proposed action before it runs and
+verifies the action actually happened afterward.
+
+Its portfolio value is the safety architecture—untrusted-model containment, policy
+enforcement, postcondition verification, and evidence-backed evaluation—not general
+backend engineering or production SaaS scale.
 
 **Positioning:** Gatekeeper decides whether a prompt may reach a model; SentinAL decides
 whether an agent's proposed OS action may execute, and verifies that it worked.

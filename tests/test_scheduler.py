@@ -9,6 +9,8 @@ not mocked. dateparser is real too — no network calls, pure local parsing.
 import os
 import sys
 import time
+import tomllib
+from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -140,3 +142,10 @@ class TestParseDueAt:
         # instead of silently degrading to an undated task.
         from capabilities.system.scheduler import _parse_due_at
         assert _parse_due_at("set a timer for 20 minutes") is not None
+
+
+def test_scheduler_parser_is_declared_as_runtime_dependency():
+    """A package install must include the parser required by SchedulerIntent."""
+    pyproject = Path(__file__).parents[1] / "pyproject.toml"
+    dependencies = tomllib.loads(pyproject.read_text(encoding="utf-8"))["project"]["dependencies"]
+    assert any(dependency.startswith("dateparser") for dependency in dependencies)
