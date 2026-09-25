@@ -81,7 +81,7 @@ Each entry: decision — reason — where it lives.
 | Router-only accuracy, full 3230-entry dataset | 91.11% | `scripts/reproduce_router_accuracy.py` |
 | Real-world phrasing (MASSIVE) / out-of-distribution | 92.33% / 83.68% | `eval/` |
 | Security fuzz suite | 66/66 blocked | `tests/test_security_fuzz.py` |
-| Tests / coverage | 990+ / 87%+ | CI |
+| Tests / coverage | 1,331 passing / 86.56% | Public-head CI command at `c415def` |
 
 Weakest routed intents (router-only): `MediaControlIntent` 57.4%, `SchedulerIntent` 68.2%,
 `InformationRetrievalIntent` 71.3%, `MediaStreamingIntent` 74.5% — thin training data.

@@ -12,7 +12,7 @@ backend engineering or production SaaS scale.
 whether an agent's proposed OS action may execute, and verifies that it worked.
 
 > **Status: research prototype / early MVP.** The security boundary and intent routing are
-> well tested (990+ automated tests, 87%+ coverage, a 66-test adversarial fuzz suite at 100%
+> well tested (1,331 automated tests passing, 86.56% coverage, a 66-test adversarial fuzz suite at 100%
 > block rate). End-to-end task success on a real machine, independently OS-state-verified, is
 > **96.7%** (95% CI 91.7–98.7%, n=120) — good for supervised daily use, not yet unattended.
 > Full write-up: [`docs/reports/`](docs/reports/) and [`thesis/`](thesis/).
@@ -89,7 +89,7 @@ the containment roadmap: [`CONTAINMENT_ARCHITECTURE.md`](CONTAINMENT_ARCHITECTUR
 | Fast-path resolution (no LLM call) | **88.45%** |
 | **End-to-end task success (real machine, OS-verified)** | **96.7%** (95% CI 91.7–98.7%, n=120) |
 | Security fuzzing block rate | **100%** (66/66) |
-| Test suite | 990 passing, 87.50% coverage |
+| Test suite | 1,331 passing, 86.56% coverage |
 
 **Reproduce with zero API keys / network:**
 
@@ -127,7 +127,7 @@ config/             Security policy + tiers (single auditable source)
 interfaces/         Voice I/O (wake word, STT, TTS) and UI bridge
 eval/, benchmarks/  Reproducible accuracy + task-success evaluation
 scripts/            Standalone verification/reproduction/offline-mode entry points
-tests/              990+ automated tests
+tests/              1,331 passing automated tests at the public head
 docs/                Planning docs, point-in-time reports, dev history
 thesis/             Full design/evaluation write-up and diagrams
 ```
