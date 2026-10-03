@@ -41,6 +41,11 @@ class TestRouterIntentRecognition:
         assert result["intent"] == "WebNavigationIntent"
         assert result["confidence"] >= 0.40
 
+    def test_go_to_youtube_routes_web_without_classifier_artifact(self, router):
+        result = router.route("go to youtube")
+        assert result["intent"] == "WebNavigationIntent"
+        assert result["confidence"] >= 0.40
+
     def test_delete_routes_file_deletion(self, router):
         result = router.route("delete the file in downloads folder")
         assert result["intent"] == "FileDeletionIntent"

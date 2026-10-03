@@ -695,9 +695,13 @@ class SemanticRouter:
         if not normalized:
             return {"intent": "UnknownIntent", "confidence": 0.0}
 
+        lexical = self._keyword_fallback(normalized)
+        if lexical["intent"] in {"WebNavigationIntent", "FileDeletionIntent"}:
+            return lexical
+
         # Fallback: keyword-based routing if model unavailable
         if self._fallback_mode:
-            return self._keyword_fallback(normalized)
+            return lexical
 
         # Fix 3.5: Use cached embedding
         query_emb = self._encode_cached(prompt)
