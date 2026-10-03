@@ -637,10 +637,9 @@ class SemanticRouter:
             # 77.63% canary) with only 4 mild, explainable misroutes (calendar/time
             # boundary overlap) vs the full fine-tune's 22 wild ones. Same ~9ms CPU
             # latency as before - the embedding model itself never changed.
-            # Full experiment trail in _evidence/experiments/: real_data_augmentation_
-            # experiment.py, real_data_balanced_experiment.py, embedding_model_sweep_
-            # experiment.py, full_finetune_experiment.py (the rejected path), and the
-            # canary sweep that caught it (eval/experiments/canary_sweep.json).
+            # Experiment scripts live under eval/experiments/. Generated evidence and
+            # classifier artifacts are local outputs under _evidence/ and are not
+            # committed to the public repo.
 
             # Phase A: Load trained classifier head
             import joblib

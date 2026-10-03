@@ -18,10 +18,10 @@
 # Numerical equivalence measured across 14 router-style phrases: cosine
 # similarity between the two backends' output vectors was 0.999999+ on every
 # phrase (min 0.9999999, mean 1.0000000 — float32 noise, not a real
-# difference), and nearest-neighbour ranking agreed 14/14. The trained
-# classifier (classifier_v2_realdata.joblib) was fit on sentence-transformers
-# MiniLM vectors; this level of equivalence means its decision boundaries
-# transfer to the ONNX backend's output without retraining.
+# difference), and nearest-neighbour ranking agreed 14/14. Locally generated
+# classifier heads are fit on sentence-transformers MiniLM vectors; this level
+# of equivalence means their decision boundaries transfer to the ONNX backend's
+# output without retraining.
 #
 # Still defaults to the proven "torch" backend — same discipline as every
 # other flag this session: ship it, validate it, then flip the default.

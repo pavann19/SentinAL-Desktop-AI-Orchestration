@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -92,10 +93,37 @@ def _format_table(results: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _git_metadata() -> dict[str, str | None]:
+    try:
+        commit = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        commit = None
+
+    try:
+        short_commit = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=ROOT,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        short_commit = None
+
+    return {"commit_sha": commit, "commit_short": short_commit}
+
+
 async def _main_async(args: argparse.Namespace) -> int:
     tasks = load_tasks(args.tasks)
     selected_tasks = _select_tasks(tasks, args.task_id, args.include_skip_in_ci)
     report = await run_suite(selected_tasks)
+    git = _git_metadata()
+    report["git_commit"] = git["commit_sha"]
+    report["git"] = git
 
     args.report_dir.mkdir(parents=True, exist_ok=True)
     report_path = args.report_dir / f"report_{args.run_id}.json"

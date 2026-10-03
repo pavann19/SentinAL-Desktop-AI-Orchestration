@@ -38,7 +38,7 @@ dependencies = [
     "langchain-groq>=0.1.0,<0.2.0",
     "langgraph>=0.1.0,<0.2.0",
     "sentence-transformers>=3.0.0,<4.0.0",
-    # NOTE: the committed classifier (classifier_v1.joblib) is pickled under the
+    # NOTE: locally generated classifier artifacts are pickled under the
     # scikit-learn version this range currently resolves to. Across a major
     # scikit-learn line, an unpickle warning or failure is possible — regenerate
     # with `python -m eval.finetune_classifier --run-id local` if that occurs.

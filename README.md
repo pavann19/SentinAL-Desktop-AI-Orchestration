@@ -1,21 +1,23 @@
 # SentinAL — Secure AI Desktop Orchestration
 
 An **agent-safety research project** built around a voice-controlled Windows desktop agent.
-Its deterministic control plane validates **every** proposed action before it runs and
-verifies the action actually happened afterward.
+Its deterministic control plane validates proposed actions before they run and
+verifies OS state afterward where a durable postcondition exists.
 
 Its portfolio value is the safety architecture—untrusted-model containment, policy
 enforcement, postcondition verification, and evidence-backed evaluation—not general
 backend engineering or production SaaS scale.
 
 **Positioning:** Gatekeeper decides whether a prompt may reach a model; SentinAL decides
-whether an agent's proposed OS action may execute, and verifies that it worked.
+whether an agent's proposed OS action may execute, and checks durable OS state afterward
+when that action leaves a verifiable postcondition.
 
 > **Status: research prototype / early MVP.** The security boundary and intent routing are
 > well tested (1,331 automated tests passing, 86.56% coverage, a 66-test adversarial fuzz suite at 100%
 > block rate). End-to-end task success on a real machine, independently OS-state-verified, is
 > **96.7%** (95% CI 91.7–98.7%, n=120) — good for supervised daily use, not yet unattended.
-> Full write-up: [`docs/reports/`](docs/reports/) and [`thesis/`](thesis/).
+> Public docs are intentionally compact; generated evidence and thesis drafts are kept out
+> of the public repo and regenerated locally when needed.
 
 ## Why
 
@@ -29,7 +31,7 @@ Full containment design: [`CONTAINMENT_ARCHITECTURE.md`](CONTAINMENT_ARCHITECTUR
 Windows 10/11 (the execution layer uses `win32gui`/`pyautogui`/UIA — not portable as written) ·
 Python 3.11+ · [Ollama](https://ollama.com/) for local/private LLM routing · Node 18+ only for
 the optional Electron/React HUD. API keys (Groq, Deepgram, Picovoice, Tavily) are all optional
-— features degrade gracefully without them, and `SENTINAL_OFFLINE=1` (below) needs none at all.
+— features degrade gracefully without them, and `SENTINAL_OFFLINE=1` (below) needs no cloud keys.
 
 ## Install & run
 
@@ -46,9 +48,15 @@ First run generates a bearer token into `.sentinal_token` (gitignored). Key `.en
 `SENTINAL_HOST` (keep on `127.0.0.1`), `LLM_PROVIDER` (`groq` cloud / `local` Ollama-only),
 `SENTINAL_DEBUG` (leave `false`).
 
-**No keys, no network, no voice** — `SENTINAL_OFFLINE=1 python scripts/offline_repl.py` runs
-the real pipeline through a text REPL: skips the cloud LLM entirely, uses local Ollama if
-reachable, else a deterministic stub — nothing to install to try it.
+**No cloud keys, no internet API, no voice** — offline mode runs the real pipeline through
+a text REPL, skips the cloud LLM entirely, probes local Ollama on `localhost:11434`, and
+falls back to a deterministic stub if Ollama is unreachable. Install the Python
+dependencies first, then run:
+
+```powershell
+$env:SENTINAL_OFFLINE = "1"
+python scripts/offline_repl.py
+```
 
 ## API
 
@@ -75,10 +83,11 @@ loopback unless you know you want it published to the network.
 **Intent allowlist** (fixed set, else rejected outright) → **filesystem sandbox**
 (`System32`, Windows core dirs, `..` traversal, bare drives blocked) → **keyword filtering**
 (destructive verbs, word-boundary matched) → **human-in-the-loop** (deletion needs explicit
-confirmation no injected instruction can bypass) → **postcondition verification** (real OS
-state checked after execution — a clean return that didn't actually happen is a failure, not
-a success). 100% block rate, 66-test adversarial fuzz suite. Full model, capability tiers, and
-the containment roadmap: [`CONTAINMENT_ARCHITECTURE.md`](CONTAINMENT_ARCHITECTURE.md).
+confirmation no injected instruction can bypass) → **postcondition verification where
+available** (for actions that leave a durable OS-state fact, a clean return that didn't
+actually happen is a failure, not a success). 100% block rate, 66-test adversarial fuzz
+suite. Full model, capability tiers, and the containment roadmap:
+[`CONTAINMENT_ARCHITECTURE.md`](CONTAINMENT_ARCHITECTURE.md).
 
 ## Evaluation
 
@@ -91,17 +100,23 @@ the containment roadmap: [`CONTAINMENT_ARCHITECTURE.md`](CONTAINMENT_ARCHITECTUR
 | Security fuzzing block rate | **100%** (66/66) |
 | Test suite | 1,331 passing, 86.56% coverage |
 
-**Reproduce with zero API keys / network:**
+**Reproduce with zero cloud API keys:**
 
-```bash
-python scripts/reproduce_router_accuracy.py           # router-only, full dataset, exhaustive
-python -m eval.run_eval                                # task-success harness
+```powershell
+$env:SENTINAL_OFFLINE = "1"
+python scripts/reproduce_router_accuracy.py
+python -m eval.run_eval --run-id offline-demo --task-id conv-hello --task-id deny-format --task-id deny-format-d-drive
 ```
+
+`eval.run_eval` writes generated reports under `_evidence/P1-5/`; that directory is
+gitignored except for its placeholder. The three-case offline demo proves the harness path
+passes in deterministic mode and fails closed on malformed offline fallback actions; it does
+**not** prove natural-language disk-format command recognition.
 
 The full end-to-end number needs a real Windows desktop and live LLM access —
 `benchmarks/run_benchmark.py --repeat 3`. Methodology (independent OS-state verification,
-Wilson intervals, no score-inflating retries, every report pinned to its git commit) is in
-[`docs/reports/`](docs/reports/).
+Wilson intervals, no score-inflating retries, and newly generated eval reports include git
+commit metadata) is summarized in `docs/DECISIONS.md`.
 
 ## Testing
 
@@ -128,8 +143,7 @@ interfaces/         Voice I/O (wake word, STT, TTS) and UI bridge
 eval/, benchmarks/  Reproducible accuracy + task-success evaluation
 scripts/            Standalone verification/reproduction/offline-mode entry points
 tests/              1,331 passing automated tests at the public head
-docs/                Planning docs, point-in-time reports, dev history
-thesis/             Full design/evaluation write-up and diagrams
+docs/                Compact public docs and current decision log
 ```
 
 ## License

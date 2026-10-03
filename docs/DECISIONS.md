@@ -7,12 +7,14 @@ prior context should be able to read this plus `CONTRIBUTING.md`, `ROADMAP.md` a
 ## 1. What this is
 
 SentinAL is a voice/text-controlled desktop agent for Windows with a deterministic
-security layer: every action an LLM proposes is validated before it runs, and verified
-against real OS state afterwards. It is a B.Tech thesis project and a public open-source
-research prototype (`pavann19/SentinAL-Desktop-AI-Orchestration`).
+security layer: proposed actions are validated before they run, and actions with durable
+postconditions are verified against real OS state afterwards. It is a B.Tech project
+and a public open-source research prototype
+(`pavann19/SentinAL-Desktop-AI-Orchestration`).
 
 **Positioning.** Gatekeeper decides whether a prompt may reach a model; SentinAL decides
-whether an agent's proposed OS action may execute, and verifies that it worked.
+whether an agent's proposed OS action may execute, and checks durable OS state afterward
+when a verifiable postcondition exists.
 
 **Goals.** (1) A desktop agent whose safety does not depend on model good behaviour.
 (2) Evidence-backed claims: reproducible benchmarks with provenance. (3) Autonomy that
@@ -30,7 +32,7 @@ containment gate; any capability that lets the system change its own policy.
 memory, world model, skills, self-improvement), `capabilities/` (system, developer, web),
 `config/` (tiers, contracts, constants — single auditable policy source), `interfaces/`
 (voice, UI bridge), `eval/` + `benchmarks/` (measurement), `scripts/` (verification and
-offline entry points), `tests/`, `thesis/`.
+offline entry points), and `tests/`.
 
 ## 3. Decision log
 
@@ -43,9 +45,9 @@ Each entry: decision — reason — where it lives.
    by querying the OS, not the pipeline.
 3. **Containment before autonomy (S4 gates S6+)** — planning ahead of the sandbox that
    contains its mistakes is the failure shape to avoid. `ROADMAP.md` ordering.
-4. **Trained classifier replaced the zero-shot router** — logistic regression over
-   all-MiniLM-L6-v2 embeddings (`classifier_v2_realdata.joblib`); low-margin ties defer to
-   the LLM. Fast path resolves ~88% of requests with no LLM call.
+4. **Trained classifier replaced the zero-shot router when a local classifier artifact is
+   present** — logistic regression over all-MiniLM-L6-v2 embeddings; low-margin ties defer
+   to the LLM. The generated classifier is not published in the public repo.
 5. **scikit-learn pinned to the artifact's version** — an unpickle across versions is
    not safe to assume.
 6. **UIA-first GUI resolution; pixel matching only as fallback** — resolution/DPI
@@ -58,8 +60,8 @@ Each entry: decision — reason — where it lives.
    `main.py`) — changes need an explicit decision; the one deliberate `main.py` change
    was adding `GET /api/tasks[/{id}]`.
 10. **Honest reporting over impressive reporting** — no score-inflating retries, Wilson
-    intervals, reports pinned to a git commit, a self-authored benchmark said to be
-    self-authored, external tasks added only where fairly testable.
+    intervals, newly generated eval reports include commit metadata, a self-authored
+    benchmark said to be self-authored, external tasks added only where fairly testable.
 11. **Broad `except Exception` is intentional** (fail-safe pipeline); CI ignores
     `BLE001`, `S110`, `S112`. All other lint findings are fixed, not ignored.
 12. **ruff pinned to 0.16.0** in CI and dev extras — lint results were drifting with
@@ -77,7 +79,7 @@ Each entry: decision — reason — where it lives.
 
 | Metric | Value | Source |
 |---|---|---|
-| End-to-end task success (real machine, OS-verified) | 96.7% (116/120), 95% CI 91.7–98.7% | `benchmarks/` + `docs/reports/` |
+| End-to-end task success (real machine, OS-verified) | 96.7% (116/120), 95% CI 91.7–98.7% | local benchmark evidence, not published as generated artifacts |
 | Router-only accuracy, full 3230-entry dataset | 91.11% | `scripts/reproduce_router_accuracy.py` |
 | Real-world phrasing (MASSIVE) / out-of-distribution | 92.33% / 83.68% | `eval/` |
 | Security fuzz suite | 66/66 blocked | `tests/test_security_fuzz.py` |
@@ -120,9 +122,8 @@ activated** (flags off; nothing reads the improvement store in the live path yet
 
 - [ ] Full suite green on a clean venv; CI green on `main`.
 - [ ] Re-run the end-to-end benchmark on the final commit (`--repeat 3`); update
-      README and thesis numbers to exactly what it prints.
-- [ ] Reconcile thesis text with `ROADMAP.md` (intent counts, test counts, limitations).
+      README numbers to exactly what it prints.
 - [ ] README/roadmap/limitations honest and current; every link resolves.
 - [ ] Tag a release; publish notes listing verified numbers and known limitations.
-- [ ] Archive: signed tag, exported evidence (`benchmarks/results/`, `_evidence/`), and a
-      dated backup of the repo outside the working tree.
+- [ ] Archive: signed tag, exported evidence outside the public repo, and a dated backup
+      of the repo outside the working tree.

@@ -19,6 +19,12 @@ sentinal-ui/build/
 sentinal-ui/release/
 _backups/
 
+# Generated evaluation/model artifacts are local evidence, not public-repo content.
+_evidence/**
+!_evidence/
+!_evidence/.gitkeep
+eval/intent_eval_results.json
+
 # Local API auth token (generated at runtime, never commit)
 .sentinal_token
 
@@ -30,6 +36,9 @@ docs/planning/AGENTIC_OS_ROADMAP_AND_THESIS_PLAN.md
 docs/planning/PHASE_A_FINETUNING_PLAN.md
 docs/planning/PHASE_TASK_BOARD.md
 docs/planning/SENTINAL_V2_RECONCILED_ARCHITECTURE.md
+docs/planning/OPEN_ENDED_ROADMAP.md
 docs/reports/CODEBASE_ANALYSIS.md
 docs/reports/STATE.md
 docs/reports/THESIS_ACCURACY_SWEEP_PACK.md
+docs/reports/
+thesis/

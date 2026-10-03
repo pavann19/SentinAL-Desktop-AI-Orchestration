@@ -11,6 +11,7 @@ whatever the implementation ended up doing.
 """
 import pytest
 
+from eval import run_eval
 from eval import harness
 
 
@@ -129,3 +130,54 @@ async def test_run_suite_empty_list_reports_zero_not_divide_by_zero(monkeypatch)
     report = await harness.run_suite([])
     assert report["total"] == 0
     assert report["success_rate"] == 0.0
+
+
+def test_run_eval_git_metadata_records_commit(monkeypatch):
+    def _fake_check_output(args, **kwargs):
+        if args[-2:] == ["--short", "HEAD"]:
+            return "abc1234\n"
+        return "abc1234def5678\n"
+
+    monkeypatch.setattr(run_eval.subprocess, "check_output", _fake_check_output)
+
+    assert run_eval._git_metadata() == {
+        "commit_sha": "abc1234def5678",
+        "commit_short": "abc1234",
+    }
+
+
+@pytest.mark.asyncio
+async def test_run_eval_report_includes_top_level_git_commit(monkeypatch, tmp_path):
+    async def _fake_run_suite(tasks):
+        return {
+            "total": 1,
+            "passed": 1,
+            "failed": 0,
+            "success_rate": 1.0,
+            "results": [],
+            "generated_at": "2026-10-01T00:00:00+00:00",
+        }
+
+    monkeypatch.setattr(run_eval, "load_tasks", lambda path: [
+        {"id": "t1", "prompt": "hello", "expect_validation": "Approved", "expect_execution": "Success"}
+    ])
+    monkeypatch.setattr(run_eval, "run_suite", _fake_run_suite)
+    monkeypatch.setattr(run_eval, "_git_metadata", lambda: {
+        "commit_sha": "abc1234def5678",
+        "commit_short": "abc1234",
+    })
+
+    args = type("Args", (), {
+        "tasks": tmp_path / "tasks.yaml",
+        "task_id": [],
+        "include_skip_in_ci": False,
+        "report_dir": tmp_path,
+        "run_id": "demo",
+    })()
+
+    exit_code = await run_eval._main_async(args)
+    report = __import__("json").loads((tmp_path / "report_demo.json").read_text(encoding="utf-8"))
+
+    assert exit_code == 0
+    assert report["git_commit"] == "abc1234def5678"
+    assert report["git"]["commit_short"] == "abc1234"
