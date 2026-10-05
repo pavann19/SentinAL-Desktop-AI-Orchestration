@@ -362,7 +362,7 @@ def _paths_for_step(step: dict) -> list[str]:
 
 
 async def process_command(prompt: str, *, autonomous: bool = False,
-                          confirm_token: str | None = None) -> dict[str, Any]:
+                          confirm_token: str | None = None, cancel_event=None) -> dict[str, Any]:
     """
     Async pipeline entry point. Wraps the synchronous executor in a thread
     so it does not block the ASGI event loop (Fix 3.12).
@@ -372,7 +372,7 @@ async def process_command(prompt: str, *, autonomous: bool = False,
     ENFORCED only when SENTINAL_REQUIRE_CONFIRMATION is on — then a T2/T3
     plan returns execution="PendingConfirmation" with a one-time confirm
     token, and the caller resends the same prompt with confirm_token set to
-    proceed. With the switch off (default), behaviour is unchanged: the
+    proceed. Explicitly disabling the switch is unsafe compatibility mode: the
     flag is informational, execution runs.
 
     autonomous=True (S6 event bus running a background goal — no human in the
@@ -405,6 +405,10 @@ async def process_command(prompt: str, *, autonomous: bool = False,
             # ── STAGE 1: INTENT EXTRACTION ──
             with traced_step("extract_intent", prompt_len=len(prompt)):
                 steps = extract_intent(prompt, autonomous=autonomous)
+            for step in steps:
+                if isinstance(step, dict):
+                    # Preserve caller text outside the extractor's authority.
+                    step["_source_prompt"] = prompt
             output["steps"] = steps
 
             if any(s.get("intent") == "UnknownIntent" for s in steps):
@@ -413,17 +417,13 @@ async def process_command(prompt: str, *, autonomous: bool = False,
                 output["response"] = steps[0].get("target", "Extraction failed.")
                 return output
 
+            # ── STAGE 2: VALIDATION ──
+            with traced_step("validate_steps", step_count=len(steps)):
+                is_valid, validation_msg, _requires_confirm = validate_steps(steps)
+
             # ── STAGE 1a: CAPABILITY BROKER — risk-tier decision (S4) ──────────
-            # Surfaces the containment tier + confirmation need for any consumer
-            # that wants to gate on it. For a direct human command
-            # (autonomous=False) it is informational only — non-blocking,
-            # because there is no confirmation-provision channel and blocking a
-            # T3 request would break FileDeletionIntent etc. For an autonomous
-            # background goal (autonomous=True, S6 event bus) it is ENFORCED:
-            # a denied decision stops here, nothing runs.
-            #
-            # Runs before validate_steps() — it never loosens the validator's
-            # own allow/deny, which still runs below and wins.
+            # Validate before issuing any confirmation. Autonomous high-tier plans
+            # are denied; guarded direct-human plans require request-bound tokens.
             from agentic_core.capability_broker import grant_all
 
             grant_decision = grant_all(steps, autonomous=autonomous)
@@ -431,6 +431,14 @@ async def process_command(prompt: str, *, autonomous: bool = False,
             output["requires_confirmation"] = grant_decision.requires_confirmation
             output["capability_reason"] = grant_decision.reason
             output["autonomous"] = autonomous
+
+            if not is_valid:
+                output["validation"] = "Denied"
+                output["execution"] = "Blocked"
+                output["response"] = validation_msg
+                return output
+
+            output["validation"] = "Approved"
 
             if autonomous and not grant_decision.allowed:
                 output["validation"] = "Denied"
@@ -444,8 +452,8 @@ async def process_command(prompt: str, *, autonomous: bool = False,
             # Only when SENTINAL_REQUIRE_CONFIRMATION is on. A T2/T3 direct-human
             # request either presents a valid one-time token bound to THIS exact
             # request (consume it, continue) or gets a PendingConfirmation
-            # result with a fresh token and nothing runs. Off by default so
-            # existing REST callers / the benchmark are unaffected. The
+            # result with a fresh token and nothing runs. On by default; explicit unsafe compatibility mode is available
+            # only to callers who configure it deliberately. The
             # autonomous path never reaches here — it already returned Blocked
             # for T2/T3 above.
             if not autonomous and grant_decision.requires_confirmation:
@@ -499,7 +507,7 @@ async def process_command(prompt: str, *, autonomous: bool = False,
                 with traced_step("execute_goal_graph", step_count=len(steps)):
                     graph = GoalGraph.from_pipeline(steps, goal_description=prompt)
                     goal_observed = await asyncio.to_thread(
-                        execute_goal_graph_observed, graph, None, plan_budget,
+                        execute_goal_graph_observed, graph, cancel_event, plan_budget,
                     )
 
                 output["validation"] = goal_observed["validation"]
@@ -516,18 +524,6 @@ async def process_command(prompt: str, *, autonomous: bool = False,
                 _record_capability_outcomes(output, _t0)
                 _record_skill_outcome(graph, output)
                 return output
-
-            # ── STAGE 2: VALIDATION ──
-            with traced_step("validate_steps", step_count=len(steps)):
-                is_valid, validation_msg, _requires_confirm = validate_steps(steps)
-
-            if not is_valid:
-                output["validation"] = "Denied"
-                output["execution"] = "Blocked"
-                output["response"] = validation_msg
-                return output
-
-            output["validation"] = "Approved"
 
             # Fix [observe-wire]: attach expected_state for ApplicationLaunchIntent
             # steps so the postcondition observer (P1-2) has something to check.
@@ -553,7 +549,7 @@ async def process_command(prompt: str, *, autonomous: bool = False,
             # are UNCHANGED from before this fix, preserving 100% backward
             # compatibility for every existing caller/test.
             with traced_step("execute_pipeline", step_count=len(steps)):
-                observed = await asyncio.to_thread(execute_pipeline_observed, steps)
+                observed = await asyncio.to_thread(execute_pipeline_observed, steps) if cancel_event is None else await asyncio.to_thread(execute_pipeline_observed, steps, cancel_event)
             execution_result = observed["result"]
 
             # Additive fields — new for any caller that wants them; existing

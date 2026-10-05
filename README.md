@@ -1,151 +1,175 @@
 # SentinAL — Secure AI Desktop Orchestration
 
-An **agent-safety research project** built around a voice-controlled Windows desktop agent.
-Its deterministic control plane validates proposed actions before they run and
-verifies OS state afterward where a durable postcondition exists.
+SentinAL is a supervised Windows desktop agent with a deterministic action-control
+layer. A language model proposes actions; policy code validates them, limits their
+authority, and checks OS state afterward when an independent postcondition exists.
 
-Its portfolio value is the safety architecture—untrusted-model containment, policy
-enforcement, postcondition verification, and evidence-backed evaluation—not general
-backend engineering or production SaaS scale.
+**Status: research prototype.** This repository contains tested security mechanisms
+and reproducible evaluation tools. It does not claim production reliability,
+complete sandbox coverage, or safe unattended operation.
 
-**Positioning:** Gatekeeper decides whether a prompt may reach a model; SentinAL decides
-whether an agent's proposed OS action may execute, and checks durable OS state afterward
-when that action leaves a verifiable postcondition.
+## Why it exists
 
-> **Status: research prototype / early MVP.** The security boundary and intent routing are
-> well tested (1,331 automated tests passing, 86.56% coverage, a 66-test adversarial fuzz suite at 100%
-> block rate). End-to-end task success on a real machine, independently OS-state-verified, is
-> **96.7%** (95% CI 91.7–98.7%, n=120) — good for supervised daily use, not yet unattended.
-> Public docs are intentionally compact; generated evidence and thesis drafts are kept out
-> of the public repo and regenerated locally when needed.
+An LLM with desktop privileges can misunderstand a request or follow injected
+instructions. SentinAL puts authorization outside the model and distinguishes an
+action that returned normally from an action whose outcome was observed.
 
-## Why
+## Security model and architecture
 
-An agent with OS execution privileges can't rely on a language model's good behaviour for
-safety. SentinAL treats the LLM as untrusted and enforces security *outside* it, then
-independently checks OS state afterward rather than trusting that a call returned cleanly.
-Full containment design: [`CONTAINMENT_ARCHITECTURE.md`](CONTAINMENT_ARCHITECTURE.md).
-
-## Requirements
-
-Windows 10/11 (the execution layer uses `win32gui`/`pyautogui`/UIA — not portable as written) ·
-Python 3.11+ · [Ollama](https://ollama.com/) for local/private LLM routing · Node 18+ only for
-the optional Electron/React HUD. API keys (Groq, Deepgram, Picovoice, Tavily) are all optional
-— features degrade gracefully without them, and `SENTINAL_OFFLINE=1` (below) needs no cloud keys.
-
-## Install & run
-
-```bash
-git clone <your-repo-url> sentinal && cd sentinal
-python -m venv venv && venv\Scripts\activate
-pip install -r requirements.txt
-ollama pull llama3.2                 # local/private model
-copy .env.example .env               # then edit — every key is documented in the template
-python main.py                       # backend on http://127.0.0.1:8000
+```mermaid
+flowchart LR
+    U[Authenticated text / supervised voice] --> R[Intent router]
+    R --> P[Untrusted planner]
+    P --> V[Deterministic validator]
+    V --> B[Capability policy and budgets]
+    B --> C[Confirmation where required]
+    C --> E[Executor]
+    E --> O[Independent OS postcondition]
+    O --> A[Outcome and audit record]
 ```
 
-First run generates a bearer token into `.sentinal_token` (gitignored). Key `.env` settings:
-`SENTINAL_HOST` (keep on `127.0.0.1`), `LLM_PROVIDER` (`groq` cloud / `local` Ollama-only),
-`SENTINAL_DEBUG` (leave `false`).
+The core boundary consists of an intent allowlist, filesystem/command policy,
+capability tiers, bounded budgets, confirmation, and postcondition checks.
+REST commands require a bearer token. Both WebSockets require a token handshake;
+foreign browser origins are rejected. Keep the backend on loopback.
 
-**No cloud keys, no internet API, no voice** — offline mode runs the real pipeline through
-a text REPL, skips the cloud LLM entirely, probes local Ollama on `localhost:11434`, and
-falls back to a deterministic stub if Ollama is unreachable. Install the Python
-dependencies first, then run:
+**Threat boundaries:** policy filtering is not an OS security boundary. Some
+capabilities execute with the user's privileges. Docker-backed npm installation
+still has a writable workspace and network access. Host pip installation and
+automatic host npm fallback are disabled. CodeAct requires Windows Sandbox. No protection against a compromised
+host, malicious administrator, or theft of the local token is claimed.
+See [security policy](SECURITY.md) and [containment design](CONTAINMENT_ARCHITECTURE.md).
+
+## Core components and maturity
+
+| Area | State | Boundary |
+|---|---|---|
+| Validation, budgets, confirmation | Verified by regression tests | Finite tests; not a formal proof |
+| Authenticated REST/WebSocket transport | Verified by positive and negative tests | Local single-user service; no multi-tenant deployment |
+| OS postcondition observation | Implemented for supported actions | Some conversational, read-only and UI actions lack durable proof |
+| Offline text demo | Demonstrated with a focused task subset | Mock/local model results are not live desktop benchmark results |
+| Learned skills and improvement store | Experimental, default off | No production learning or autonomous promotion claim |
+| Electron packaging | Experimental | Installer operation is not verified; use the browser HUD |
+| Cross-platform desktop execution, unattended service, formal security proof | Not implemented | Windows supervised usage only |
+
+## Verification and evaluation
+
+Use a Windows virtual environment with development tools installed:
+
+```powershell
+python -m pytest tests/ --timeout=60
+python -m ruff check main.py agentic_core system_services config capabilities interfaces scripts/check_release.py scripts/audit_dependencies.py --ignore E501,E402,BLE001,S110,S112
+python -m mypy agentic_core/validator.py agentic_core/memory_hook.py system_services/privacy_router.py --ignore-missing-imports
+python scripts/check_release.py
+python scripts/audit_dependencies.py
+```
+
+CI makes these checks blocking, runs the browser UI checks, builds the Python
+package, and validates the headless Docker image. Coverage requires 70% over the
+configured scope; voice/vision and other explicitly omitted modules are listed in
+`.coveragerc`. Mypy currently covers three modules, not the whole application.
+[Local verification checkpoint](docs/verification.md) records results and unverified boundaries.
+
+Reproduce routing or supervised task measurements:
+
+```powershell
+python scripts/reproduce_router_accuracy.py
+python -m eval.finetune_classifier --run-id local
+python benchmarks/run_benchmark.py --repeat 3
+```
+
+The benchmark command executes desktop actions. Review its tasks first and run
+only on a disposable/supervised Windows desktop. Model weights may download on
+first use. Training creates a trusted local classifier; fresh checkouts use the
+artifact-free router. Results from those modes must not be conflated.
+
+[Methodology](docs/benchmarks/methodology.md), [historical result summary](docs/benchmarks/accuracy.md),
+and [dataset provenance](docs/datasets.md) explain evidence boundaries. Generated
+models, embeddings, detailed reports and runtime records stay outside public Git.
+
+## Installation
+
+Windows 10/11; Python 3.11–3.13. For the optional HUD, Node.js 22.12+.
+The desktop runtime is Windows-only; Docker provides headless evaluation only.
+
+```powershell
+git clone https://github.com/pavann19/SentinAL-Desktop-AI-Orchestration.git
+Set-Location SentinAL-Desktop-AI-Orchestration
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install ".[dev]"
+```
+
+For live operation, copy `.env.example` to `.env` and configure the providers you
+intend to use. Ollama is optional for the offline demo. Voice and cloud services
+have separate optional credentials. [Configuration](docs/configuration.md).
+
+## Usage
+
+Text demo without cloud credentials or voice:
 
 ```powershell
 $env:SENTINAL_OFFLINE = "1"
 python scripts/offline_repl.py
 ```
 
-## API
+Try `hello`, `format the C drive`, then `exit`. Offline mode probes local Ollama
+and falls back to a deterministic mock. Embedding weights need a cached copy for
+a strictly disconnected run; `SENTINAL_OFFLINE` alone is not a network firewall.
 
-| Endpoint | Auth | Purpose |
-|---|---|---|
-| `GET /health`, `/api/health` | none | Liveness probe |
-| `POST /api/command` | bearer | Execute a natural-language command |
-| `GET /api/tasks[/{id}]` | bearer | Poll a background task's status |
-| `GET /api/logs` | bearer | Last 10 diagnostic log entries |
-| `WS /ws/agent`, `/ws/telemetry` | — | Streaming pipeline state / live telemetry |
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/command \
-  -H "Authorization: Bearer $(cat .sentinal_token)" -H "Content-Type: application/json" \
-  -d '{"prompt": "open notepad"}'
-```
-
-`/api/command` executes real OS actions — the token is a real credential, and CORS does not
-protect it (CORS is browser-enforced; scripts bypass it entirely). Keep `SENTINAL_HOST` on
-loopback unless you know you want it published to the network.
-
-## Security model
-
-**Intent allowlist** (fixed set, else rejected outright) → **filesystem sandbox**
-(`System32`, Windows core dirs, `..` traversal, bare drives blocked) → **keyword filtering**
-(destructive verbs, word-boundary matched) → **human-in-the-loop** (deletion needs explicit
-confirmation no injected instruction can bypass) → **postcondition verification where
-available** (for actions that leave a durable OS-state fact, a clean return that didn't
-actually happen is a failure, not a success). 100% block rate, 66-test adversarial fuzz
-suite. Full model, capability tiers, and the containment roadmap:
-[`CONTAINMENT_ARCHITECTURE.md`](CONTAINMENT_ARCHITECTURE.md).
-
-## Evaluation
-
-| Metric | Result |
-|---|---|
-| Intent accuracy — real-world phrasing (Amazon MASSIVE) | **92.33%** |
-| Intent accuracy — out-of-distribution (synthetic) | **83.68%** |
-| Fast-path resolution (no LLM call) | **88.45%** |
-| **End-to-end task success (real machine, OS-verified)** | **96.7%** (95% CI 91.7–98.7%, n=120) |
-| Security fuzzing block rate | **100%** (66/66) |
-| Test suite | 1,331 passing, 86.56% coverage |
-
-**Reproduce with zero cloud API keys:**
+Focused evaluation:
 
 ```powershell
 $env:SENTINAL_OFFLINE = "1"
-python scripts/reproduce_router_accuracy.py
 python -m eval.run_eval --run-id offline-demo --task-id conv-hello --task-id deny-format --task-id deny-format-d-drive
 ```
 
-`eval.run_eval` writes generated reports under `_evidence/P1-5/`; that directory is
-gitignored except for its placeholder. The three-case offline demo proves the harness path
-passes in deterministic mode and fails closed on malformed offline fallback actions; it does
-**not** prove natural-language disk-format command recognition.
+Start the backend with `python main.py`. It creates `.sentinal_token` when no token
+is configured. Optional browser HUD: see [UI setup](sentinal-ui/README.md).
 
-The full end-to-end number needs a real Windows desktop and live LLM access —
-`benchmarks/run_benchmark.py --repeat 3`. Methodology (independent OS-state verification,
-Wilson intervals, no score-inflating retries, and newly generated eval reports include git
-commit metadata) is summarized in `docs/DECISIONS.md`.
+## API
 
-## Testing
+| Endpoint | Authentication | Purpose |
+|---|---|---|
+| `GET /health`, `/api/health` | Public | Liveness only |
+| `POST /api/command` | Bearer | Submit a command; confirmation token for guarded actions |
+| `GET /api/tasks`, `/api/tasks/{id}` | Bearer | Background task status |
+| `GET /api/logs` | Bearer | Diagnostic log entries |
+| `/ws/agent`, `/ws/telemetry` | First-frame token handshake | Commands/events and telemetry |
 
-`pytest tests/ -v --deselect tests/test_stress.py` (CI runs ruff, mypy, and this on every push).
-
-## Known limitations
-
-- **6 of 19 intents have no independent postcondition check** (read-only/conversational, or
-  leave no durable OS-state fact — e.g. `ConversationalIntent`, `DictationIntent`).
-- **Windows-only.**
-- **GUI resolution** falls back to pixel-matching (fragile to DPI/multi-monitor changes) only
-  when UI Automation can't resolve a label — not the default path, but not eliminated.
-- **The end-to-end benchmark is self-authored**; `benchmarks/external/` adds a pluggable
-  manifest format for third-party tasks, still thin.
-- **No installer/package** — install is manual.
-
-## Project layout
-
-```
-agentic_core/       Router, planner, validator, executor, memory, world model
-capabilities/       Pluggable actions (system, developer, web)
-config/             Security policy + tiers (single auditable source)
-interfaces/         Voice I/O (wake word, STT, TTS) and UI bridge
-eval/, benchmarks/  Reproducible accuracy + task-success evaluation
-scripts/            Standalone verification/reproduction/offline-mode entry points
-tests/              1,331 passing automated tests at the public head
-docs/                Compact public docs and current decision log
+```powershell
+$token = (Get-Content .sentinal_token -Raw).Trim()
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/command -Headers @{Authorization="Bearer $token"} -ContentType application/json -Body '{"prompt":"hello"}'
 ```
 
-## License
+A WebSocket client must send `{"type":"authenticate","token":"<local-token>"}`
+within five seconds and wait for `{"type":"authenticated"}` before commands.
+Browser origins are restricted to localhost/127.0.0.1 port 5173. Never put the
+token in a URL, frontend build configuration, screenshot or public issue.
 
-[MIT](LICENSE) © 2026 Gannoju Pavan Kumar
+## Limitations
+
+- Single-user Windows prototype with manual setup; no supported installer.
+- Finite adversarial tests do not establish resistance to all prompt injections.
+- GUI outcomes depend on focus, permissions, DPI, application versions and timing.
+- Postcondition coverage varies by intent; no universal exactly-once guarantee.
+- Artifact-free routing scored 61.98% on the current 3,230-row synthetic dataset; see the result summary.
+- Historical metrics came from a particular machine, model and routing mode.
+- Learning, long-running autonomy and Electron packaging remain experimental.
+
+## Project structure
+
+| Directory | Purpose |
+|---|---|
+| `agentic_core/` | Orchestration, policy, budgets, memory and experimental learning |
+| `capabilities/` | System/developer/web actions and OS observers |
+| `config/` | Policy contracts, paths, feature flags and provider configuration |
+| `interfaces/`, `system_services/` | Voice/UI integration, privacy and state |
+| `eval/`, `benchmarks/` | Versioned datasets, task definitions and measurement code |
+| `tests/` | Behavioral and security regression tests |
+| `scripts/` | Supported demo, release and reproduction utilities |
+| `docs/` | Architecture decisions, configuration and evaluation methodology |
+| `sentinal-ui/` | Optional browser HUD and experimental Electron source |
+
+[Contributing](CONTRIBUTING.md) · [Roadmap](ROADMAP.md) · [MIT license](LICENSE)

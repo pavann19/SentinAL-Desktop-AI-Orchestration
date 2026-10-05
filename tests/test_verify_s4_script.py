@@ -45,10 +45,10 @@ def test_routing_assertion_matches_real_builder(tmp_path):
     )
     d = str(tmp_path)
     body = _sandboxed_npm_script_body(["is-number"], False, d)
-    assert "docker run --rm" in body
-    assert f'-v "{d}:/workspace"' in body
+    assert "'docker' 'run' '--rm'" in body
+    assert "'-v'" in body and (d + ":/workspace") in body
     assert _DOCKER_NODE_IMAGE in body
-    assert "npm install is-number" in body
+    assert "'npm' 'install' 'is-number'" in body
 
 
 def test_finish_writes_a_report(tmp_path, monkeypatch, capsys):

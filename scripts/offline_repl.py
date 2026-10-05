@@ -2,7 +2,7 @@
 scripts/offline_repl.py — text REPL for SENTINAL_OFFLINE=1.
 
 Runs the real pipeline (extract_intent -> validate -> execute) with no voice
-loop, no cloud key, and no network required. Sets SENTINAL_OFFLINE=1 before
+loop or cloud key. A cached embedding model is needed for disconnected operation. Sets SENTINAL_OFFLINE=1 before
 anything else is imported so BrainConfig never touches Groq and only touches
 Ollama if it's actually reachable (config/settings.py, agentic_core/mock_llm.py)
 — with neither available, extraction/planning falls back to a deterministic

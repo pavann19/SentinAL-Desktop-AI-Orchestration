@@ -6,6 +6,7 @@ Unit tests for agentic_core/confirmation.py — the direct-human confirm channel
 """
 import os
 import sys
+import subprocess
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -16,6 +17,16 @@ from agentic_core.confirmation import (
     _request_fingerprint,
     summarize,
 )
+
+
+def test_confirmation_is_on_when_environment_setting_is_absent():
+    env = dict(os.environ)
+    env.pop("SENTINAL_REQUIRE_CONFIRMATION", None)
+    result = subprocess.run(
+        [sys.executable, "-c", "from agentic_core.confirmation import REQUIRE_CONFIRMATION; assert REQUIRE_CONFIRMATION"],
+        env=env, capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 @pytest.fixture()

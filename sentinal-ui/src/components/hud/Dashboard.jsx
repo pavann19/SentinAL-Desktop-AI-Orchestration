@@ -10,7 +10,7 @@ import DataValue from '../ui/DataValue';
 
 export default function Dashboard() {
   const { 
-    bootPhase, state, addNotification,
+    bootPhase, addNotification,
     envFiles, envDirs, sysUptime, sysThreat, govClearance 
   } = useSystemStore();
   const [filesOpen, setFilesOpen] = useState(false);
@@ -32,7 +32,7 @@ export default function Dashboard() {
         <h2 className="hud-title">SYS.DASHBOARD</h2>
 
         <div className="data-row">
-          <span className="data-label">🛡 CLEARANCE</span>
+          <span className="data-label">🛡 USER CONTEXT</span>
           <DataValue value={govClearance} fieldKey="govClearance" />
         </div>
 
@@ -69,23 +69,23 @@ export default function Dashboard() {
         </div>
 
         <div className="data-row" style={{ marginTop: '0.8rem' }}>
-          <span className="data-label">⏱ UPTIME</span>
+          <span className="data-label">⏱ PROCESS UPTIME</span>
           <DataValue 
             value={sysUptime} 
             fieldKey="sysUptime"
-            format={(v) => v.toFixed(2)}
-            suffix="%"
+            format={(v) => Math.floor(v).toString()}
+            suffix="s"
             countUp
             style={{ color: 'var(--stark-green)' }}
           />
         </div>
 
         <div className="data-row" style={{ marginTop: '0.8rem' }}>
-          <span className="data-label">⚠️ THREAT LEVEL</span>
+          <span className="data-label">⚠️ RESOURCE LOAD</span>
           <DataValue 
             value={sysThreat}
             fieldKey="sysThreat"
-            style={{ color: sysThreat === 'ZERO' ? 'var(--stark-cyan)' : sysThreat ? 'var(--stark-red)' : undefined }}
+            style={{ color: sysThreat === 'NORMAL' ? 'var(--stark-cyan)' : sysThreat ? 'var(--stark-red)' : undefined }}
           />
         </div>
       </div>

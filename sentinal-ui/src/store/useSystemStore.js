@@ -60,8 +60,8 @@ const useSystemStore = create((set, get) => ({
   setSystemState: (state) => set({ state }),
 
   // FIX 6: Confirmation dialog actions
-  requestConfirmation: (command) => set({ confirmationPending: true, confirmationCommand: command }),
-  resolveConfirmation: () => set({ confirmationPending: false, confirmationCommand: null }),
+  requestConfirmation: (command, token) => set({ confirmationPending: true, confirmationCommand: command, confirmationToken: token }),
+  resolveConfirmation: () => set({ confirmationPending: false, confirmationCommand: null, confirmationToken: null }),
   
   toggleMode: () => set((s) => {
     const newMode = s.mode === 'assist' ? 'security' : 'assist';
@@ -130,7 +130,7 @@ const useSystemStore = create((set, get) => ({
   })),
 
   dequeueTask: () => set((s) => {
-    const [next, ...rest] = s.taskQueue;
+    const rest = s.taskQueue.slice(1);
     return { taskQueue: rest };
   }),
 

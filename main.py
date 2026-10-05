@@ -3,6 +3,7 @@
 # Optimized for near-instant boot times and Global Project Sync (v2.4).
 
 import sys
+
 # Force UTF-8 console output on Windows to prevent UnicodeEncodeError crashes
 # when any module prints non-ASCII characters (emojis, special symbols, etc.)
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -14,11 +15,11 @@ import os
 import time
 
 SERVER_START_TIME = time.time()
-import json
 import asyncio
-import traceback
-import socket
+import json
+
 import psutil
+
 
 # ── 1. GLOBAL CONFIG & SYNC (Master Lock) ───────────────────────────────────
 def load_env_config():
@@ -50,28 +51,29 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["OMP_NUM_THREADS"] = "1"
 
 SYSTEM_CONFIG = {
-    "clearance": "ADMIN",
+    "clearance": "LOCAL USER",
     "agent": "MEGHA",
     "active_skills": ["SYS_CONTROL", "FILE_OPS", "NET_SOCKET"]
 }
 
 import secrets
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Header, HTTPException, Request
+from contextlib import asynccontextmanager
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from starlette.websockets import WebSocketState
-from pydantic import BaseModel
-from contextlib import asynccontextmanager
-from agentic_core.scheduler import task_manager
 
 # ── NEW OS CORE SERVICES ──────────────────────────────────────────────────
 from agentic_core.capability_registry import registry
 from agentic_core.processor import _DEFAULT_APP_MAP_SEED
-from system_services.system_state import state_manager
+from agentic_core.scheduler import task_manager
 from interfaces.ui_bridge.conversation_manager import conversation_manager
 from interfaces.voice.wake_engine import wake_engine
+from system_services.system_state import state_manager
 
 active_telemetry_clients = set()
 active_agent_clients: dict = {}   # Fix 2.5: dict[ws → connect_time] for deterministic routing
@@ -81,6 +83,7 @@ TELEMETRY_PINGS = {}  # Track {websocket: last_ping_time}
 IS_CLOUD = os.getenv("LLM_PROVIDER", "local").lower() in ("groq", "openai")
 
 from interfaces.voice.nlp_correction import corrector
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -232,7 +235,7 @@ async def lifespan(app: FastAPI):
                     await safe_send_json(ws, {"type": "execution_step", "message": f"Microphone (Raw): {text}", "stage": "perception"})
                     await asyncio.sleep(0.1) # Small delay for UI
                 except Exception:
-                    active_agent_clients.discard(ws)
+                    active_agent_clients.pop(ws, None)
                 
             clean_text = await asyncio.to_thread(corrector.correct_text, text)
             
@@ -257,7 +260,7 @@ async def lifespan(app: FastAPI):
             now = time.time()
             dead = [ws for ws, lp in TELEMETRY_PINGS.items() if (now - lp) > 10.0]
             for ws in dead:
-                print(f"[RELIABILITY] Heartbeat LOST for telemetry client. Culling.")
+                print("[RELIABILITY] Heartbeat LOST for telemetry client. Culling.")
                 TELEMETRY_PINGS.pop(ws, None)
                 active_telemetry_clients.discard(ws)
             await asyncio.sleep(5)
@@ -373,8 +376,35 @@ async def require_api_token(authorization: str = Header(default="")) -> None:
     scheme, _, presented = authorization.partition(" ")
     if scheme.lower() != "bearer" or not presented:
         raise HTTPException(status_code=401, detail="Missing bearer token.")
-    if not secrets.compare_digest(presented.strip(), API_TOKEN):
+    if not secrets.compare_digest(presented.strip().encode("utf-8"), API_TOKEN.encode("utf-8")):
         raise HTTPException(status_code=401, detail="Invalid bearer token.")
+
+
+_WS_ORIGINS = {"http://localhost:5173", "http://127.0.0.1:5173"}
+
+
+async def authenticate_websocket(websocket: WebSocket) -> bool:
+    """Reject foreign browser origins and require a bounded first-frame handshake."""
+    origin = websocket.headers.get("origin")
+    if origin is not None and origin not in _WS_ORIGINS:
+        await websocket.close(code=1008)
+        return False
+    await websocket.accept()
+    try:
+        message = await asyncio.wait_for(websocket.receive_json(), timeout=5.0)
+        token = message.get("token") if isinstance(message, dict) else None
+        valid = (
+            isinstance(message, dict) and message.get("type") == "authenticate"
+            and isinstance(token, str) and len(token) <= 4096
+            and secrets.compare_digest(token.encode("utf-8"), API_TOKEN.encode("utf-8"))
+        )
+    except (TimeoutError, ValueError, WebSocketDisconnect):
+        valid = False
+    if not valid:
+        await websocket.close(code=1008)
+        return False
+    await websocket.send_json({"type": "authenticated"})
+    return True
 
 
 @app.get("/")
@@ -446,7 +476,8 @@ def _read_last_10_logs():
 @app.websocket("/ws/telemetry")
 async def websocket_telemetry(websocket: WebSocket):
     """// Real-time System Telemetry Stream"""
-    await websocket.accept()
+    if not await authenticate_websocket(websocket):
+        return
     active_telemetry_clients.add(websocket)
     try:
         while True:
@@ -469,7 +500,7 @@ async def websocket_telemetry(websocket: WebSocket):
                 w = wmi.WMI(namespace="root\\OpenHardwareMonitor")
                 temperature_infos = w.Sensor()
                 for sensor in temperature_infos:
-                    if sensor.SensorType==u'Temperature' and 'cpu' in sensor.Identifier.lower():
+                    if sensor.SensorType=='Temperature' and 'cpu' in sensor.Identifier.lower():
                         cpu_temp = float(sensor.Value)
                         break
             except Exception:
@@ -496,45 +527,9 @@ async def websocket_telemetry(websocket: WebSocket):
                 "file_count": total_files
             }
             
-            uptime_seconds = time.time() - SERVER_START_TIME
-            uptime_pct = min(99.99, 99.0 + (uptime_seconds / 86400)) 
-
-            # ── Dynamic System Assessment ──
-            cpu_val = hardware["cpu_percent"]
-            ram_val = hardware["ram_percent"]
-            
-            # 1. Threat Level Assessment
-            if cpu_val > 95 or ram_val > 98:
-                threat = "CRITICAL"
-            elif cpu_val > 90 or ram_val > 90:
-                threat = "HIGH"
-            elif cpu_val > 70:
-                threat = "ELEVATED"
-            else:
-                threat = "ZERO"
-
-            # 2. AI Core Status (based on TaskManager load & memory)
-            if task_manager.current_task_id:
-                core_status = "EXECUTING"
-            elif cpu_val > 85:
-                core_status = "STRAINED"
-            else:
-                core_status = "OPTIMAL"
-
-            # 3. Dynamic Clearance (derived from mode/state)
-            clearance = "ADMIN" if uptime_seconds > 60 else "GUEST"
-
-            system_stats = {
-                "uptime_percent": round(uptime_pct, 4),
-                "ai_core_status": core_status,
-                "threat_level": threat,
-                "build_version": "v10.1.5-STABLE"
-            }
-            
-            # Sync Config with Dynamic Clearance
+            system_stats = build_system_telemetry(hardware)
             dynamic_config = SYSTEM_CONFIG.copy()
-            dynamic_config["clearance"] = clearance
-            
+
             if websocket.client_state == WebSocketState.CONNECTED:
                 TELEMETRY_PINGS[websocket] = time.time()
                 await safe_send_json(websocket, {
@@ -557,6 +552,20 @@ async def websocket_telemetry(websocket: WebSocket):
         active_telemetry_clients.discard(websocket)
 
 # ── Global Session Memory (Shared across tasks) ──
+def build_system_telemetry(hardware: dict) -> dict:
+    """Measured process uptime and resource load; no availability or threat claim."""
+    cpu = hardware["cpu_percent"]
+    ram = hardware["ram_percent"]
+    load = "CRITICAL" if cpu > 95 or ram > 98 else "HIGH" if cpu > 90 or ram > 90 else "ELEVATED" if cpu > 70 else "NORMAL"
+    core = "EXECUTING" if task_manager.current_task_id else "STRAINED" if cpu > 85 else "IDLE"
+    return {
+        "uptime_seconds": max(0.0, time.time() - SERVER_START_TIME),
+        "ai_core_status": core,
+        "resource_load": load,
+        "build_version": "9.0.0-prototype",
+    }
+
+
 SESSION_MEMORY = {
     "last_research_context": "",
     "last_search_query": ""
@@ -586,7 +595,7 @@ async def finalize_mission(data: dict | str, websocket: WebSocket, cancel_event:
         final_text = data
         speech_text = data
     else:
-        final_text = data.get("final_response", "")
+        final_text = data.get("response", data.get("final_response", ""))
         speech_text = data.get("speech_response", final_text)
 
     # 2. Emit Standardized WebSocket Response
@@ -595,6 +604,8 @@ async def finalize_mission(data: dict | str, websocket: WebSocket, cancel_event:
         "message": final_text,
         "final_response": final_text,
         "speech_response": speech_text,
+        "execution": data.get("execution", "Success") if isinstance(data, dict) else "Success",
+        "failure_category": data.get("failure_category") if isinstance(data, dict) else None,
         "is_cloud": IS_CLOUD  # Fix 3.9: reflects actual LLM provider
     })
 
@@ -606,235 +617,38 @@ async def finalize_mission(data: dict | str, websocket: WebSocket, cancel_event:
         await asyncio.to_thread(speak, speech_text, 1.0, cancel_event, "HQ")
         await safe_send_json(websocket, {"type": "speech_end"})
 
-async def execute_agent_task(prompt: str, websocket: WebSocket, cancel_event: asyncio.Event):
-    """
-    Decoupled execution payload. Run safely via TaskManager.
-    """
-    if cancel_event.is_set(): return
-    try:
-        # -1. Input Normalization
-        prompt_lower = prompt.lower().strip()
-        normalization_map = {
-            "search for": "search",
-            "look up": "search",
-            "find": "search"
-        }
-        for old, new in normalization_map.items():
-            if prompt_lower.startswith(old):
-                prompt_lower = prompt_lower.replace(old, new, 1)
-                break
-                
-        # 0. Fast-Path OS Command Router (Deterministic Bypass)
-        import re
-
-        from datetime import datetime
-        
-        fast_path_result = None
-        # Use bulletproof substring matching for deterministic bypasses
-        if any(x in prompt_lower for x in ["what time is it", "what is the time", "current time", "tell me the time"]) or prompt_lower == "time":
-            fast_path_result = f"The time is {datetime.now().strftime('%I:%M %p')}."
-        elif any(x in prompt_lower for x in ["what is the date", "what's the date", "whats the date", "current date", "tell me the date"]) or prompt_lower == "date":
-            fast_path_result = f"Today's date is {datetime.now().strftime('%B %d, %Y')}."
-        elif any(x in prompt_lower for x in ["what day is it", "what is the day", "what day of the week is it", "today"]) or prompt_lower == "day":
-            fast_path_result = f"Today is {datetime.now().strftime('%A')}."
-        
-        if fast_path_result:
-            await safe_send_json(websocket, {"type": "execution_step", "message": "Fast-Path: Retrieving direct OS system result...", "status": "pending", "stage": "actuation"})
-            await finalize_mission(fast_path_result, websocket, cancel_event)
-            return
-
-        # 1. Start processing immediately
-        await safe_send_json(websocket, {"type": "execution_step", "message": "Neural Link: Establishing mission parameters...", "status": "pending", "stage": "perception",
-            "step_index": 1, "step_total": 4, "step_label": "Perception", "step_icon": "👁"})
-        if cancel_event.is_set(): return
-        
-        # 2. Extract Intent (Using normalized prompt)
-        from agentic_core.processor import extract_intent
-        steps = await asyncio.to_thread(extract_intent, prompt_lower)
-        if cancel_event.is_set(): return
-        
-        # 3. Aegis Governance
-        from agentic_core.validator import validate_steps
-        await safe_send_json(websocket, {"type": "execution_step", "message": "Aegis: Verifying governance policy...", "status": "pending", "stage": "governance",
-            "step_index": 2, "step_total": 4, "step_label": "Governance", "step_icon": "🛡"})
-        is_valid, validation_msg, _ = await asyncio.to_thread(validate_steps, steps)
-        if cancel_event.is_set(): return
-        
-        if not is_valid:
-            await finalize_mission(f"Security Block: {validation_msg}", websocket, cancel_event)
-            return
-
-        # 4. Neural Memory Branch
-        is_continuation = any(s.get("intent") == "ContinuationIntent" for s in steps)
-        if is_continuation:
-            if not SESSION_MEMORY["last_research_context"]:
-                await finalize_mission("I have no previous context to elaborate on, Boss.", websocket, cancel_event)
-                return
-
-            await safe_send_json(websocket, {"type": "execution_step", "message": "Neural Memory: Accessing previous fact layer context...", "status": "pending", "stage": "researching"})
-            
-            from agentic_core.processor import _get_routing_llm
-            today = datetime.now().strftime("%A, %B %d, %Y")
-            rag_prompt = f"Date: {today}. Query: {SESSION_MEMORY['last_search_query']}. Context: {SESSION_MEMORY['last_research_context']}. You are a tactical AI parsing previous Intel. Provide the FULL details and exhaustive elaboration that you previously summarized."
-            
-            llm = _get_routing_llm(SESSION_MEMORY['last_search_query'])
-            try:
-                response = await asyncio.wait_for(
-                    asyncio.to_thread(llm.invoke, [("human", rag_prompt)]),
-                    timeout=30.0
-                )
-                final_answer = response.content.strip()
-                if not final_answer:
-                    final_answer = "The neural memory returned an empty response."
-            except asyncio.TimeoutError:
-                await safe_send_json(websocket, {"type": "error", "message": "Neural Memory Timeout: Synthesis exceeded 30s."})
-                return
-
-            if cancel_event.is_set(): return
-            await finalize_mission(final_answer, websocket, cancel_event)
-            return
-
-        # 5. Neural Research Branch
-        is_research = any(s.get("intent") == "InformationRetrievalIntent" for s in steps)
-        all_unknown = all(s.get("intent") == "UnknownIntent" for s in steps) if steps else True
-        if all_unknown:
-            await safe_send_json(websocket, {"type": "execution_step", "message": "Aegis: Confidence too low. Requesting clarification...", "status": "pending", "stage": "governance"})
-            from agentic_core.processor import _get_routing_llm
-            llm = _get_routing_llm("Clarification pass")
-            clarify_prompt = f"The user said: '{prompt}'. The system is unsure of their intent because the semantic confidence was too low. Generate a very short, polite, conversational clarification question asking what they want to do or if they meant to run a specific command. Do not execute anything or answer any questions. Keep it to one exact sentence."
-            try:
-                resp = await asyncio.to_thread(llm.invoke, [("system", clarify_prompt)])
-                clarification = resp.content.strip()
-            except Exception:
-                clarification = "I didn't quite catch your intent. Could you rephrase that for me?"
-            
-            await finalize_mission(clarification, websocket, cancel_event)
-            return
-            
-        final_answer = ""
-        if is_research:
-            search_query = next((s.get("target") for s in steps if s.get("intent") == "InformationRetrievalIntent"), prompt)
-            
-            # --- CLOUD LEAK PATCH: Security Governance ---
-            from system_services.privacy_router import privacy_guard
-            if privacy_guard.analyze(search_query)["route"] == "local":
-                await safe_send_json(websocket, {"type": "execution_step", "message": "Aegis: Blocked. Cannot pass local entities to Cloud Search.", "status": "failed", "stage": "governance"})
-                await finalize_mission("Security Block: I cannot perform web searches containing private system paths or sensitive data.", websocket, cancel_event)
-                return
-            
-            await safe_send_json(websocket, {"type": "execution_step", "message": f"Neural Research: Querying fact layer for '{search_query}'...", "status": "pending", "stage": "researching"})
-            await asyncio.sleep(1.0)
-            if cancel_event.is_set(): return
-
-            from capabilities.web.search_engine import get_live_research
-            start_time = time.perf_counter()
-            try:
-                search_data = await asyncio.wait_for(
-                    asyncio.to_thread(get_live_research, search_query),
-                    timeout=15.0
-                )
-            except asyncio.TimeoutError:
-                await safe_send_json(websocket, {"type": "error", "message": "Neural Link Timeout: Tavily search exceeded 15s. Please retry."})
-                return
-                
-            if "error" in search_data:
-                # GRACEFUL DEGRADATION: If search fails, notify user and fallback to LLM knowledge
-                await safe_send_json(websocket, {"type": "execution_step", "message": f"Neural Link Offline: {search_data['error']}. Falling back to internal knowledge...", "status": "pending", "stage": "researching"})
-                context = "System: Live research failed. Provide a briefing based only on your current internal neural parameters."
-            else:
-                context = search_data.get("context", "")
-                SESSION_MEMORY["last_research_context"] = context
-                SESSION_MEMORY["last_search_query"] = search_query
-
-            from agentic_core.processor import _get_routing_llm
-            from datetime import datetime
-            today = datetime.now().strftime("%A, %B %d, %Y")
-            
-            strict_rule = " CRITICAL RULE: You are a tactical AI. Your initial response MUST be a 2-sentence high-level summary. End your summary with the exact phrase: 'Shall I elaborate, Boss?'. Do NOT output the full details unless the user's prompt explicitly contains the word 'continue', 'elaborate', or 'yes'."
-            rag_prompt = f"Date: {today}. Query: {search_query}. Context: {context}. Brief the user concisely.{strict_rule}"
-            
-            await safe_send_json(websocket, {"type": "execution_step", "message": "Neural Synthesis: Compiling briefing...", "status": "pending", "stage": "researching"})
-            if cancel_event.is_set(): return
-
-            llm = _get_routing_llm(search_query)
-            try:
-                response = await asyncio.wait_for(
-                    asyncio.to_thread(llm.invoke, [("human", rag_prompt)]),
-                    timeout=30.0
-                )
-                final_answer = response.content.strip()
-                if not final_answer:
-                    final_answer = "The neural synthesis returned an empty response. Please retry your query."
-            except asyncio.TimeoutError:
-                await safe_send_json(websocket, {"type": "error", "message": "Neural Synthesis Timeout: LLM generation exceeded 30s."})
-                return
-        
-        else:
-            from agentic_core.executor import execute_pipeline
-            total_steps = len(steps) + 3  # perception + governance + each plan step
-            await safe_send_json(websocket, {"type": "execution_step", "message": f"Actuation: Dispatching {len(steps)} command(s)...", "status": "pending", "stage": "actuation",
-                "step_index": 3, "step_total": total_steps, "step_label": "Actuation", "step_icon": "⚡"})
-            # Emit per-step actuation progress messages
-            for i, step_plan in enumerate(steps):
-                if cancel_event.is_set(): return
-                intent_name = step_plan.get('intent', 'Task')
-                target_name = step_plan.get('target', step_plan.get('packages', ''))
-                label = f"{intent_name.replace('Intent', '')}: {target_name}" if target_name else intent_name.replace('Intent', '')
-                icon_map = {
-                    'ApplicationLaunchIntent': '🚀',
-                    'GeneralizedOSIntent': '💻',
-                    'InformationRetrievalIntent': '🔍',
-                    'WebNavigationIntent': '🌐',
-                    'FileDeletionIntent': '🗑',
-                    'ProcessManagementIntent': '⚙',
-                    'ProjectScaffoldIntent': '🏗',
-                    'DependencyInstallIntent': '📦',
-                    'ConversationalIntent': '💬',
-                    'CodeActIntent': '👨‍💻',
-                    'AcademicResearchIntent': '📚',
-                    'DataModelingIntent': '📊',
-                    'SysUtilityIntent': '🎛',
-                    'SchedulerIntent': '📅',
-                    'MediaControlIntent': '🎵',
-                    'WindowManagementIntent': '🪟',
-                    'DictationIntent': '🗣️',
-                }
-                icon = icon_map.get(intent_name, '▶')
-                await safe_send_json(websocket, {"type": "execution_step",
-                    "message": f"Executing: {label}",
-                    "status": "pending", "stage": "actuation",
-                    "step_index": 3 + i + 1, "step_total": total_steps,
-                    "step_label": label, "step_icon": icon})
-            if cancel_event.is_set(): return
-            final_answer = await asyncio.to_thread(execute_pipeline, steps, cancel_event)
-
-
-        if cancel_event.is_set(): return
-        
-        # ── TRACKING FINAL STATE ──
-        state_manager.update_state(
-            last_intent=steps[0].get("intent") if steps else "ConversationalIntent",
-            last_target=steps[0].get("target") if steps else "N/A",
-            last_execution_status="Success"
-        )
-
-        await finalize_mission(final_answer, websocket, cancel_event)
-
-    except Exception as inner_e:
-        # GLOBAL ERROR BOUNDARY: Always log and return a safe, operational response to the UI
-        print(f"[SRE] CRITICAL SYSTEM FAULT: {str(inner_e)}")
-        import traceback
-        traceback.print_exc()
-        try:
-            await finalize_mission("I encountered an issue, but I'm still operational.", websocket, cancel_event)
-        except Exception:
-            pass  # Intentional fallback boundary
+async def execute_agent_task(prompt: str, websocket: WebSocket, cancel_event: asyncio.Event,
+                             confirm_token: str | None = None):
+    """Use the same policy, confirmation and observation pipeline as the REST API."""
+    if cancel_event.is_set():
+        return
+    from capabilities.system.api_wrapper import process_command
+    await safe_send_json(websocket, {"type": "execution_step", "message": "Validating request", "stage": "governance"})
+    result = await process_command(prompt, confirm_token=confirm_token, cancel_event=cancel_event)
+    if cancel_event.is_set():
+        return
+    if result.get("execution") == "PendingConfirmation":
+        await safe_send_json(websocket, {
+            "type": "confirmation_required", "message": result.get("response", ""),
+            "prompt": prompt, "confirm_token": result["confirm_token"],
+        })
+        return
+    success = result.get("execution") == "Success"
+    state_manager.update_state(last_execution_status=result.get("execution", "Error"))
+    if success:
+        await finalize_mission(result, websocket, cancel_event)
+    else:
+        await safe_send_json(websocket, {
+            "type": "error", "message": result.get("response", ""),
+            "execution": result.get("execution"), "failure_category": result.get("failure_category"),
+        })
 
 
 @app.websocket("/ws/agent")
 async def websocket_agent(websocket: WebSocket):
     """// Full-Duplex Agent Brain Pipeline (v9.0 Hybrid)"""
-    await websocket.accept()
+    if not await authenticate_websocket(websocket):
+        return
     active_agent_clients[websocket] = time.time()  # Fix 2.5: track connect time for routing
     try:
         while True:
@@ -857,8 +671,15 @@ async def websocket_agent(websocket: WebSocket):
                 
             print(f"[AUDIT] Mission Received: '{prompt}'")
             
-            # Submit securely to the task manager instead of spawning an untethered thread
-            await task_manager.submit_task(prompt, websocket, execute_agent_task)
+            confirm_token = msg.get("confirm_token")
+            if confirm_token is not None and not isinstance(confirm_token, str):
+                await safe_send_json(websocket, {"type": "error", "message": "Invalid confirmation token."})
+                continue
+
+            async def run_command(task_prompt, task_socket, cancel_event, token=confirm_token):
+                await execute_agent_task(task_prompt, task_socket, cancel_event, confirm_token=token)
+
+            await task_manager.submit_task(prompt, websocket, run_command)
 
     except WebSocketDisconnect:
         pass  # Standard disconnect

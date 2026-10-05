@@ -1,9 +1,9 @@
 {
-  "name": "jarvis-ui-new",
+  "name": "sentinal-ui",
   "private": true,
   "version": "1.0.0",
   "author": "Pavan",
-  "description": "J.A.R.V.I.S. OS SentinAL — Desktop AI Interface",
+  "description": "SentinAL desktop control interface",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
@@ -28,20 +28,20 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "concurrently": "^9.1.2",
-    "electron": "^35.1.2",
-    "electron-builder": "^26.0.12",
+    "concurrently": "^10.0.5",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "tailwindcss": "^4.2.2",
-    "vite": "^8.0.4",
+    "vite": "^8.3.2",
     "wait-on": "^8.0.3"
   },
   "build": {
-    "appId": "com.sentinal.megha",
-    "productName": "MEGHAv1",
+    "appId": "com.sentinal.desktop",
+    "productName": "SentinAL",
     "directories": {
       "output": "release"
     },
@@ -51,14 +51,30 @@
       "build/**/*"
     ],
     "extraResources": [
-      { "from": "../main.py", "to": "main.py" },
-      { "from": "../.env", "to": ".env" },
-      { "from": "../agentic_core", "to": "agentic_core" },
-      { "from": "../system_services", "to": "system_services" },
-      { "from": "../capabilities", "to": "capabilities" },
-      { "from": "../interfaces", "to": "interfaces" },
-      { "from": "../config", "to": "config" },
-      { "from": "../data", "to": "data" }
+      {
+        "from": "../main.py",
+        "to": "main.py"
+      },
+      {
+        "from": "../agentic_core",
+        "to": "agentic_core"
+      },
+      {
+        "from": "../system_services",
+        "to": "system_services"
+      },
+      {
+        "from": "../capabilities",
+        "to": "capabilities"
+      },
+      {
+        "from": "../interfaces",
+        "to": "interfaces"
+      },
+      {
+        "from": "../config",
+        "to": "config"
+      }
     ],
     "win": {
       "target": "nsis",

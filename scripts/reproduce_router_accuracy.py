@@ -1,11 +1,12 @@
 """
-scripts/reproduce_router_accuracy.py — one command, no API keys, no network.
+scripts/reproduce_router_accuracy.py — one command, no API keys; cached embeddings allow offline use.
 
 Reproduces the intent-router accuracy number: every request runs through the
-REAL classifier + embedding model (agentic_core/router.py) against the full,
+current router + embedding model (agentic_core/router.py) against the full,
 committed eval/intent_dataset.json, exhaustively (no sampling). Nothing here
 calls an LLM, so there is nothing to configure — no Groq key, no Ollama, no
-Deepgram, no Tavily, no network of any kind.
+Deepgram or Tavily. First use may download embedding weights. A clean checkout
+uses artifact-free routing; a trusted locally trained classifier changes the mode.
 
 This is a thin, discoverable wrapper — the real, already-built, already-
 documented instrument is eval/measure_intent_accuracy.py (every accuracy
@@ -47,7 +48,7 @@ def main() -> int:
     if args.dataset:
         cmd += ["--dataset", args.dataset]
 
-    print("No API keys / network required. Running:")
+    print("No cloud API keys required; embedding weights must be cached for offline use. Running:")
     print("  " + " ".join(cmd))
     print()
 

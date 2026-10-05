@@ -22,11 +22,9 @@ from dataclasses import dataclass, field
 
 CONFIRM_TTL_SECONDS = float(os.getenv("SENTINAL_CONFIRM_TTL_SECONDS", "300"))
 
-# Master switch. Off by default: turning it on changes behaviour (a T2/T3
-# direct-human request now needs a second round-trip), which existing REST
-# callers and the benchmark do not expect. A real deployment should set it on.
+# Guarded direct-human actions require a one-time confirmation by default.
 REQUIRE_CONFIRMATION = os.getenv(
-    "SENTINAL_REQUIRE_CONFIRMATION", "false"
+    "SENTINAL_REQUIRE_CONFIRMATION", "true"
 ).strip().lower() not in ("0", "false", "no", "")
 
 

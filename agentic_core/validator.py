@@ -109,6 +109,13 @@ def validate_steps(steps: list) -> tuple[bool, str, bool]:
         intent = step.get("intent", "").strip()
         target = step.get("target", "").lower().strip()
 
+        # A router/extractor mismatch must not erase an explicit destructive
+        # disk request. Check the original step prompt before confirmation.
+        prompt = str(step.get("_source_prompt", step.get("prompt", ""))).lower()
+        disk_format = r"\bformat\s+(?:the\s+)?(?:[a-z]\s+drive\b|drive\s+[a-z]\b|[a-z]:(?=\s|$))"
+        if intent not in {"ConversationalIntent", "InformationRetrievalIntent", "ContinuationIntent"} and re.search(disk_format, prompt):
+            return False, f"[Security Error] Denied Step {i+1}: Disk formatting is forbidden.", False
+
         # ── Fix 1.7: INTENT ALIASING (Synonym Mapping) ──
         # Maps LLM variations or older naming conventions to the canonical allowlist.
         INTENT_ALIASES = {

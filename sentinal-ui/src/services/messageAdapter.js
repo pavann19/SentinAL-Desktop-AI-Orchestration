@@ -171,9 +171,9 @@ export function adaptTelemetryMessage(payload) {
     temp,
     envFiles: env?.file_count ?? 0,
     envDirs: env?.directories ?? [],
-    sysUptime: sys?.uptime_percent ?? 0,
+    sysUptime: sys?.uptime_seconds ?? null,
     sysCoreStatus: sys?.ai_core_status ?? 'UNKNOWN',
-    sysThreat: sys?.threat_level ?? 'UNKNOWN',
+    sysThreat: sys?.resource_load ?? 'UNKNOWN',
     govClearance: gov?.clearance ?? 'UNKNOWN',
   };
 }

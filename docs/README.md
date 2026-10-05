@@ -1,11 +1,15 @@
-# docs/ layout
+# Engineering documentation
 
-The public documentation surface is intentionally small:
+- [Containment architecture](../CONTAINMENT_ARCHITECTURE.md)
+- [Security policy and reporting](../SECURITY.md)
+- [Architecture decisions](DECISIONS.md)
+- [Evaluation methodology](benchmarks/methodology.md)
+- [Historical result interpretation](benchmarks/accuracy.md)
+- [Dataset provenance](datasets.md)
+- [Configuration](configuration.md)
 
-- `README.md` at the repo root is the recruiter-facing overview.
-- `ROADMAP.md` and `CONTAINMENT_ARCHITECTURE.md` are the canonical design docs.
-- `docs/DECISIONS.md` records current project state and evidence boundaries.
+The root [README](../README.md) is the primary entry point. Internal handoffs,
+academic drafts, generated outputs and development diaries are preserved outside
+the public source tree.
 
-Generated reports, thesis drafts, handoff notes, and large evidence artifacts are not
-published in this public tree. Regenerate measurement outputs with the scripts in
-`eval/` and `scripts/`; they write to gitignored local output directories.
+- [Local verification checkpoint](verification.md) — dated results and unverified boundaries.

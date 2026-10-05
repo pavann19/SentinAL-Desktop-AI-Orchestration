@@ -1,248 +1,113 @@
-name: SentinAL Phase 1 — CI/CD Test Pipeline
+name: Release verification
 
 on:
   push:
-    branches: [ main, develop, "phase-*" ]
+    branches: [main, develop, "codex/**"]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verification-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
-  PYTHON_VERSION: "3.11"
+  PYTHONUTF8: "1"
   SENTINAL_DEBUG: "false"
-  SENTINAL_UI_PORT: "5173"
-  TASK_QUEUE_MAX: "20"
-  SESSION_TIMEOUT: "15"
-  TAVILY_API_KEY: ""       # Empty in CI — search tests use mocks
-  GROQ_API_KEY: ""         # Empty in CI — LLM tests use mocks
-  LLM_PROVIDER: "local"
+  LLM_PROVIDER: local
+  GROQ_API_KEY: ""
+  TAVILY_API_KEY: ""
   EXECUTOR_STEP_DELAY: "0"
   GUI_FOCUS_WAIT: "0"
 
 jobs:
-  # ── Job 1: Static Analysis ────────────────────────────────────────────────
-  lint:
-    name: "Static Analysis (ruff + mypy)"
+  python:
+    name: Windows tests, 70% scoped coverage, lint and package
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Upgrade pip
-        run: python -m pip install --upgrade pip
-
-      - name: Install linting tools
-        run: python -m pip install ruff==0.16.0 mypy
-
-      - name: Run ruff (fast linter)
-        # BLE001 (blind `except Exception`) is intentionally ignored: this codebase's
-        # core design principle (SentinAL assumes the LLM can be compromised) is
-        # that no single component's failure —
-        # a flaky GUI call, an unreachable window, a malformed LLM response — should
-        # crash the whole pipeline. Broad catches are a deliberate fail-safe pattern
-        # here, not oversight; narrowing all ~76 of them to specific exception types
-        # would risk missing failure modes the fail-closed guarantee depends on.
-        # Every one already logs or returns a safe default rather than swallowing
-        # silently (see the S110/S112 fixes in the same commit that added this line).
-        run: ruff check agentic_core/ system_services/ config/ capabilities/ interfaces/ --ignore E501,E402,BLE001,S110,S112
-
-      - name: Run mypy (type checking)
-        run: mypy agentic_core/validator.py agentic_core/memory_hook.py system_services/privacy_router.py --ignore-missing-imports
-
-  # ── Job 2: Unit + Integration Tests ──────────────────────────────────────
-  test:
-    name: "Unit + Integration Tests (90% Coverage)"
-    runs-on: windows-latest
-    needs: lint
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: "3.11"
           cache: pip
-
-      - name: Install dependencies
-        # Installs from requirements.txt (the actual pinned dependency set, also
-        # used locally) rather than a hand-maintained duplicate list. The
-        # duplicate list had drifted and was missing opentelemetry-api/-sdk and
-        # pyautogui - both required just to IMPORT agentic_core.executor and
-        # agentic_core.tracing, so 8 test modules failed at collection, not at
-        # runtime. requirements.txt is the single source of truth; only
-        # test-only tooling not in it (pytest-cov, pytest-asyncio, anyio) is
-        # added separately.
-        #
-        # shell: bash + `set -euo pipefail`, not the windows-latest PowerShell
-        # default: a multi-line PowerShell `run:` block does NOT stop when a
-        # native command (like `pip install`) fails partway through - only the
-        # LAST command's exit code determines the step's pass/fail. That silently
-        # masked exactly this install failing (this exact fix's first version
-        # reported "succeeded" while none of requirements.txt's packages had
-        # actually installed, since the trailing `pip install pytest-cov ...`
-        # command succeeded on its own and PowerShell never checked the middle
-        # command). `set -e` makes bash abort immediately on any failing command
-        # instead, so a real install failure surfaces here, not three jobs and
-        # a confusing collection error later.
+          cache-dependency-path: pyproject.toml
+      - name: Install application and development tools
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest-cov pytest-asyncio anyio
-
-      - name: Run unit + integration tests (excludes stress)
-        # Single line, not multi-line with `^` continuations: windows-latest runs
-        # `run:` steps in PowerShell by default, where `^` is not a line-continuation
-        # character (that's cmd.exe syntax) - it previously produced a ParserError
-        # ("Missing expression after unary operator '--'"), silently masked because
-        # this job never got far enough to run while the lint job above it was
-        # failing (needs: lint). --cov-fail-under corrected from 75 to 70 to match
-        # this project's actual, deliberately-established coverage standard
-        # (pytest.ini / .coveragerc) - 75 was never actually met by this suite.
-        run: pytest tests/ --ignore=tests/test_stress.py --ignore=tests/test_router.py --ignore=tests/test_stt_service.py --ignore=tests/test_wake_intelligence.py --ignore=tests/test_tts_service.py -v --tb=short --cov=agentic_core --cov=system_services --cov=config --cov=capabilities --cov=interfaces --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=70
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: coverage.xml
-          fail_ci_if_error: false
-
-      - name: Upload coverage HTML report
-        uses: actions/upload-artifact@v4
+          python -m pip install ".[dev]"
+      - name: Audit installed release dependencies
+        run: python scripts/audit_dependencies.py
+      - name: Runtime lint
+        run: python -m ruff check main.py agentic_core system_services config capabilities interfaces scripts/check_release.py scripts/audit_dependencies.py --ignore E501,E402,BLE001,S110,S112
+      - name: Type-check security modules
+        run: python -m mypy agentic_core/validator.py agentic_core/memory_hook.py system_services/privacy_router.py --ignore-missing-imports
+      - name: Validate release source and links
+        run: python scripts/check_release.py
+      - name: Complete test suite, including router, voice mocks, security and stress
+        run: python -m pytest tests/ --timeout=60 --cov-report=xml:coverage.xml --cov-fail-under=70
+      - name: Focused offline pipeline evaluation
+        env:
+          SENTINAL_OFFLINE: "1"
+        run: python -m eval.run_eval --run-id ci --task-id conv-hello --task-id deny-format --task-id deny-format-d-drive
+      - name: Build source distribution and wheel
+        run: python -m build
+      - name: Validate wheel contents
+        shell: bash
+        run: |
+          python -c "import glob,zipfile; names=zipfile.ZipFile(glob.glob('dist/*.whl')[0]).namelist(); assert 'main.py' in names; assert 'interfaces/voice/stt_service.py' in names; assert not any(n.startswith(('data/','_evidence/','thesis/')) for n in names)"
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: coverage-html-report
-          path: htmlcov/
+          name: python-verification
+          path: |
+            coverage.xml
+            dist/*.whl
+          if-no-files-found: warn
+          retention-days: 14
 
-  # ── Job 3: Security Fuzz Tests ────────────────────────────────────────────
-  security:
-    name: "Security Fuzz Tests"
-    runs-on: windows-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-
-      - name: Install dependencies
-        # See the "test" job's Install dependencies step: same rationale
-        # (requirements.txt over a hand-maintained, drift-prone duplicate list)
-        # and same reason for shell: bash + set -e (PowerShell multi-line run
-        # blocks don't fail-fast on a mid-block command failure).
-        # test_security_fuzz.py imports agentic_core.executor, which needs
-        # pyautogui and opentelemetry to even import. pytest-cov is required
-        # here too even though this job doesn't care about coverage: pytest.ini
-        # unconditionally adds --cov=... to every pytest invocation via addopts,
-        # so pytest itself refuses to start ("unrecognized arguments: --cov=...")
-        # if pytest-cov isn't installed, regardless of which tests are run.
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest-asyncio pytest-cov
-
-      - name: Run security fuzz tests (zero tolerance — must all pass)
-        # --no-cov: this job intentionally runs one test file, whose coverage
-        # of the whole codebase can never reach .coveragerc's fail_under=70 -
-        # that threshold is the "test" job's job. Without --no-cov, this step
-        # would fail on the coverage gate even when every actual test passes.
-        run: pytest tests/test_security_fuzz.py -v --tb=short --no-cov
-
-  # ── Job 4: Stress Tests ───────────────────────────────────────────────────
-  stress:
-    name: "Stress + Concurrency Tests"
-    runs-on: windows-latest
-    needs: test
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-
-      - name: Install dependencies
-        # See the "test" job's Install dependencies step for rationale
-        # (requirements.txt as source of truth, shell: bash + set -e to fail
-        # fast instead of PowerShell silently ignoring a mid-block failure).
-        # pytest-cov: see the "security" job's comment - pytest.ini's addopts
-        # forces --cov=... on every invocation, so pytest won't even start
-        # without it installed, regardless of whether coverage is wanted here.
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest-asyncio pytest-timeout pytest-cov
-
-      - name: Run stress and concurrency tests
-        # --no-cov: see the "security" job's comment - a single test file's
-        # coverage of the whole codebase can never meet the global 70% gate.
-        run: pytest tests/test_stress.py -v --tb=short --timeout=60 --no-cov
-
-  # ── Job 5: Pipeline Integration Tests ─────────────────────────────────────
-  integration:
-    name: "Pipeline Integration Tests"
-    runs-on: windows-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-
-      - name: Install dependencies
-        # See the "test" job's Install dependencies step: same rationale
-        # (requirements.txt as source of truth, shell: bash + set -e to fail
-        # fast instead of PowerShell silently ignoring a mid-block failure).
-        # test_api_wrapper.py and test_pipeline_integration.py both import
-        # capabilities.system.api_wrapper, which needs pyautogui and
-        # opentelemetry (via agentic_core.executor/tracing) to even import.
-        # pytest-cov: see the "security" job's comment - pytest.ini's addopts
-        # forces --cov=... on every invocation, so pytest won't even start
-        # without it installed, regardless of whether coverage is wanted here.
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest-asyncio pytest-cov
-
-      - name: Run pipeline integration tests
-        # --no-cov: see the "security" job's comment - two test files' coverage
-        # of the whole codebase can never meet the global 70% gate.
-        run: pytest tests/test_pipeline_integration.py tests/test_api_wrapper.py -v --tb=short --no-cov
-
-  # ── Job 6: Final Gate — All Tests Must Pass ───────────────────────────────
-  gate:
-    name: "🚦 Final Gate — All Checks Passed"
+  frontend:
+    name: Browser HUD lint, build and dependency audit
     runs-on: ubuntu-latest
-    needs: [lint, test, security, stress, integration]
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: sentinal-ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: sentinal-ui/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run lint -- --max-warnings=0
+      - run: npm run build
+      - run: npm audit --audit-level=high
+
+  docker:
+    name: Headless evaluation image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t sentinal-eval .
+      - name: Image import and source-data smoke check
+        run: docker run --rm sentinal-eval python -c "import json; import eval.finetune_classifier; import agentic_core.embedding_backend; assert len(json.load(open('eval/intent_dataset.json'))) == 3230"
+
+  gate:
+    name: All required checks succeeded
+    runs-on: ubuntu-latest
+    needs: [python, frontend, docker]
     if: always()
     steps:
-      - name: Check all jobs passed
+      - name: Reject failure, cancellation and skipped dependencies
+        env:
+          RESULTS: ${{ toJSON(needs) }}
         run: |
-          if [[ "${{ needs.lint.result }}" == "failure" || \
-                "${{ needs.test.result }}" == "failure" || \
-                "${{ needs.security.result }}" == "failure" || \
-                "${{ needs.stress.result }}" == "failure" || \
-                "${{ needs.integration.result }}" == "failure" ]]; then
-            echo "❌ CI FAILED — One or more test suites failed."
-            exit 1
-          else
-            echo "✅ All CI checks passed. Phase 1 is green."
-          fi
+          python -c 'import json,os; jobs=json.loads(os.environ["RESULTS"]); assert all(job["result"] == "success" for job in jobs.values()), jobs'

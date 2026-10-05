@@ -18,6 +18,8 @@ import {
 } from './messageAdapter';
 
 const BASE_URL = 'ws://localhost:8000';
+let apiToken = '';
+export function configureToken(token) { apiToken = token; }
 const MAX_BACKOFF_MS = 30_000;
 
 // ── Connection status reporting ──────────────────────────────────
@@ -50,14 +52,19 @@ class TelemetrySocket {
     this._ws = ws;
 
     ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'authenticate', token: apiToken }));
       this._backoff = 1_000; // reset backoff on success
-      setWsStatus('telemetry', 'connected');
+      setWsStatus('telemetry', 'authenticating');
       console.debug('[WS:telemetry] Connected.');
     };
 
     ws.onmessage = (ev) => {
       try {
         const payload = JSON.parse(ev.data);
+        if (payload.type === 'authenticated') {
+          setWsStatus('telemetry', 'connected');
+          return;
+        }
         
         if (payload.type === 'wake' || payload.type === 'wake_ack') {
           useSystemStore.getState().triggerWake();
@@ -95,7 +102,12 @@ class TelemetrySocket {
       // [INDUSTRY STANDARD] UI HYDRATION: Preserve last known state instead of resetting telemetry
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
+      if (event.code === 1008) {
+        this._destroyed = true;
+        setWsStatus('telemetry', 'unauthorized');
+        return;
+      }
       if (this._destroyed) return;
       setWsStatus('telemetry', 'disconnected');
       // [INDUSTRY STANDARD] UI HYDRATION: Do not clear visual dashboard on micro-disconnects
@@ -126,27 +138,39 @@ class AgentSocket {
     this._destroyed = false;
     this._retryTimer = null;
     this._currentTaskName = null;
+    this._authenticated = false;
   }
 
   connect() {
     if (this._destroyed) return;
+    this._authenticated = false;
     setWsStatus('agent', 'connecting');
 
     const ws = new WebSocket(`${BASE_URL}/ws/agent`);
     this._ws = ws;
 
     ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'authenticate', token: apiToken }));
       this._backoff = 1_000;
-      setWsStatus('agent', 'connected');
+      setWsStatus('agent', 'authenticating');
       console.debug('[WS:agent] Connected.');
 
-      // Announce connection in the terminal log
-      useSystemStore.getState().addLog('SYS', 'Agent link established. Neural pipeline online.', 'success');
+
     };
 
     ws.onmessage = (ev) => {
       try {
         const payload = JSON.parse(ev.data);
+        if (payload.type === 'authenticated') {
+          this._authenticated = true;
+          useSystemStore.getState().addLog('SYS', 'Authenticated agent connection established.', 'success');
+          setWsStatus('agent', 'connected');
+          return;
+        }
+        if (payload.type === 'confirmation_required') {
+          useSystemStore.getState().requestConfirmation(payload.prompt, payload.confirm_token);
+          return;
+        }
         const adapted = adaptAgentMessage(payload);
         const store = useSystemStore.getState();
 
@@ -205,7 +229,12 @@ class AgentSocket {
       setWsStatus('agent', 'error');
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
+      if (event.code === 1008) {
+        this._destroyed = true;
+        setWsStatus('agent', 'unauthorized');
+        return;
+      }
       if (this._destroyed) return;
       setWsStatus('agent', 'disconnected');
       console.warn(`[WS:agent] Disconnected. Retrying in ${this._backoff / 1000}s...`);
@@ -223,17 +252,17 @@ class AgentSocket {
    * Sends a command to the agent. Only dispatches if connection is open.
    * Returns true if sent, false if buffered/failed.
    */
-  sendCommand(text) {
+  sendCommand(text, confirmToken = null) {
     if (!text?.trim()) return false;
 
     this._currentTaskName = text;
 
-    if (!this._ws || this._ws.readyState !== WebSocket.OPEN) {
-      useSystemStore.getState().addLog('ERR', 'Agent link not ready. Command queued.', 'warn');
+    if (!this._authenticated || !this._ws || this._ws.readyState !== WebSocket.OPEN) {
+      useSystemStore.getState().addLog('ERR', 'Agent link not ready. Command was not sent.', 'warn');
       return false;
     }
 
-    this._ws.send(JSON.stringify({ type: 'command', text }));
+    this._ws.send(JSON.stringify({ type: 'command', text, confirm_token: confirmToken }));
     return true;
   }
 
@@ -242,6 +271,7 @@ class AgentSocket {
    * Signals the backend to halt the current mission.
    */
   sendInterrupt() {
+    if (!this._authenticated) return;
     this._ws?.send(JSON.stringify({ type: 'interrupt' }));
     useSystemStore.getState().addLog('SYS', 'Interrupt signal sent. Halting mission.', 'warn');
   }
@@ -279,8 +309,8 @@ export function destroySockets() {
   _agentSocket = null;
 }
 
-export function sendCommand(text) {
-  return _agentSocket?.sendCommand(text) ?? false;
+export function sendCommand(text, confirmToken = null) {
+  return _agentSocket?.sendCommand(text, confirmToken) ?? false;
 }
 
 export function sendInterrupt() {

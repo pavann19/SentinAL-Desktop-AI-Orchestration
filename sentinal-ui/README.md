@@ -1,16 +1,22 @@
-# React + Vite
+# SentinAL UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Optional React interface for the loopback Python backend. Start the backend first.
 
-Currently, two official plugins are available:
+```powershell
+npm ci
+npm run dev
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Open http://localhost:5173 and enter the backend's `.sentinal_token` value.
+The token is held in page memory and sent in a WebSocket authentication frame;
+it is never placed in a URL, frontend environment variable or browser storage.
+Reload to replace an invalid token. Do not expose the Vite server to the network.
 
-## React Compiler
+```powershell
+npm run lint
+npm run build
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Electron source is retained as experimental packaging work. Its packaged file-origin
+UI is not an approved WebSocket origin; packaged installer operation is unverified.
+The packaging manifest excludes local configuration and runtime data.

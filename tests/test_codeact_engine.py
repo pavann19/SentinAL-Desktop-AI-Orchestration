@@ -80,7 +80,7 @@ class TestGenerateAndRun:
         result = generate_and_run("delete everything", llm)
         assert "Security block" in result
 
-    @patch("capabilities.developer.codeact_engine._sandbox_available", return_value=False)
+    @patch("capabilities.developer.codeact_engine._sandbox_available", return_value=True)
     @patch("time.sleep")
     @patch("subprocess.Popen")
     @patch("builtins.open", new_callable=mock_open)
@@ -89,9 +89,9 @@ class TestGenerateAndRun:
         llm = self._mock_llm('Write-Host "=== SentinAL CodeAct: Starting mission ==="')
         result = generate_and_run("set up a flask project", llm)
         mock_popen.assert_called_once()
-        assert "opened a terminal window" in result
+        assert "isolated Windows Sandbox" in result
 
-    @patch("capabilities.developer.codeact_engine._sandbox_available", return_value=False)
+    @patch("capabilities.developer.codeact_engine._sandbox_available", return_value=True)
     @patch("os.makedirs")
     def test_save_failure_returns_error(self, mock_makedirs, mock_sb):
         llm = self._mock_llm('Write-Host "hello"')
@@ -99,7 +99,7 @@ class TestGenerateAndRun:
             result = generate_and_run("set up a project", llm)
         assert "Could not save script" in result
 
-    @patch("capabilities.developer.codeact_engine._sandbox_available", return_value=False)
+    @patch("capabilities.developer.codeact_engine._sandbox_available", return_value=True)
     @patch("subprocess.Popen", side_effect=RuntimeError("launch failed"))
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
@@ -108,7 +108,7 @@ class TestGenerateAndRun:
         result = generate_and_run("set up a project", llm)
         assert "Failed to launch" in result
 
-    @patch("capabilities.developer.codeact_engine._sandbox_available", return_value=False)
+    @patch("capabilities.developer.codeact_engine._sandbox_available", return_value=True)
     @patch("time.sleep")
     @patch("subprocess.Popen")
     @patch("builtins.open", new_callable=mock_open)
@@ -202,10 +202,10 @@ class TestGenerateAndRunSandboxPath:
     @patch("subprocess.Popen", side_effect=[RuntimeError("sandbox boom"), MagicMock(pid=2)])
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
-    def test_sandbox_launch_failure_falls_back_to_host(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_sb, mock_rw):
+    def test_sandbox_launch_failure_never_falls_back_to_host(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_sb, mock_rw):
         result = generate_and_run("set up a project", self._mock_llm('Write-Host "hi"'))
-        assert mock_popen.call_count == 2                # sandbox attempt, then host
-        assert "directly on" in result and "full access" in result
+        assert mock_popen.call_count == 1
+        assert "host fallback is disabled" in result
 
 
 class TestTaskIdSurfaced:
@@ -236,8 +236,10 @@ class TestTaskIdSurfaced:
     @patch("subprocess.Popen")
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
-    def test_watch_id_in_host_result(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_rw, mock_sb):
+    def test_missing_sandbox_never_launches_host(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_rw, mock_sb):
         mock_popen.return_value = MagicMock(pid=5678)
         mock_rw.return_value = "host-watch-id"
         result = generate_and_run("do a small thing", self._mock_llm('Write-Host "hi"'))
-        assert "host-watch-id" in result
+        assert "host execution is disabled" in result
+        mock_popen.assert_not_called()
+        mock_rw.assert_not_called()

@@ -1,94 +1,38 @@
-# SentinAL v9.0 — Production Requirements
-# Fix 2.1: Pinned versions, removed dead packages (pyaudio, SpeechRecognition,
-#           streamlit, textual, librosa), removed duplicate python-dotenv.
-#           Added cachetools for LRU cache (tts_service.py Fix 2.2).
-
-# ── Web Framework ─────────────────────────────────────────────────────────────
-fastapi>=0.111.0,<1.0.0
+# Runtime dependency ranges, mirrored from pyproject.toml. Not a lockfile.
+fastapi>=0.142.2,<1.0.0
 uvicorn[standard]>=0.29.0,<1.0.0
 pydantic>=2.7.0,<3.0.0
-starlette>=0.37.0,<1.0.0
+starlette>=1.3.1,<2.0.0
 slowapi>=0.1.9,<1.0.0
-
-# ── AI / LLM ──────────────────────────────────────────────────────────────────
-# Raised from a stale 0.x pin (found via the same clean-install process that
-# caught the numpy conflict below): langchain 0.2.x requires numpy<2 on every
-# Python version, unconditionally conflicting with kokoro-onnx's numpy>=2.0.2 -
-# there is no numpy version satisfying both, on any Python version. The actual
-# working local environment has been on langchain 1.x for a long time (this
-# file's 0.x pin had been silently unenforced, same root cause as the numpy
-# pin); raised to match what is already verified working (full suite: 444
-# passed) rather than downgrading a working environment to match a stale file.
-langchain>=1.0.0,<2.0.0
-langchain-core>=1.0.0,<2.0.0
+langchain>=1.3.9,<2.0.0
+langchain-core>=1.3.3,<2.0.0
 langchain-ollama>=1.0.0,<2.0.0
 langchain-groq>=1.0.0,<2.0.0
 langgraph>=1.0.0,<2.0.0
-
-# ── Embeddings & Semantic Router ──────────────────────────────────────────────
-sentence-transformers>=3.0.0,<4.0.0
+sentence-transformers>=5.6.0,<7.0.0
+torch>=2.13.0,<3.0.0
+transformers>=5.10.0,<6.0.0
 scikit-learn==1.8.0
-
-# ── DataModelingIntent (EDA) ────────────────────────────────────────────────
 pandas>=2.0.0,<3.0.0
 matplotlib>=3.8.0,<4.0.0
-
-# ── AcademicResearchIntent (local PDF summarization) ────────────────────────
 pypdf>=5.0.0,<7.0.0
-
-# ── SchedulerIntent (reminder time parsing) ──────────────────────────────────
 dateparser>=1.2.0,<2.0.0
-
-# ── STT / Voice Pipeline ──────────────────────────────────────────────────────
 faster-whisper>=1.0.0,<2.0.0
 sounddevice>=0.4.7,<1.0.0
 soundfile>=0.12.1,<1.0.0
-# Lower bound 2.0.2 (raised from a stale 1.26.0/<2.0.0 pin, real conflict found
-# via a genuinely clean `pip install -r requirements.txt`): kokoro-onnx>=0.4.0
-# below requires numpy>=2.0.2 in every version pip resolves, making the old
-# <2.0.0 cap unsatisfiable. The old pin had been silently violated in every
-# working local environment for a long time (already running numpy 2.4.x) -
-# this file just never said so until a fresh install actually enforced it.
 numpy>=2.0.2,<3.0.0
 scipy>=1.13.0,<2.0.0
-
-# ── TTS / Audio Output ────────────────────────────────────────────────────────
 kokoro-onnx>=0.4.0
 onnxruntime>=1.18.0,<2.0.0
-
-# ── Router embedding backend (optional) ───────────────────────────────────────
-# fastembed runs the router's all-MiniLM-L6-v2 model via ONNX Runtime instead
-# of sentence-transformers/torch — same checkpoint, numerically equivalent
-# output (measured cosine similarity 0.999999+ against the torch path), ~56%
-# less resident memory in isolation / ~16% less through the full router
-# (shared classifier + sklearn cost dilutes the gap) and a faster cold start.
-# Opt in with SENTINAL_EMBEDDING_BACKEND=onnx (default stays "torch" — see
-# agentic_core/embedding_backend.py). Reuses the onnxruntime pin above; no
-# new heavy dependency. sentence-transformers/torch remain required either
-# way (faster-whisper's STT fallback needs torch independent of the router).
 fastembed>=0.4.0
-
-# ── Utilities & Cache ─────────────────────────────────────────────────────────
 python-dotenv>=1.0.0,<2.0.0
-cachetools>=5.3.0,<6.0.0          # Fix 2.2: LRU cache for tts_service
+cachetools>=5.3.0,<6.0.0
 psutil>=5.9.0,<7.0.0
 pyautogui>=0.9.54,<1.0.0
-pygetwindow>=0.0.9,<1.0.0
-pywinauto>=0.6.9,<1.0.0
-pillow>=10.3.0,<11.0.0
+pygetwindow>=0.0.9,<1.0.0; sys_platform == "win32"
+pywinauto>=0.6.9,<1.0.0; sys_platform == "win32"
+pillow>=12.3.0,<13.0.0
 opentelemetry-api>=1.25.0,<2.0.0
 opentelemetry-sdk>=1.25.0,<2.0.0
-
-# ── Search ────────────────────────────────────────────────────────────────────
 tavily-python>=0.3.0,<1.0.0
-
-# ── Wake Word ─────────────────────────────────────────────────────────────────
 pvporcupine>=3.0.0,<4.0.0
-
-# ── Testing ───────────────────────────────────────────────────────────────────
-pytest>=8.0.0,<9.0.0
-
-# ── Optional Vision (only if using vision_module.py) ─────────────────────────
-# torch>=2.2.0,<3.0.0             # Large — uncomment only if needed
-# transformers>=4.40.0,<5.0.0     # Large — uncomment only if needed
-# accelerate>=0.29.0,<1.0.0       # Large — uncomment only if needed

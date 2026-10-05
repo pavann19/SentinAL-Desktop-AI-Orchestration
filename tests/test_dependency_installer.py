@@ -1,7 +1,7 @@
 """
 tests/test_dependency_installer.py
 Unit tests for capabilities/developer/dependency_installer.py.
-Mocks subprocess.Popen, time.sleep, and file I/O — never launches a real
+Mocks subprocess.Popen, time.sleep, and file I/O â€” never launches a real
 terminal or writes to disk.
 """
 import sys
@@ -9,6 +9,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from unittest.mock import patch, MagicMock, mock_open
+import agentic_core.process_supervisor  # initialize dependencies before filesystem mocks
 from capabilities.developer.dependency_installer import (
     pip_install, npm_install, _validate_packages, _run_install,
     _docker_available, _sandboxed_npm_script_body,
@@ -40,290 +41,126 @@ class TestValidatePackages:
         assert valid is True
 
 
-class TestPipInstall:
-
-    def test_invalid_package_returns_error(self):
-        result = pip_install("bad; rm -rf /")
-        assert result.startswith("ERROR")
-
-    @patch("agentic_core.process_supervisor.register_watch")
-    @patch("time.sleep")
+class TestContainedInstallPolicy:
     @patch("subprocess.Popen")
-    @patch("builtins.open", new_callable=mock_open)
-    @patch("os.makedirs")
-    def test_valid_package_launches_terminal(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register):
-        mock_popen.return_value = MagicMock(pid=4242)
-        result = pip_install("requests")
-        mock_popen.assert_called_once()
-        assert "Launched visible terminal" in result
-
-    @patch("agentic_core.process_supervisor.register_watch")
-    @patch("time.sleep")
-    @patch("subprocess.Popen")
-    @patch("builtins.open", new_callable=mock_open)
-    @patch("os.makedirs")
-    def test_upgrade_flag_included_in_script(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register):
-        mock_popen.return_value = MagicMock(pid=4242)
-        pip_install("requests", upgrade=True)
-        # The command is now written into the generated .ps1 script, not passed
-        # as a Popen argument (see the PID-bug fix docstring in _run_install).
-        written = mock_file().write.call_args[0][0]
-        assert "upgrade" in written
-
-
-class TestNpmInstall:
-
-    def test_nonexistent_directory_returns_error(self):
-        result = npm_install("lodash", cwd="C:/totally/fake/nonexistent/dir_12345")
-        assert result.startswith("ERROR")
-        assert "does not exist" in result
-
-    def test_invalid_package_returns_error(self):
-        result = npm_install("bad; rm -rf /", cwd=os.getcwd())
-        assert result.startswith("ERROR")
+    def test_pip_never_executes_on_host(self, launch):
+        assert "disabled" in pip_install("requests")
+        assert "disabled" in pip_install("requests", upgrade=True)
+        launch.assert_not_called()
 
     @patch("capabilities.developer.dependency_installer._docker_available", return_value=False)
-    @patch("agentic_core.process_supervisor.register_watch")
-    @patch("time.sleep")
     @patch("subprocess.Popen")
-    @patch("builtins.open", new_callable=mock_open)
-    @patch("os.makedirs")
-    def test_valid_package_launches_terminal(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register, mock_docker):
-        mock_popen.return_value = MagicMock(pid=4242)
-        result = npm_install("lodash", cwd=os.getcwd())
-        mock_popen.assert_called_once()
-        assert "Launched visible terminal" in result
+    def test_missing_docker_never_executes_on_host(self, launch, docker):
+        assert "host npm fallback is disabled" in npm_install("lodash", cwd=os.getcwd())
+        launch.assert_not_called()
 
-    @patch("capabilities.developer.dependency_installer._docker_available", return_value=False)
-    @patch("agentic_core.process_supervisor.register_watch")
-    @patch("time.sleep")
     @patch("subprocess.Popen")
-    @patch("builtins.open", new_callable=mock_open)
-    @patch("os.makedirs")
-    def test_no_packages_installs_from_package_json(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register, mock_docker):
-        mock_popen.return_value = MagicMock(pid=4242)
-        result = npm_install("", cwd=os.getcwd())
-        mock_popen.assert_called_once()
-        assert "Launched visible terminal" in result
+    def test_uncontained_internal_command_rejected(self, launch):
+        assert "disabled" in _run_install(["npm", "install"], label="npm")
+        launch.assert_not_called()
 
-
-class TestRunInstallPidFix:
-    """
-    Regression coverage for the PID bug: the launch must be a direct,
-    list-form Popen (no `start`/`Start-Process` shell wrapper) so
-    Popen.pid is the real, visible PowerShell process — and a completion
-    sentinel must be woven into the generated script so the process
-    supervisor can tell success from failure, not just "the process died".
-    """
-
-    @patch("agentic_core.process_supervisor.register_watch")
-    @patch("time.sleep")
-    @patch("subprocess.Popen")
-    @patch("builtins.open", new_callable=mock_open)
-    @patch("os.makedirs")
-    def test_launch_is_list_form_with_no_shell_wrapper(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register):
-        mock_popen.return_value = MagicMock(pid=9001)
-        _run_install(["python", "-m", "pip", "install", "requests"], label="pip install requests")
-
-        args, kwargs = mock_popen.call_args
-        launch_cmd = args[0]
-        assert isinstance(launch_cmd, list)
-        assert launch_cmd[0] == "powershell"
-        assert "-File" in launch_cmd
-        # Nothing in the launch args re-wraps this in another shell/process —
-        # that indirection is exactly what made Popen.pid wrong before.
-        assert not kwargs.get("shell")
-        assert not any("Start-Process" in str(a) for a in launch_cmd)
-        assert not any(str(a).strip().lower().startswith("start ") for a in launch_cmd)
-
-    @patch("agentic_core.process_supervisor.register_watch")
-    @patch("time.sleep")
-    @patch("subprocess.Popen")
-    @patch("builtins.open", new_callable=mock_open)
-    @patch("os.makedirs")
-    def test_real_pid_is_registered_with_the_supervisor(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register):
-        mock_popen.return_value = MagicMock(pid=9001)
-        _run_install(["npm", "install"], label="npm install")
-
-        mock_register.assert_called_once()
-        _, kwargs = mock_register.call_args
-        assert kwargs["pid"] == 9001
-        assert kwargs["label"] == "dependency_install"
-        assert kwargs["sentinel_path"]  # a real sentinel path, not None
-
-    @patch("agentic_core.process_supervisor.register_watch")
-    @patch("time.sleep")
-    @patch("subprocess.Popen")
-    @patch("builtins.open", new_callable=mock_open)
-    @patch("os.makedirs")
-    def test_generated_script_contains_command_and_sentinel_footer(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register):
-        mock_popen.return_value = MagicMock(pid=9001)
-        _run_install(["npm", "install", "lodash"], label="npm install lodash")
-
-        written = mock_file().write.call_args[0][0]
-        assert "npm install lodash" in written
-        assert "SentinAL completion sentinel" in written
-
-
-class TestDockerAvailable:
-
-    @patch("subprocess.run")
-    def test_returncode_zero_means_available(self, mock_run):
-        mock_run.return_value = MagicMock(returncode=0)
-        assert _docker_available() is True
-
-    @patch("subprocess.run")
-    def test_nonzero_returncode_means_unavailable(self, mock_run):
-        mock_run.return_value = MagicMock(returncode=1)
-        assert _docker_available() is False
-
-    @patch("subprocess.run", side_effect=FileNotFoundError())
-    def test_docker_not_installed_means_unavailable(self, mock_run):
-        assert _docker_available() is False
-
-    @patch("subprocess.run", side_effect=Exception("timed out"))
-    def test_unexpected_exception_means_unavailable_not_raised(self, mock_run):
-        assert _docker_available() is False
+    def test_invalid_package_and_directory_rejected(self):
+        assert npm_install("bad; calc", cwd=os.getcwd()).startswith("ERROR")
+        assert pip_install("bad; calc").startswith("ERROR")
+        assert "does not exist" in npm_install("lodash", cwd="C:/nonexistent-sentinal-test")
 
 
 class TestSandboxedNpmScriptBody:
+    def test_container_mount_and_security_options(self):
+        body = _sandboxed_npm_script_body(["lodash"], False, r"C:\proj")
+        assert "'docker' 'run' '--rm'" in body
+        assert r"'C:\proj:/workspace'" in body
+        assert "--cap-drop=ALL" in body
+        assert "no-new-privileges" in body
+        assert "'npm' 'install' 'lodash'" in body
+        assert "$LASTEXITCODE -ne 0" in body
 
-    def test_wraps_npm_install_in_docker_run_with_mounted_cwd(self):
-        body = _sandboxed_npm_script_body(["lodash"], dev=False, work_dir=r"C:\proj")
-        assert "docker run --rm" in body
-        assert r'-v "C:\proj:/workspace"' in body
-        assert "-w /workspace" in body
-        assert "npm install lodash" in body
+    def test_dev_and_empty_restore(self):
+        assert "--save-dev" in _sandboxed_npm_script_body(["lodash"], True, r"C:\proj")
+        assert "'npm' 'install'" in _sandboxed_npm_script_body([], False, r"C:\proj")
 
-    def test_dev_flag_included(self):
-        body = _sandboxed_npm_script_body(["lodash"], dev=True, work_dir=r"C:\proj")
-        assert "--save-dev" in body
-
-    def test_empty_package_list_installs_from_package_json(self):
-        body = _sandboxed_npm_script_body([], dev=False, work_dir=r"C:\proj")
-        assert "npm install" in body
-        assert "npm install  " not in body  # no double space where a package name would go
-
-    def test_native_module_check_and_fallback_are_present(self):
-        body = _sandboxed_npm_script_body(["sharp"], dev=False, work_dir=r"C:\proj")
+    def test_native_modules_fail_without_second_install(self):
+        body = _sandboxed_npm_script_body(["sharp"], False, r"C:\proj")
         assert "*.node" in body
-        assert "Falling back to a direct" in body
-        # The fallback command itself must be unsandboxed (no "docker run").
-        fallback_section = body.split("Falling back to a direct")[1]
-        assert "docker run" not in fallback_section
-        assert "npm install sharp" in fallback_section
+        assert "throw 'Linux native modules" in body
+        assert body.count("'npm' 'install'") == 1
+        assert "host fallback is disabled" in body
+
+    def test_workspace_metacharacters_are_literal(self):
+        body = _sandboxed_npm_script_body(["lodash"], False, "C:/it's/$data")
+        assert "Set-Location -LiteralPath 'C:/it''s/$data'" in body
+        assert "'C:/it''s/$data:/workspace'" in body
 
 
-class TestNpmInstallDockerWiring:
+class TestDockerAvailable:
+    @patch("subprocess.run")
+    def test_daemon_status(self, run):
+        run.return_value = MagicMock(returncode=0)
+        assert _docker_available()
+        run.return_value = MagicMock(returncode=1)
+        assert not _docker_available()
 
+    @patch("subprocess.run", side_effect=FileNotFoundError())
+    def test_missing_binary(self, run):
+        assert not _docker_available()
+
+    @patch("subprocess.run", side_effect=TimeoutError())
+    def test_timeout(self, run):
+        assert not _docker_available()
+
+
+class TestSupervisedContainedLaunch:
     @patch("capabilities.developer.dependency_installer._docker_available", return_value=True)
-    @patch("agentic_core.process_supervisor.register_watch")
+    @patch("agentic_core.process_supervisor.register_watch", return_value="watch123")
     @patch("time.sleep")
     @patch("subprocess.Popen")
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
-    def test_sandboxed_script_used_when_docker_available(
-        self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register, mock_docker,
-    ):
-        mock_popen.return_value = MagicMock(pid=4242)
-        npm_install("lodash", cwd=os.getcwd())
-        written = mock_file().write.call_args[0][0]
-        assert "docker run --rm" in written
+    def test_real_pid_sentinel_and_task_id(self, mkdir, file, launch, sleep, register, docker):
+        launch.return_value = MagicMock(pid=9001)
+        result = npm_install("lodash", cwd=os.getcwd())
+        launch.assert_called_once()
+        args, kwargs = launch.call_args
+        assert isinstance(args[0], list)
+        assert args[0][0] == "powershell"
+        assert "-File" in args[0]
+        assert not kwargs.get("shell")
+        assert not any("Start-Process" in value for value in args[0])
+        register.assert_called_once()
+        assert register.call_args.kwargs["pid"] == 9001
+        assert register.call_args.kwargs["sentinel_path"]
+        written = file().write.call_args.args[0]
+        assert "'docker' 'run'" in written
+        assert "SentinAL completion sentinel" in written
+        assert "watch123" in result
+        assert "not a completion" in result
 
-    @patch("capabilities.developer.dependency_installer._docker_available", return_value=False)
-    @patch("agentic_core.process_supervisor.register_watch")
-    @patch("time.sleep")
     @patch("subprocess.Popen")
+    @patch("os.makedirs", side_effect=OSError("disk full"))
+    def test_script_preparation_failure_never_falls_back(self, mkdir, launch):
+        result = _run_install(["npm", "install"], "npm", script_body="contained")
+        assert "Could not prepare" in result
+        launch.assert_not_called()
+
+    @patch("subprocess.Popen", side_effect=FileNotFoundError())
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
-    def test_direct_install_used_when_docker_unavailable(
-        self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register, mock_docker,
-    ):
-        mock_popen.return_value = MagicMock(pid=4242)
-        npm_install("lodash", cwd=os.getcwd())
-        written = mock_file().write.call_args[0][0]
-        assert "docker run" not in written
-        assert "npm install lodash" in written
+    def test_missing_powershell_never_launches_cmd(self, mkdir, file, launch):
+        result = _run_install(["npm", "install"], "npm", script_body="contained")
+        assert "fallback is disabled" in result
+        launch.assert_called_once()
 
-    @patch("capabilities.developer.dependency_installer._docker_available", return_value=True)
-    @patch("agentic_core.process_supervisor.register_watch")
-    @patch("time.sleep")
-    @patch("subprocess.Popen")
+    @patch("subprocess.Popen", side_effect=RuntimeError("boom"))
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
-    def test_pip_install_never_checks_docker(
-        self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register, mock_docker,
-    ):
-        """pip_install stays unsandboxed regardless of Docker availability —
-        it has no target-directory concept to redirect into a mount."""
-        mock_popen.return_value = MagicMock(pid=4242)
-        pip_install("requests")
-        mock_docker.assert_not_called()
-        written = mock_file().write.call_args[0][0]
-        assert "docker run" not in written
+    def test_launch_error_is_reported(self, mkdir, file, launch):
+        assert "boom" in _run_install(["npm", "install"], "npm", script_body="contained")
 
-
-class TestRunInstallFallback:
-
-    @patch("time.sleep")
-    @patch("subprocess.Popen")
+    @patch("agentic_core.process_supervisor.register_watch", side_effect=RuntimeError("db down"))
+    @patch("subprocess.Popen", return_value=MagicMock(pid=9001))
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
-    def test_powershell_not_found_falls_back_to_cmd(self, mock_makedirs, mock_file, mock_popen, mock_sleep):
-        # First call (powershell) raises FileNotFoundError, second call (cmd) succeeds
-        mock_popen.side_effect = [FileNotFoundError(), MagicMock()]
-        result = _run_install(["python", "-m", "pip", "install", "requests"], label="pip install requests")
-        assert mock_popen.call_count == 2
-        assert "Launched terminal" in result
-
-    @patch("time.sleep")
-    @patch("subprocess.Popen")
-    @patch("builtins.open", new_callable=mock_open)
-    @patch("os.makedirs")
-    def test_unexpected_exception_returns_error(self, mock_makedirs, mock_file, mock_popen, mock_sleep):
-        mock_popen.side_effect = RuntimeError("boom")
-        result = _run_install(["npm", "install"], label="npm install")
-        assert result.startswith("ERROR")
-        assert "boom" in result
-
-    @patch("time.sleep")
-    @patch("subprocess.Popen")
-    def test_script_prep_failure_still_launches_unsupervised(self, mock_popen, mock_sleep):
-        # os.makedirs raising means the try/except around script prep catches
-        # it and falls through to the no-sentinel launch path — the install
-        # must still happen, just unobserved, exactly like the pre-fix behaviour.
-        mock_popen.return_value = MagicMock(pid=4242)
-        with patch("os.makedirs", side_effect=OSError("disk full")):
-            result = _run_install(["python", "-m", "pip", "install", "requests"], label="pip install requests")
-        assert "Launched visible terminal" in result
-        launch_cmd = mock_popen.call_args[0][0]
-        assert "-File" not in launch_cmd
-        assert "-Command" in launch_cmd
-
-
-class TestTaskIdSurfaced:
-    """S7-adjacent background-task-monitoring: the watch_id register_watch()
-    returns must reach the caller, not just live inside process_supervisor."""
-
-    @patch("agentic_core.process_supervisor.register_watch")
-    @patch("time.sleep")
-    @patch("subprocess.Popen")
-    @patch("builtins.open", new_callable=mock_open)
-    @patch("os.makedirs")
-    def test_watch_id_appears_in_result(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register):
-        mock_popen.return_value = MagicMock(pid=4242)
-        mock_register.return_value = "abc123watchid"
-        result = pip_install("requests")
-        assert "abc123watchid" in result
-
-    @patch("agentic_core.process_supervisor.register_watch")
-    @patch("time.sleep")
-    @patch("subprocess.Popen")
-    @patch("builtins.open", new_callable=mock_open)
-    @patch("os.makedirs")
-    def test_no_task_note_when_register_watch_fails(self, mock_makedirs, mock_file, mock_popen, mock_sleep, mock_register):
-        mock_popen.return_value = MagicMock(pid=4242)
-        mock_register.side_effect = RuntimeError("db down")
-        result = pip_install("requests")
-        assert "Launched visible terminal" in result
+    def test_failed_watch_does_not_fabricate_task_id(self, mkdir, file, launch, register):
+        result = _run_install(["npm", "install"], "npm", script_body="contained")
+        assert "Launched contained" in result
         assert "Task id" not in result

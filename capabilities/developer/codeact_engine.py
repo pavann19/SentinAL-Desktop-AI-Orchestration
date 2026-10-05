@@ -39,12 +39,10 @@ _logger = logging.getLogger("CodeActEngine")
 # Workstations editions) enabled + a reboot. Checked fresh per call, with a
 # RAM floor — a Sandbox instance needs ~1.5-2 GB and this project's dev
 # machine has crashed under memory pressure before. When it isn't available
-# CodeAct falls back to the pre-containment host path, saying so explicitly
-# rather than silently pretending it's contained.
+# Missing or failed Windows Sandbox blocks execution; there is no host fallback.
 _SANDBOX_EXE = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "WindowsSandbox.exe")
 _SANDBOX_MIN_FREE_GB = float(os.getenv("SENTINAL_CODEACT_SANDBOX_MIN_FREE_GB", "3.0"))
 _SANDBOX_MEMORY_MB = int(os.getenv("SENTINAL_CODEACT_SANDBOX_MEMORY_MB", "2048"))
-# Fixed mount point inside the Sandbox — the per-run host dir maps to here.
 _SANDBOX_SHARE = r"C:\shared"
 
 
@@ -59,7 +57,7 @@ def _sandbox_available() -> bool:
         if free_gb < _SANDBOX_MIN_FREE_GB:
             _logger.warning(
                 f"[CodeAct] Windows Sandbox installed but only {free_gb:.1f} GB free "
-                f"(< {_SANDBOX_MIN_FREE_GB} GB floor) — falling back to host execution."
+                f"(< {_SANDBOX_MIN_FREE_GB} GB floor) — host execution disabled."
             )
             return False
     except Exception:
@@ -247,6 +245,8 @@ def generate_and_run(prompt: str, llm) -> str:
         host_sentinel_path = os.path.join(run_dir, sentinel_filename)
 
         use_sandbox = _sandbox_available()
+        if not use_sandbox:
+            return "CodeAct: Windows Sandbox unavailable; host execution is disabled."
 
         # Completion sentinel: the script is launched with -NoExit, so process
         # death is NOT a completion signal — a footer that writes a marker file
@@ -263,8 +263,7 @@ def generate_and_run(prompt: str, llm) -> str:
             )
             script = build_sentinel_header() + script + build_sentinel_footer(sentinel_in_script)
         except Exception as e:
-            _logger.warning(f"[CodeAct] Could not attach completion sentinel (non-fatal): {e}")
-            host_sentinel_path = None
+            return f"CodeAct: Cannot attach completion sentinel; execution blocked: {e}"
 
         with open(script_path, "w", encoding="utf-8") as f:
             f.write(script)
@@ -313,40 +312,6 @@ def generate_and_run(prompt: str, llm) -> str:
                 f"everything else in it is discarded.{winget_note}{task_note}"
             )
         except Exception as e:
-            _logger.error(f"[CodeAct] Sandbox launch failed ({e}); falling back to host execution.")
-            # fall through to 4b
+            return f"CodeAct: Failed to launch Windows Sandbox; host fallback is disabled: {e}"
 
-    # ── Step 4b: Run in a visible host PowerShell window (UNCONTAINED) ────────
-    try:
-        launch_cmd = [
-            "powershell", "-ExecutionPolicy", "Bypass", "-NoProfile", "-NoExit",
-            "-File", script_path,
-        ]
-        proc = subprocess.Popen(
-            launch_cmd,
-            creationflags=subprocess.CREATE_NEW_CONSOLE,
-            start_new_session=True,
-        )
-        watch_id = None
-        try:
-            from agentic_core.process_supervisor import register_watch
-            watch_id = register_watch(
-                label="codeact",
-                sentinel_path=host_sentinel_path,
-                pid=proc.pid,
-                expected_state={"script_path": script_path, "sandboxed": False},
-            )
-        except Exception as e:
-            _logger.warning(f"[CodeAct] Could not register process watch (non-fatal): {e}")
-
-        time.sleep(1.5)
-        print("[CodeAct] Visible host terminal launched (UNSANDBOXED).")
-        task_note = f" Task id: {watch_id}." if watch_id else ""
-        return (
-            "I've opened a terminal window and started executing your request. "
-            "Windows Sandbox isn't available right now, so this is running directly on "
-            f"your machine with full access to your files — watch the PowerShell window.{task_note}"
-        )
-    except Exception as e:
-        _logger.error(f"[CodeAct] Launch failed: {e}")
-        return f"CodeAct: Failed to launch PowerShell window — {e}"
+    return "CodeAct: Host execution is disabled."

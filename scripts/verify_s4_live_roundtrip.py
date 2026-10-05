@@ -178,10 +178,10 @@ def main() -> int:
     probe_dir = tempfile.mkdtemp(prefix="sentinal_s4_probe_")
     body = _sandboxed_npm_script_body([pkg], False, probe_dir)
     routing_ok = (
-        "docker run --rm" in body
-        and f'-v "{probe_dir}:/workspace"' in body
+        "'docker' 'run' '--rm'" in body
+        and "'-v'" in body and (probe_dir + ":/workspace") in body
         and _DOCKER_NODE_IMAGE in body
-        and f"npm install {pkg}" in body
+        and f"'npm' 'install' '{pkg}'" in body
     )
     shutil.rmtree(probe_dir, ignore_errors=True)
     rep.add("routing_selects_sandbox", "PASS" if routing_ok else "FAIL",
@@ -261,7 +261,7 @@ def main() -> int:
     for root, _dirs, files in os.walk(os.path.join(work, "node_modules")):
         native += [os.path.join(root, f) for f in files if f.endswith(".node")]
     rep.add("no_linux_native_artifacts", "PASS" if not native else "INFO",
-            "none" if not native else f"{len(native)} .node file(s) -- pipeline's host-fallback path covers this")
+            "none" if not native else f"{len(native)} .node file(s) -- pipeline blocks native artifacts without host fallback")
 
     # 8 ─ optional: the real production entry point
     if args.via_pipeline:

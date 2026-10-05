@@ -183,7 +183,11 @@ class TestProcessCommandRoutesToGoalGraphEngine:
         with patch("agentic_core.planner.is_multistep_query", return_value=True), \
              patch("agentic_core.planner.planner.plan_goal", return_value=graph), \
              patch("agentic_core.executor._run_and_observe", side_effect=fake_run_and_observe):
-            output = await process_command("search architecture and paste the result")
+            prompt = "search architecture and paste the result"
+            pending = await process_command(prompt)
+            assert pending["execution"] == "PendingConfirmation"
+            assert call_records == []
+            output = await process_command(prompt, confirm_token=pending["confirm_token"])
 
         assert output["validation"] == "Approved"
         assert output["execution"] == "Success"

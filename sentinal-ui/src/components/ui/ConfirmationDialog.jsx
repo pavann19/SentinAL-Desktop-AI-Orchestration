@@ -10,14 +10,14 @@ import useSystemStore from '../../store/useSystemStore';
 import { sendCommand } from '../../services/wsService';
 
 export default function ConfirmationDialog() {
-  const { confirmationPending, confirmationCommand, resolveConfirmation } = useSystemStore();
+  const { confirmationPending, confirmationCommand, confirmationToken, resolveConfirmation } = useSystemStore();
 
   if (!confirmationPending) return null;
 
   const handleApprove = () => {
     resolveConfirmation();
-    // Re-send the command with an explicit confirmation prefix the backend can parse
-    sendCommand(`CONFIRMED: ${confirmationCommand}`);
+    // The one-time token is bound to the original prompt and plan.
+    sendCommand(confirmationCommand, confirmationToken);
   };
 
   const handleDeny = () => {
@@ -91,7 +91,7 @@ export default function ConfirmationDialog() {
           marginBottom: '24px', letterSpacing: '0.5px',
         }}>
           This action may permanently modify or delete system files.
-          Clearance level ADMIN required to proceed.
+          Your explicit approval is required to proceed.
         </div>
 
         {/* Action buttons */}
