@@ -27,7 +27,7 @@ class TestExtractValidateExecute:
         """'hello' must flow through the full pipeline and return a message."""
         from agentic_core.processor import extract_intent
         from agentic_core.validator import validate_steps
-        from agentic_core.executor import execute_pipeline
+        from dispatch_support import execute_confirmed_pipeline as execute_pipeline
 
         steps = extract_intent("hello")
         assert steps[0]["intent"] == "ConversationalIntent"
@@ -43,7 +43,7 @@ class TestExtractValidateExecute:
         """WebNavigationIntent pipeline must open a browser without crashing."""
         from agentic_core.processor import extract_intent
         from agentic_core.validator import validate_steps
-        from agentic_core.executor import execute_pipeline
+        from dispatch_support import execute_confirmed_pipeline as execute_pipeline
 
         steps = extract_intent("go to youtube")
         is_valid, msg, _ = validate_steps(steps)
@@ -93,7 +93,7 @@ class TestExtractValidateExecute:
         )
         from agentic_core.processor import extract_intent
         from agentic_core.validator import validate_steps
-        from agentic_core.executor import execute_pipeline
+        from dispatch_support import execute_confirmed_pipeline as execute_pipeline
 
         steps = extract_intent("run a command")
         is_valid, msg, _ = validate_steps(steps)

@@ -34,6 +34,27 @@ flowchart TD
 | Snapshot/restore | `snapshot.py`, supported write-target derivation | Partial filesystem recovery, not whole-machine rollback |
 | Process completion | `process_supervisor.py` | Launch acknowledgement is not completion; a sentinel is stronger than PID disappearance |
 
+## Execution authority
+
+`execution_authority.py` validates the resolved action and derives its tier from
+trusted policy immediately before dispatch. Request-local authority is immutable;
+worker threads receive it explicitly. Callers without request authority are
+considered autonomous. Initial execution, goal-graph replans, observation retries
+and direct executor calls use this boundary.
+
+Confirmation covers every executable field. Graph status and planner verification
+hints do not confer authority. A guarded template whose arguments change during
+data substitution cannot reuse its confirmation. Shell repairs and cached-path
+replacements stop and require a new request. Arbitrary application paths and script
+launches are T3; the small fixed application-name set retains T1.
+
+Planner `expected_state` is retained only as a hint. The executor replaces it with
+an action-derived predicate, or omits verification when no supported check exists.
+The observer checks system state; it does not establish that this action caused it.
+
+The boundary protects against untrusted model output. It is not a Python sandbox:
+malicious code already imported into the service can call OS APIs directly.
+
 ## Process isolation
 
 CodeAct requires Windows Sandbox. Missing Sandbox, failed launch or missing

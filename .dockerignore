@@ -6,5 +6,7 @@
 !agentic_core/
 !agentic_core/router.py
 !agentic_core/embedding_backend.py
+!config/
+!config/constants.py
 eval/__pycache__/
 eval/intent_eval_results.json

@@ -5,9 +5,6 @@ import numpy as np
 # Suppress huggingface warnings about symlinks
 warnings.filterwarnings("ignore", module="huggingface_hub")
 
-# ── Expanded Intent Phrase Bank ─────────────────────────────────────────────
-# Fix 3.5: Expanded from ~7 to 25+ diverse anchor phrases per intent.
-# More phrases = better cosine similarity coverage across paraphrase space.
 INTENT_CAPABILITIES = {
     "InformationRetrievalIntent": [
         "search the web for this",
@@ -227,8 +224,6 @@ INTENT_CAPABILITIES = {
         "type everything I say",
         "write this down for me",
         "voice typing",
-        # Expanded 2026-07-10 to meet the >=20 phrase-bank minimum enforced by
-        # tests/test_router.py (Fix 3.5 standard). See MERGE_LOG.md Edit 2.
         "take dictation for me",
         "transcribe my speech",
         "transcribe what I am saying",
@@ -478,15 +473,6 @@ INTENT_CAPABILITIES = {
         "please go on",
         "show me more",
     ],
-    # Added 2026-07-14: these three intents (ALLOWLIST_INTENTS, config/constants.py
-    # — "Phase 3" capabilities) had real downstream handling in
-    # agentic_core/processor.py's extract_intent() but NO router phrase bank,
-    # meaning they could only ever be reached via the LLM fallback correctly
-    # guessing the intent name from a natural-language description — never via
-    # the fast, cheap embedding path. Verified against the 704-item labeled
-    # eval/intent_dataset.json: these 3 intents alone accounted for 144 of the
-    # 184 entries (78%) that were structurally unreachable by the router prior
-    # to this change. See STATE.md for the measured before/after accuracy delta.
     "ProcessManagementIntent": [
         "kill this process",
         "stop the running task",
@@ -611,35 +597,6 @@ class SemanticRouter:
             self.model = build_embedder()
             print(f"[Router] Embedding backend: {_EMB_BACKEND}")
 
-            # Fix (real-vs-synthetic accuracy gap): the previous classifier head was
-            # trained ONLY on self-authored synthetic prompts - 98.35% on the synthetic
-            # benchmark, but only 60.85% against real-world phrasing (Amazon MASSIVE,
-            # mapped to the 5 SentinAL intents it covers - eval/real_world_massive_ood.json).
-            # It was measuring "predicts my own writing," not real usage.
-            #
-            # A full fine-tune of MiniLM itself was tried and REJECTED after a canary
-            # sweep (76 fresh, hand-written prompts never seen by either dataset) caught
-            # it overfitting: 97.73%/95.67% on the curated benchmarks, but only 61.84%
-            # on genuinely novel phrasing with 22 confident (>=70%), semantically bizarre
-            # misroutes ("run a program" -> MediaStreamingIntent at 100% confidence).
-            # Full fine-tuning has enough capacity (22M params) to fit ~5,600 training
-            # examples tightly without generalizing - the aggregate benchmark numbers
-            # never caught it because the benchmarks share phrasing conventions with
-            # the training data.
-            #
-            # What's actually deployed: the STOCK, frozen MiniLM embeddings (unchanged)
-            # with only the linear classifier head retrained - synthetic train data +
-            # real data (each of the 5 augmented intents capped at 1,000 real examples,
-            # so no intent's volume can swamp the others' decision boundaries) +
-            # class_weight='balanced' + 20 targeted examples fixing a FileDeletionIntent/
-            # GeneralizedOSIntent confusion the canary sweep also caught. Verified:
-            # 95.26% synthetic / 92.33% real-world / 80.26% canary (beats production's
-            # 77.63% canary) with only 4 mild, explainable misroutes (calendar/time
-            # boundary overlap) vs the full fine-tune's 22 wild ones. Same ~9ms CPU
-            # latency as before - the embedding model itself never changed.
-            # Experiment scripts live under eval/experiments/. Generated evidence and
-            # classifier artifacts are local outputs under _evidence/ and are not
-            # committed to the public repo.
 
             # Phase A: Load trained classifier head
             import joblib
@@ -659,15 +616,6 @@ class SemanticRouter:
             for intent, phrases in INTENT_CAPABILITIES.items():
                 self.intent_embeddings[intent] = self.model.encode(phrases)
 
-            # Phase A blind spot: eval/intent_dataset.json (the classifier's training
-            # labels) only covers 15 of the ~19 intents in INTENT_CAPABILITIES.
-            # GeneralizedOSIntent, ContinuationIntent, DictationIntent, and
-            # MediaControlIntent have NO training examples, so clf.classes_ can never
-            # contain them - the classifier will confidently misroute these to a
-            # trained neighbor (e.g. "continue" -> ProcessManagementIntent @ 0.78,
-            # not flagged ambiguous). Keep zero-shot cosine coverage for exactly
-            # these classifier-blind intents so they stay reachable. Real fix is
-            # adding labeled training data for them in a Phase A-v2 dataset pass.
             if self._use_classifier:
                 self._classifier_blind_intents = [
                     i for i in INTENT_CAPABILITIES if i not in set(self.classifier.classes_)
@@ -703,7 +651,6 @@ class SemanticRouter:
         if self._fallback_mode:
             return lexical
 
-        # Fix 3.5: Use cached embedding
         query_emb = self._encode_cached(prompt)
 
         best_intent   = "UnknownIntent"
@@ -743,23 +690,6 @@ class SemanticRouter:
                 elif max_score > second_score:
                     second_score = max_score
 
-        # Fix [tie-break]: margin between the top and runner-up intent, computed
-        # BEFORE the 0.40 demotion below. Empirically calibrated against the
-        # 3003-item eval/intent_dataset.json (see STATE.md / git history for the
-        # calibration run): misclassified-but-above-threshold calls had a median
-        # margin of 0.040 vs. 0.144 for correct calls — real separation, not
-        # noise. eps=0.05 catches ~43% of those wrong calls at the cost of
-        # sending ~13% of already-correct calls to the (slower, but usually
-        # still-correct) LLM fallback instead of answering instantly. This
-        # exists specifically because pure confidence tuning cannot fix
-        # genuinely ambiguous requests (e.g. "browse to wikipedia" sitting
-        # between WebNavigationIntent and InformationRetrievalIntent) — no
-        # phrase-bank expansion closes that gap without stealing accuracy from
-        # the neighboring intent (measured directly this session: a targeted
-        # WebNavigationIntent expansion produced +10.4pp on WebNavigation but
-        # -5.4pp on InformationRetrievalIntent, net +0.2pp — a wash).
-        # Phase A Calibrated Margin
-        # Evaluated on 3003-item Val Split, the dynamic eps is 0.2207 instead of the old 0.05
         margin = round(highest_score - second_score, 4) if second_score > -1.0 else None
         AMBIGUITY_MARGIN_THRESHOLD = 0.2207 if getattr(self, "_use_classifier", False) else 0.05
         is_ambiguous = bool(

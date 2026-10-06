@@ -80,5 +80,10 @@
       "target": "nsis",
       "icon": "build/icon.png"
     }
+  },
+  "overrides": {
+    "@electron/get": {
+      "global-agent": "4.1.3"
+    }
   }
 }

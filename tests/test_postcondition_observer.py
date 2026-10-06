@@ -1,12 +1,4 @@
-"""
-Independent verification tests for capabilities/system/postcondition_observer.py (P1-2).
-
-Written by the integrator, NOT by the implementer, per
-VERIFICATION_PROTOCOL.md Gate 2. Tests are written against the ORIGINAL SPEC
-(_context_packs/P1-2_vision_verifier_wiring.md), mocking the three underlying
-modules (process_manager, gui_resolver, vision_module) so this suite is fast,
-deterministic, and does not depend on real OS state or a running VLM.
-"""
+"""Regression tests for postcondition observer."""
 import pytest
 
 from capabilities.system import postcondition_observer as pco

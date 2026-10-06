@@ -1,6 +1,6 @@
 # Result interpretation
 
-## Current artifact-free checkpoint (2026-10-05)
+## Current artifact-free checkpoint (2026-10-06)
 
 `python scripts/reproduce_router_accuracy.py --run-id release-clean` measured
 **2,002/3,230 correct (61.98%)** on the committed synthetic dataset
@@ -10,10 +10,10 @@ on CPU with cached MiniLM weights. It measures intent labels, not task completio
 or security strength. Per-intent performance varies substantially; CodeAct routing
 scored 0/165 in this mode. The raw report is archived outside public Git.
 
-## Current training reproduction (2026-10-05)
+## Current training reproduction (2026-10-06)
 
 The documented `python -m eval.finetune_classifier --run-id release-clean` command
-also completed in an external source-only copy using the same updated environment.
+also completed in an external source-only copy using the same pinned reference environment.
 The standalone logistic-regression classifier scored **477/485 (98.35%)** on its
 stratified synthetic test split and **164/190 (86.32%)** on the versioned synthetic
 OOD set. Split seed: 42; selected C: 10.0. These are classifier-component scores,
@@ -22,18 +22,11 @@ Training created embeddings, split indices and a trusted classifier outside the
 public tree; no pre-generated artifact was needed. This host reproduction does
 not verify the Docker build or container execution.
 
-## Historical trained/configured observations
+## Scope
 
-Historical project documentation recorded 116/120 successful OS-verified task
-attempts (96.7%, Wilson 95% interval 91.7–98.7%), 92.33% real-world routing accuracy,
-83.68% synthetic OOD accuracy, and 88.45% fast-path resolution. These came from
-specific local model/classifier configurations. They are **historical observations**,
-not a score for the current clean checkout or a production reliability guarantee.
-
-The original raw outputs are preserved outside the public source tree. The public
-source retains the datasets, benchmark tasks and verification implementation.
-Without the original environment/result manifest, independent confirmation of
-those exact historical numbers remains unverified.
+These results describe the versioned synthetic inputs and reference environment.
+They do not measure real-world desktop reliability. Historical scores without a
+complete environment manifest are not release claims.
 
 A fresh checkout has no generated classifier. Report artifact-free routing separately
 from locally trained routing. Do not carry historical classifier accuracy over to

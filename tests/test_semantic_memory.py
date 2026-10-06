@@ -1,9 +1,3 @@
-# tests/test_semantic_memory.py
-# S6 semantic memory, increment 1.
-#
-# The embedder is stubbed with a tiny deterministic fake (token bag-of-words
-# over a fixed vocabulary) so the real all-MiniLM-L6-v2 model never loads:
-# fast, hermetic, and still gives "share more words -> higher cosine".
 
 from __future__ import annotations
 

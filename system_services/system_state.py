@@ -1,7 +1,3 @@
-# system_state.py
-# Reactive State Awareness Layer for SentinAL.
-# V2.0 — Fix 3.11: Removed redundant `last_interaction_time` duplicate field.
-#         Single canonical field is `last_interaction`.
 
 import threading
 import time
@@ -44,8 +40,6 @@ class SystemState:
         Updates the global system state and notifies all registered subscribers.
         """
         with self.state_lock:
-            # Fix 3.11: Removed dual-field sync logic — single canonical `last_interaction` field
-            # Backwards compat: if callers pass last_interaction_time, map it to last_interaction
             if "last_interaction_time" in kwargs and "last_interaction" not in kwargs:
                 kwargs["last_interaction"] = kwargs.pop("last_interaction_time")
             else:

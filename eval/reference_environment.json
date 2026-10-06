@@ -1,0 +1,26 @@
+{
+  "python": "3.13.3",
+  "platform": "Windows CPU",
+  "model": {
+    "id": "sentence-transformers/all-MiniLM-L6-v2",
+    "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "backend": "torch"
+  },
+  "input_sha256": {
+    "eval/intent_dataset.json": "ee781fc2276e3b2151fbefbf07b192939abfbdf9e121968f6ba05750bbcb7f85",
+    "eval/intent_dataset_ood_test.json": "3dc3bd92d91fa6f897245163931c3050075f0f05f5260d506645554a13556543",
+    "eval/real_world_massive_ood.json": "9ab89999f6102508545341a68c4bf0ce6f2981394809d2a04759a07eb27258de"
+  },
+  "split_seed": 42,
+  "synthetic_router_mode": "artifact-free",
+  "dependency_reference": "requirements-evaluation.txt",
+  "commands": [
+    "python scripts/reproduce_router_accuracy.py --run-id reference",
+    "python -m eval.finetune_classifier --run-id reference"
+  ],
+  "limitations": [
+    "Self-authored synthetic datasets; no end-to-end desktop reliability claim.",
+    "Exact mapped MASSIVE input is versioned; original upstream export recipe is unavailable.",
+    "ONNX backend is experimental and not covered by this reference environment."
+  ]
+}

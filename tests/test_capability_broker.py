@@ -62,7 +62,7 @@ class TestTierAssignments:
         assert tier_for({"intent": intent}) == T1
 
     @pytest.mark.parametrize("intent", [
-        "DictationIntent", "SysUtilityIntent", "ProjectScaffoldIntent",
+        "DictationIntent", "ProjectScaffoldIntent",
         "DependencyInstallIntent",
     ])
     def test_real_write_intents_are_t2(self, intent):
@@ -114,7 +114,7 @@ class TestGrantDirectHuman:
         assert d.requires_confirmation is False
 
     def test_t2_proceeds_but_flags_confirmation(self):
-        d = grant({"intent": "SysUtilityIntent"})
+        d = grant({"intent": "SysUtilityIntent", "target": "dark_mode"})
         assert d.allowed is True
         assert d.tier == T2
         assert d.requires_confirmation is True

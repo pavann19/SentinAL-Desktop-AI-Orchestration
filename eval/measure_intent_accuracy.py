@@ -1,30 +1,7 @@
-"""
-Reproducible intent-accuracy measurement tool for eval/intent_dataset.json.
+"""Measure exhaustive router accuracy or a seeded sample of pipeline requests.
 
-Formalizes the ad-hoc, throwaway verification scripts written during Session 9
-(each written, run once, then deleted) into a real, committed, versioned
-instrument — so every future accuracy claim in the thesis traces to a
-command that can be re-run by anyone, not a one-off script that no longer
-exists.
-
-Reproducibility guarantees:
-  - The dataset file's SHA-256 hash is recorded in every report, so a report
-    can always be matched back to the exact dataset version that produced it
-    (critical once the dataset grows/changes — see the 704 -> ~3000 scale-up).
-  - --sample-seed makes the full-pipeline sample (which calls the live LLM
-    pipeline and is too slow to run in full at large scale) deterministic —
-    the same seed always draws the same sample from a given dataset.
-  - Router-only measurement is exhaustive (every entry, no sampling) since it
-    requires no network/LLM calls and is fast even at thousands of entries.
-  - Every report is written to _evidence/intent_accuracy/ with a timestamp-
-    free, content-addressable-ish name (run id), never overwriting silently.
-
-Usage:
-    # Router-only, full dataset (fast, no LLM calls, exhaustive):
-    python -m eval.measure_intent_accuracy --mode router-only --run-id v1
-
-    # Full-pipeline, sampled (slow, live LLM calls):
-    python -m eval.measure_intent_accuracy --mode full-pipeline --sample-size 40 --sample-seed 7 --run-id v1
+Reports include dataset hashes, selection and per-intent results. Pipeline mode
+can execute desktop actions; router-only mode does not dispatch capabilities.
 """
 from __future__ import annotations
 

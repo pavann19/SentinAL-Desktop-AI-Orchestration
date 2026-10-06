@@ -1,23 +1,4 @@
-"""
-tests/test_target_extraction_fallback.py
-
-Regression tests for the raw-prompt fallback in agentic_core/processor.py's
-PHASE 2 target extraction.
-
-Found live: a 40-task benchmark run under a weaker local model (Ollama
-llama3.2 instead of Groq's 70B) returned empty target extractions for
-WebNavigationIntent and FileDeletionIntent at a rate the stronger cloud model
-rarely hit. The raw-prompt fallback that already existed for
-MediaStreamingIntent/InformationRetrievalIntent was never extended to those
-two - an empty extraction left target_val == "", and validate_steps() then
-hard-blocks with "requires a target for safety". Not a crash, but a silent,
-confusing failure: "open github" just refused, with no indication why.
-
-These tests exercise _FALLBACK_STRIP_PATTERNS directly (the actual regexes
-used in production) rather than re-implementing the stripping logic, so a
-pattern edit that breaks a case here is a real regression, not a stale
-duplicate assertion.
-"""
+"""Regression tests for target extraction fallback."""
 import os
 import re
 import sys

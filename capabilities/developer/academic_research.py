@@ -1,19 +1,3 @@
-"""
-capabilities/developer/academic_research.py
-Local PDF text extraction + LLM summarization for AcademicResearchIntent.
-
-Replaces the fabricated-success stub (see git history / MERGE_LOG.md): the
-previous version claimed "a 15% improvement over baseline models" and a
-saved summary without ever opening a file. This version extracts real text
-from a real PDF and summarizes what was actually extracted — or returns an
-honest ERROR if the file can't be found, opened, or has no extractable text.
-
-Deliberately local-PDF only, not arXiv/web retrieval — that would add a
-network dependency and a much larger surface (search, download, rate
-limits) for a first real implementation. A local file is the bounded,
-verifiable case: the postcondition is a filesystem check on the summary
-path this module actually writes.
-"""
 import logging
 import os
 import re

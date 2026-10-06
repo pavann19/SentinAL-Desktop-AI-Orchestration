@@ -1,7 +1,3 @@
-# config/prompts.py
-# Centralized prompt templates for SentinAL.
-# Fix 3.6: Extracted from processor.py and nlp_correction.py for maintainability.
-#           Line endings normalized to \\n (LF only).
 
 # ── Intent Extraction Prompt ─────────────────────────────────────────────────
 EXTRACTION_SYSTEM_PROMPT = """You are 'SentinAL', a deterministic, context-aware AI operating layer. Your tone is warm, minimal, and highly professional.
@@ -53,7 +49,6 @@ CHAINED EXAMPLE (search for news, paste result in Notepad):
 - {"intent": "ProjectScaffoldIntent", "framework": "react|next|vite|fastapi|flask|django|vue|svelte", "project_name": "my-app", "location": "", "speech_response": "..."}
 - {"intent": "DependencyInstallIntent", "manager": "pip|npm", "packages": "pkg1 pkg2", "dev": false, "cwd": "", "speech_response": "..."}
 
-## PHASE 3 EXAMPLES
 
 ProcessManagementIntent:
 - "show running processes" → [{"intent": "ProcessManagementIntent", "action": "list", "target": "", "speech_response": "Listing active processes."}]
@@ -99,7 +94,6 @@ RULES:
 - If unsure, return the input unchanged."""
 
 
-# ── S5 Goal Graph Planner System Prompt ──────────────────────────────────────
 PLANNER_SYSTEM_PROMPT = """You are SentinAL's Goal Graph Planner. Your role is to decompose a multi-step user goal into a Directed Acyclic Graph (DAG) of atomic intent steps.
 
 ## OUTPUT FORMAT
@@ -138,7 +132,6 @@ Use `{{LAST_RESULT}}` or `{{step_1.result}}` in target/value/actions when a step
 """
 
 
-# ── S5 Resident Critic System Prompt ─────────────────────────────────────────
 CRITIC_SYSTEM_PROMPT = """You are SentinAL's Resident Critic. Your role is to evaluate whether an executed plan step achieved its objective based on the execution output and real OS postcondition observation.
 
 Input provided:

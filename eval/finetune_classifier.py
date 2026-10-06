@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sentence_transformers import SentenceTransformer
+from config.constants import EMBEDDING_MODEL_ID, EMBEDDING_MODEL_REVISION
 import joblib
 
 import sys
@@ -85,7 +86,7 @@ def get_embeddings(texts, cache_path):
         return np.load(cache_path)
 
     print(f"Encoding {len(texts)} texts for {cache_path}...")
-    model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
+    model = SentenceTransformer(EMBEDDING_MODEL_ID, revision=EMBEDDING_MODEL_REVISION, device="cpu")
     embeddings = model.encode(texts, show_progress_bar=True)
     np.save(cache_path, embeddings)
     fp_path.write_text(fingerprint, encoding="utf-8")

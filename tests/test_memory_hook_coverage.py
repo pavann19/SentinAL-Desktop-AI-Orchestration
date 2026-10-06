@@ -1,17 +1,4 @@
-"""
-tests/test_memory_hook_coverage.py
-
-Coverage for the uncovered branches in agentic_core/memory_hook.py.
-
-tests/test_memory.py covers the URL-template happy paths and basic interaction
-logging. This file targets what it does not reach: the path cache (Fix 2.9,
-used by the executor's Explorer interceptor), the DB-error fallbacks, and the
-intent-filtered context retrieval that processor.py depends on.
-
-Every test uses an isolated in-memory or tmp_path database rather than the
-module-level singleton, so nothing here touches the developer's real
-sentinal_memory.db.
-"""
+"""Regression tests for memory hook coverage."""
 import os
 import sys
 
@@ -30,9 +17,6 @@ def mem(tmp_path):
     m.close()
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Path cache (Fix 2.9) — used by executor.py's Explorer interceptor
-# ══════════════════════════════════════════════════════════════════════════════
 class TestPathCache:
     def test_save_and_retrieve_an_existing_path(self, mem, tmp_path):
         real_dir = tmp_path / "Projects"

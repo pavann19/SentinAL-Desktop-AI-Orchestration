@@ -1,13 +1,3 @@
-# config/snapshots.py
-# Storage + retention for the S4 pre-action filesystem snapshots.
-#
-# A Windows Home/Pro machine has no native copy-on-write overlay filesystem
-# (OverlayFS is Linux; ProjFS is heavy, intrusive machinery), so the T2 model
-# from CONTAINMENT_ARCHITECTURE.md §6 — "real writes + pre-action snapshot +
-# provenance -> restore snapshot" — is implemented as capture-and-restore:
-# before a step with a declarable write target runs, the prior state of that
-# path is captured; on plan success the capture is discarded, on plan failure
-# it is restored.
 
 import os
 import tempfile

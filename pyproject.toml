@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sentinal"
 version = "9.0.0"
-description = "Secure AI Desktop Orchestration — a voice-controlled desktop agent with a deterministic security and privacy governance layer."
+description = "Supervised Windows desktop orchestration with deterministic action authorization."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = "MIT"

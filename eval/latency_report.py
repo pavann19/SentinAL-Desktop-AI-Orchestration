@@ -1,21 +1,7 @@
-"""
-Latency aggregation for the thesis Evaluation chapter (§7.2 End-to-End Latency).
+"""Aggregate recorded trace durations into per-stage latency distributions.
 
-Reads the OpenTelemetry trace files produced by the P1-3 tracing layer
-(agentic_core/tracing.py writes one JSON span-tree per process_command call
-into logs/traces/) and aggregates per-stage duration distributions:
-percentiles (p50/p90/p95/p99), min/max/mean, and the raw sorted samples that
-a plotting tool can turn into a CDF.
-
-This is pure data aggregation — it does NOT run the pipeline or call any LLM.
-It only reads already-emitted trace files, so it is safe, offline, and
-deterministic given a fixed set of trace files.
-
-Usage:
-    python -m eval.latency_report                         # reads logs/traces/
-    python -m eval.latency_report --traces-dir <dir> \
-        --out _evidence/latency/latency_report.json
-"""
+Reads existing trace files without executing the pipeline. Reports are generated
+outputs; fixed trace inputs are required to reproduce the aggregate."""
 from __future__ import annotations
 
 import argparse
@@ -27,8 +13,6 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TRACES_DIR = ROOT / "logs" / "traces"
 DEFAULT_OUT = ROOT / "_evidence" / "latency" / "latency_report.json"
 
-# The pipeline stage span names produced by P1-3 tracing (agentic_core/tracing.py
-# TRACE_ROOT_NAME + the three wrapped call sites in api_wrapper.py).
 ROOT_SPAN = "pipeline.process_command"
 STAGE_SPANS = ("extract_intent", "validate_steps", "execute_pipeline")
 

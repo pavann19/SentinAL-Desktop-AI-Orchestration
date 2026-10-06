@@ -1,16 +1,3 @@
-# config/capability_contracts.py
-# P2-4 — declarative capability contracts (MCP tool-contract layer).
-#
-# One CapabilityContract per allowlisted intent: the parameter schema the
-# executor branch actually reads, the result shape, the containment tier
-# (resolved from config.capability_tiers — NOT hand-copied), a coarse cost
-# hint, reversibility, side effects, and worked examples.
-#
-# This is metadata only. It does NOT change dispatch — agentic_core/executor.py
-# keeps its own if/elif chain untouched. agentic_core/capability_manifest.py
-# reads this file to expose an MCP-style tool manifest and a parallel
-# contract-dispatch path (wired for exactly one capability as the P2-4
-# deliverable; full pipeline cutover is deferred, see that module).
 
 from __future__ import annotations
 

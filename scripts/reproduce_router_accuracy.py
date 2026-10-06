@@ -1,24 +1,7 @@
-"""
-scripts/reproduce_router_accuracy.py — one command, no API keys; cached embeddings allow offline use.
+"""Run exhaustive artifact-free router evaluation with cloud credentials unset.
 
-Reproduces the intent-router accuracy number: every request runs through the
-current router + embedding model (agentic_core/router.py) against the full,
-committed eval/intent_dataset.json, exhaustively (no sampling). Nothing here
-calls an LLM, so there is nothing to configure — no Groq key, no Ollama, no
-Deepgram or Tavily. First use may download embedding weights. A clean checkout
-uses artifact-free routing; a trusted locally trained classifier changes the mode.
-
-This is a thin, discoverable wrapper — the real, already-built, already-
-documented instrument is eval/measure_intent_accuracy.py (every accuracy
-number in this repo's docs traces back to a run of it). This just gives it
-one obvious command and a timestamped run id so repeat runs don't overwrite
-each other's report.
-
-Usage:
-    python scripts/reproduce_router_accuracy.py
-    python scripts/reproduce_router_accuracy.py --run-id my-label
-
-Exit code matches eval.measure_intent_accuracy's own.
+First use downloads the pinned embedding model. Cached weights permit offline
+execution. Generated reports are ignored; locally trained classifiers change mode.
 """
 from __future__ import annotations
 

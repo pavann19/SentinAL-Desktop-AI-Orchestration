@@ -4,7 +4,6 @@ import time
 
 from system_services.system_state import state_manager
 
-# Fix 3.8: SESSION_TIMEOUT now configurable via env var
 _SESSION_TIMEOUT = float(os.getenv("SESSION_TIMEOUT", "15.0"))
 
 
@@ -28,7 +27,6 @@ class ConversationManager:
 
     def start_session(self):
         """Activates a continuous conversational window. Re-entrant: just refreshes if active."""
-        # Fix 3.8: Re-entrancy guard — don't reset if already active, just refresh timer
         if self.is_session_valid():
             self.update_interaction()
             return

@@ -1,31 +1,3 @@
-# agentic_core/skill_registry.py
-# S8-2 — learned-skill registry + lifecycle.
-#
-# A learned skill (from skill_abstraction.abstract_skill) lives here through
-# its lifecycle:
-#
-#   candidate  registered, not yet replay-validated
-#      │  mark_validated(confidence >= SKILL_CONFIDENCE_FLOOR)   [S8-3]
-#      ▼
-#   candidate (validated)
-#      │  activate()                                             [S8-4]
-#      ▼
-#   active     the planner may select it (behind SENTINAL_LEARNED_SKILLS_ENABLED)
-#      │  demote(reason)  — rolling success dropped              [S8-5]
-#      ▼
-#   demoted    no longer offered; can be re-validated & re-activated
-#      │  retire(reason)
-#      ▼
-#   retired    dead
-#
-# Invariants enforced here, not by convention:
-#   - origin is always "learned"; tier is always T1 (§10.2 step 4)
-#   - activate() refuses a skill that has not been validated
-#   - a retired skill cannot be activated
-#   - every transition is written to the append-only audit trail
-#
-# The registry is inert data until S8-4 wires it into the planner. Nothing
-# reads it for execution here.
 
 from __future__ import annotations
 

@@ -1,5 +1,3 @@
-# config/world_model.py
-# S7 — live environment model configuration.
 
 import os
 

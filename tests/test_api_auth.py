@@ -1,13 +1,4 @@
-"""
-tests/test_api_auth.py
-Regression tests for REST API authentication.
-
-Context: /api/command executes real OS actions and was previously reachable
-with no credentials. CORS did not protect it (CORS is browser-enforced only,
-so curl/scripts/other local processes bypassed it entirely), and the server
-defaulted to binding 0.0.0.0, publishing it to every network interface.
-These tests lock in the fix so it cannot silently regress.
-"""
+"""Regression tests for api auth."""
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

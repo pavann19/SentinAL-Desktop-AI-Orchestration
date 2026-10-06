@@ -1,22 +1,3 @@
-# agentic_core/skill_validator.py
-# S8-3 — replay-validation gate.
-#
-# A learned skill (skill_abstraction -> skill_registry candidate) is promoted
-# only after it replays successfully on held-out slot fillings — in the
-# containment overlay, never on the live system unguarded
-# (CONTAINMENT_ARCHITECTURE §10.2 step 3).
-#
-# "Overlay" for host actions = the S4 pre-action snapshot (agentic_core/
-# snapshot.py): capture the write targets, run the filled plan, check it
-# succeeded and its postcondition verified, then RESTORE so the validation
-# leaves no trace. (The verified npm/Docker overlay is the overlay for the
-# code-execution capability specifically; multi-step GoalGraphs of allowlisted
-# GUI/file intents run on the host under snapshot/restore, which is S4's
-# reversal mechanism.)
-#
-# The step runner is injectable so this module is unit-testable without a real
-# desktop; the production default runs the real observed goal-graph executor.
-# Never raises.
 
 from __future__ import annotations
 

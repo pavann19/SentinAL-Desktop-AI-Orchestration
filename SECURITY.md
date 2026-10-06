@@ -6,7 +6,10 @@ No supported multi-user or internet-facing deployment exists.
 
 ## Boundaries
 
-Models propose actions; deterministic code enforces policy and confirmation.
+Models propose actions; deterministic code authorizes each resolved action before
+execution. Replanning cannot reuse confirmation for a changed target or arguments.
+Planner predicates cannot replace action-derived verification. Arbitrary Python
+code already running in the service is outside this boundary.
 REST bearer authentication and WebSocket first-frame authentication protect command
 entry points. Browser WebSocket origins are explicitly restricted. Health endpoints
 remain public. The token is a capability for the local service: anyone who steals it

@@ -215,13 +215,13 @@ class TestDirectHumanConfirmChannel:
                 "failure_category": "success", "attempts": 1, "replanned": False}
 
     @pytest.mark.asyncio
-    async def test_explicit_unsafe_opt_out_t3_runs_without_a_token(self):
+    async def test_disabling_confirmation_does_not_authorize_guarded_execution(self):
         from capabilities.system.api_wrapper import process_command
         with patch("agentic_core.confirmation.REQUIRE_CONFIRMATION", False), \
              patch("agentic_core.processor.extract_intent", return_value=[self._T3_STEP]), \
              patch("agentic_core.executor.execute_pipeline_observed", return_value=self._EXEC_OK):
             result = await process_command("delete confirm_test_file.txt")
-        assert result["execution"] == "Success"
+        assert result["execution"] == "Blocked"
         assert "confirm_token" not in result
 
     @pytest.mark.asyncio

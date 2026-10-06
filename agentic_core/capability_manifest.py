@@ -1,25 +1,3 @@
-# agentic_core/capability_manifest.py
-# P2-4 — MCP tool-contract manifest + parallel contract dispatch.
-#
-# Reads config/capability_contracts.py and exposes:
-#   - manifest()            : the full JSON-serialisable tool manifest
-#   - contract_for(intent)  : one contract
-#   - validate_params(...)  : an ADVISORY schema pre-check (does not replace
-#                             agentic_core/validator.py, which still runs the
-#                             real allow/deny in the pipeline)
-#   - dispatch_via_contract : call a capability THROUGH its contract
-#
-# dispatch_via_contract is the "dynamic dispatch of one migrated capability"
-# P2-4 deliverable. It is wired for exactly one capability today
-# (SchedulerIntent) and is NOT called from the running pipeline —
-# agentic_core/executor.py keeps its own if/elif dispatch byte-for-byte.
-# Full cutover (routing every intent through contracts) is deferred: it means
-# rewriting that chain, and executor.py is frozen for the current work.
-#
-# Import-time consistency check: every allowlisted intent (except UnknownIntent)
-# must have exactly one contract, and no contract may exist for a
-# non-allowlisted intent. Drift raises here, so the manifest cannot silently
-# rot as intents are added.
 
 from __future__ import annotations
 

@@ -12,9 +12,6 @@ def handle_dictation(target: str, prompt: str) -> str:
     if not prompt_text:
         return "I didn't hear anything to dictate."
 
-    # _get_routing_llm() moved INSIDE the try: see window_manager.py's
-    # identical fix for why a fetch failure must degrade the same way an
-    # .invoke() failure does, not propagate uncaught.
     try:
         from agentic_core.processor import _get_routing_llm
         llm = _get_routing_llm("Dictation Payload Extraction")

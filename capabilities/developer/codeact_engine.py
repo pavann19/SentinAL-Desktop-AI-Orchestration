@@ -1,22 +1,3 @@
-# capabilities/developer/codeact_engine.py
-# ═══════════════════════════════════════════════════════════════════
-# CODEACT ENGINE — SentinAL's Dynamic Script Generation & Execution
-#
-# Architecture:
-#   1. LLM generates a PowerShell script for the WHOLE multi-step task
-#   2. Script is validated against a security blocklist (no rm -rf, no registry edits etc.)
-#   3. Script is saved into a per-run directory
-#   4a. If Windows Sandbox is available: the script runs inside a fresh,
-#       disposable Windows Sandbox VM (S4 containment — T3 throwaway
-#       environment). Only the per-run directory is mapped in; nothing the
-#       script does can touch the host outside it, and the whole VM is
-#       destroyed when its window closes.
-#   4b. Otherwise: the script runs in a VISIBLE PowerShell window ON THE HOST
-#       with the user's full privileges (the pre-containment behaviour), and
-#       the response says so plainly.
-#
-# This bypasses the rigid JSON Intent system for developer workflow tasks.
-# ═══════════════════════════════════════════════════════════════════
 
 import logging
 import os
@@ -27,19 +8,6 @@ import time
 
 _logger = logging.getLogger("CodeActEngine")
 
-# ── S4 containment: Windows Sandbox ─────────────────────────────────────────
-# CodeAct's whole point is running arbitrary LLM-generated PowerShell — a
-# blocklist over free-form code is inherently incomplete, so this is the
-# system's widest attack surface (T3). Windows Sandbox gives it an ephemeral,
-# disposable Windows VM: the generated script runs there, only a single per-run
-# directory is shared in, and the VM (and anything the script did to it) is
-# gone when the window closes.
-#
-# Requires the Windows Sandbox optional feature (Pro/Enterprise/Education/
-# Workstations editions) enabled + a reboot. Checked fresh per call, with a
-# RAM floor — a Sandbox instance needs ~1.5-2 GB and this project's dev
-# machine has crashed under memory pressure before. When it isn't available
-# Missing or failed Windows Sandbox blocks execution; there is no host fallback.
 _SANDBOX_EXE = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "WindowsSandbox.exe")
 _SANDBOX_MIN_FREE_GB = float(os.getenv("SENTINAL_CODEACT_SANDBOX_MIN_FREE_GB", "3.0"))
 _SANDBOX_MEMORY_MB = int(os.getenv("SENTINAL_CODEACT_SANDBOX_MEMORY_MB", "2048"))

@@ -1,32 +1,7 @@
-"""
-Ablation study runner for the thesis Evaluation chapter (§7.1 routing / §7.5 privacy).
+"""Compare task outcomes with fast-path routing disabled or cloud routing disabled.
 
-Runs the task-success harness (eval/harness.py) under several configurations by
-temporarily disabling one subsystem at a time, so the thesis can report the
-DELTA each subsystem contributes rather than just an absolute number:
-
-  - baseline        : the system exactly as shipped
-  - no_fast_path    : deterministic_fast_path() forced to return None, so every
-                      prompt goes through the embedding router / LLM path
-                      (evidence for RQ1 — the latency/accuracy value of the
-                      deterministic fast-path)
-  - privacy_all_local : privacy router forced to route every prompt local
-                      (evidence for RQ2 — task-success delta when nothing is
-                      allowed to use the cloud)
-
-Each ablation is applied via monkeypatching at runtime and UNDONE immediately
-after that configuration's run — the real code on disk is never modified, and
-configurations do not leak into each other.
-
-IMPORTANT: this runs the REAL pipeline, which makes live LLM/API calls for any
-task that isn't handled by a fast-path or hardcoded bypass. It therefore needs
-valid API keys / a reachable local model, and is slower than the offline
-latency_report. Use --task-id to run a subset while iterating.
-
-Usage:
-    python -m eval.ablation --run-id demo --task-id conv-hello --task-id info-capital
-    python -m eval.ablation --run-id full        # whole non-skip suite, all configs
-"""
+Temporary patches are scoped to each run. The real pipeline can execute desktop
+actions; review task selection and use a supervised disposable workspace."""
 from __future__ import annotations
 
 import argparse

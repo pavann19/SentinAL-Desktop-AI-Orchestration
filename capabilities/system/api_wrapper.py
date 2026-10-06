@@ -1,9 +1,3 @@
-# api_wrapper.py
-# Deterministic Backend Interface for SentinAL
-# Replaces the ReAct agent with a strict extracted intent pipeline.
-# V2.0 — Fix 3.12: process_command is now async to avoid blocking the ASGI event loop.
-# V2.1 — Fix [observe-wire]: STAGE 3 now calls execute_pipeline_observed()
-#         instead of execute_pipeline() directly — see comment at that call site.
 
 import asyncio
 import os
@@ -88,49 +82,11 @@ def _mkdir_target_from_command(command: str) -> str | None:
 
 
 def _derive_expected_state(step: dict) -> dict | None:
-    """
-    Fix [observe-wire]: derives a postcondition check so execute_pipeline_observed()'s
-    verification (built in P1-1/P1-2/P1-4, but never actually invoked by the live
-    pipeline until that fix — process_command called raw execute_pipeline() directly)
-    can confirm a step ACTUALLY achieved its effect, not just that execute_pipeline()
-    returned without raising.
+    """Derive supported verification predicates from executable action fields.
 
-    Centralized here rather than in agentic_core/processor.py because steps are
-    constructed in several separate code paths there (the deterministic app-map fast
-    path, the registry bypass inside the router loop, and the generic LLM-envelope
-    path) — one centralized post-processing point is far easier to verify completely
-    than chasing every construction site.
-
-    ── Scope: a mismatch must mean the step genuinely failed ────────────────────
-    A failed postcondition triggers a bounded WHOLE-PIPELINE replan in
-    execute_pipeline_observed(), so a check that reports a false mismatch does not
-    merely mislog — it re-runs the pipeline and duplicates its side effects (a
-    second browser tab, a second launch). A check therefore earns its place here
-    only if "not verified" reliably means "did not happen".
-
-    Two classes of check qualify, for different reasons:
-
-    1. Immediate/deterministic — os.path.exists() and the process list answer
-       identically on every call, so a single check is conclusive.
-    2. Timing-sensitive but bounded — a browser window title is NOT conclusive on
-       the first check (after webbrowser.open() the window may not have rendered
-       yet, making "not found" indistinguishable from "still loading"), but it
-       becomes conclusive once observe_postcondition() polls until a deadline.
-       These pass settle_timeout_ms so the observer waits before declaring a
-       mismatch. Verified results still return immediately, so the timeout is paid
-       only when something actually went wrong.
-
-    Known limitation on the browser checks: if a window matching the site is
-    ALREADY open, the check verifies without the new navigation having succeeded.
-    That is a false negative for detection (a failure we miss), which is no worse
-    than the blind execution it replaces — unlike a false positive, which would
-    open a duplicate tab. The asymmetry is why this trade is acceptable.
-
-    Uses a bare basename for process checks, no extension guessing:
-    observe_postcondition() does a case-insensitive SUBSTRING match
-    (`process_name.lower() in p["name"].lower()`), so "notepad" already matches
-    a running "notepad.exe" without needing to know the exact executable name.
-    """
+    Process/path checks and bounded UI settling provide scoped observations, not
+    proof of causality. An already-present process or window can satisfy a check.
+    Unsupported actions receive no invented predicate."""
     if not isinstance(step, dict):
         return None
 
@@ -308,7 +264,7 @@ def _derive_expected_state(step: dict) -> dict | None:
 def _paths_for_step(step: dict) -> list[str]:
     """
     The host filesystem path(s) a step is about to write to, when that is
-    reliably derivable from the step dict — for the S4 pre-action snapshot.
+    reliably derivable from the step dict — for pre-action snapshots.
     Returns [] when the write target can't be known in advance (arbitrary
     shell, GUI actions, CodeAct — the same unpredictability
     _derive_expected_state() already declines to guess at).
@@ -363,26 +319,16 @@ def _paths_for_step(step: dict) -> list[str]:
 
 async def process_command(prompt: str, *, autonomous: bool = False,
                           confirm_token: str | None = None, cancel_event=None) -> dict[str, Any]:
-    """
-    Async pipeline entry point. Wraps the synchronous executor in a thread
-    so it does not block the ASGI event loop (Fix 3.12).
+    """Route a request through validation, exact-action confirmation and observed execution.
 
-    autonomous=False (every direct caller — REST, voice, benchmark): the
-    capability broker's tier/confirmation decision is surfaced. It is
-    ENFORCED only when SENTINAL_REQUIRE_CONFIRMATION is on — then a T2/T3
-    plan returns execution="PendingConfirmation" with a one-time confirm
-    token, and the caller resends the same prompt with confirm_token set to
-    proceed. Explicitly disabling the switch is unsafe compatibility mode: the
-    flag is informational, execution runs.
-
-    autonomous=True (S6 event bus running a background goal — no human in the
-    loop): the broker's decision IS enforced unconditionally. A plan whose
-    highest tier is T2 or T3 is denied outright ("no human -> cannot
-    confirm -> deny"), nothing runs, and the multi-step path runs under the
-    tighter autonomous PlanBudget.
-
-    validate_steps() still runs first and unconditionally in every case.
-    """
+    Autonomous T2/T3 actions are denied. Replans and resolved dependencies must
+    pass authorization again; earlier approval cannot authorize changed arguments."""
+    from agentic_core.execution_authority import (
+        ExecutionAuthority,
+        action_fingerprint,
+        resolve_action,
+        run_with_authority,
+    )
     from agentic_core.executor import (
         FAILURE_CATEGORY_POSTCONDITION_MISMATCH,
         execute_pipeline_observed,
@@ -392,7 +338,7 @@ async def process_command(prompt: str, *, autonomous: bool = False,
 
     # 1. Initialize output structure
     _t0 = time.monotonic()
-    output = {
+    output: dict[str, Any] = {
         "input": prompt,
         "steps": [],
         "validation": "N/A",
@@ -405,6 +351,7 @@ async def process_command(prompt: str, *, autonomous: bool = False,
             # ── STAGE 1: INTENT EXTRACTION ──
             with traced_step("extract_intent", prompt_len=len(prompt)):
                 steps = extract_intent(prompt, autonomous=autonomous)
+            steps = [resolve_action(step) for step in steps]
             for step in steps:
                 if isinstance(step, dict):
                     # Preserve caller text outside the extractor's authority.
@@ -421,9 +368,6 @@ async def process_command(prompt: str, *, autonomous: bool = False,
             with traced_step("validate_steps", step_count=len(steps)):
                 is_valid, validation_msg, _requires_confirm = validate_steps(steps)
 
-            # ── STAGE 1a: CAPABILITY BROKER — risk-tier decision (S4) ──────────
-            # Validate before issuing any confirmation. Autonomous high-tier plans
-            # are denied; guarded direct-human plans require request-bound tokens.
             from agentic_core.capability_broker import grant_all
 
             grant_decision = grant_all(steps, autonomous=autonomous)
@@ -448,14 +392,6 @@ async def process_command(prompt: str, *, autonomous: bool = False,
                 )
                 return output
 
-            # ── STAGE 1a': DIRECT-HUMAN CONFIRMATION GATE (P2-5) ───────────────
-            # Only when SENTINAL_REQUIRE_CONFIRMATION is on. A T2/T3 direct-human
-            # request either presents a valid one-time token bound to THIS exact
-            # request (consume it, continue) or gets a PendingConfirmation
-            # result with a fresh token and nothing runs. On by default; explicit unsafe compatibility mode is available
-            # only to callers who configure it deliberately. The
-            # autonomous path never reaches here — it already returned Blocked
-            # for T2/T3 above.
             if not autonomous and grant_decision.requires_confirmation:
                 from agentic_core.confirmation import (
                     REQUIRE_CONFIRMATION,
@@ -475,27 +411,19 @@ async def process_command(prompt: str, *, autonomous: bool = False,
                         )
                         return output
 
-            # ── STAGE 1b: S5 GOAL GRAPH ROUTING (multi-step only) ──────────────
-            # Fix [S5-wire]: execute_goal_graph_observed() — the critic-integrated,
-            # per-step-replan, data-chaining-aware execution engine built for S5 —
-            # was added to this module but never actually called from here. The
-            # planner still ran (extract_intent() engages it for a multi-step
-            # prompt), but its output was flattened via GoalGraph.to_pipeline()
-            # and handed to the plain execute_pipeline_observed() below, same as
-            # before S5 existed — meaning {{LAST_RESULT}}/{{step_id.result}}
-            # placeholders were never resolved (that only happens inside
-            # resolve_data_dependencies(), which only execute_goal_graph_observed()
-            # calls), and the Critic's per-step postcondition-aware replan never
-            # ran on a real request. This is that missing call site.
-            #
-            # steps already carry depends_on (GoalNode.to_dict() includes it), so
-            # reconstructing a GoalGraph from the flattened list is lossless —
-            # it's the same DAG the planner built, not a re-derived one.
-            #
-            # Single-step requests (~94% of traffic, per S5's own gating design)
-            # are untouched: len(steps) == 1 keeps using execute_pipeline_observed()
-            # exactly as before, so this adds zero latency/behavior change for the
-            # dominant case.
+                else:
+                    output["validation"] = "Denied"
+                    output["execution"] = "Blocked"
+                    output["response"] = "Guarded actions require confirmation; unsafe compatibility mode is unsupported."
+                    return output
+
+            authority = ExecutionAuthority(
+                prompt=prompt,
+                autonomous=autonomous,
+                confirmed_actions=frozenset(action_fingerprint(s) for s in steps)
+                if output.get("confirmation") == "provided" else frozenset(),
+            )
+
             if len(steps) > 1:
                 from agentic_core.budget import budget_for
                 from agentic_core.goal_graph import GoalGraph
@@ -507,7 +435,7 @@ async def process_command(prompt: str, *, autonomous: bool = False,
                 with traced_step("execute_goal_graph", step_count=len(steps)):
                     graph = GoalGraph.from_pipeline(steps, goal_description=prompt)
                     goal_observed = await asyncio.to_thread(
-                        execute_goal_graph_observed, graph, cancel_event, plan_budget,
+                        run_with_authority, execute_goal_graph_observed, authority, graph, cancel_event, plan_budget,
                     )
 
                 output["validation"] = goal_observed["validation"]
@@ -525,31 +453,12 @@ async def process_command(prompt: str, *, autonomous: bool = False,
                 _record_skill_outcome(graph, output)
                 return output
 
-            # Fix [observe-wire]: attach expected_state for ApplicationLaunchIntent
-            # steps so the postcondition observer (P1-2) has something to check.
-            # Purely additive — steps that already carry expected_state, or that
-            # aren't ApplicationLaunchIntent, are untouched.
-            for step in steps:
-                if isinstance(step, dict) and "expected_state" not in step:
-                    derived = _derive_expected_state(step)
-                    if derived:
-                        step["expected_state"] = derived
+            from agentic_core.execution_authority import trusted_postconditions
+            steps = [trusted_postconditions(step) for step in steps]
 
-            # ── STAGE 3: EXECUTION ── (run in thread pool — Fix 3.12)
-            # Fix [observe-wire]: execute_pipeline_observed() (P1-1/P1-4) wraps the
-            # original execute_pipeline() with a before/after state snapshot, a
-            # postcondition check for any step carrying expected_state, a failure
-            # taxonomy, and one bounded whole-pipeline replan on postcondition
-            # mismatch. This mechanism was built and unit-tested in a prior
-            # session but NEVER WIRED IN — process_command called raw
-            # execute_pipeline() directly, meaning the entire mechanism was dead
-            # from the live system's perspective. This call site is the fix.
-            # `.result` is exactly what execute_pipeline() itself would have
-            # returned — the ERROR-prefix check and response assignment below
-            # are UNCHANGED from before this fix, preserving 100% backward
-            # compatibility for every existing caller/test.
             with traced_step("execute_pipeline", step_count=len(steps)):
-                observed = await asyncio.to_thread(execute_pipeline_observed, steps) if cancel_event is None else await asyncio.to_thread(execute_pipeline_observed, steps, cancel_event)
+                args = (steps,) if cancel_event is None else (steps, cancel_event)
+                observed = await asyncio.to_thread(run_with_authority, execute_pipeline_observed, authority, *args)
             execution_result = observed["result"]
 
             # Additive fields — new for any caller that wants them; existing
@@ -563,7 +472,7 @@ async def process_command(prompt: str, *, autonomous: bool = False,
                 output["execution"] = "Failed"
                 output["response"] = execution_result
 
-            elif observed["failure_category"] == FAILURE_CATEGORY_POSTCONDITION_MISMATCH:
+            elif observed["failure_category"] in (FAILURE_CATEGORY_POSTCONDITION_MISMATCH, "observation_unavailable"):
                 # The postcondition observer checked real system state after the
                 # run (and after any bounded replan) and the expected effect was
                 # NOT there. execute_pipeline() returned a cheerful string anyway
@@ -695,27 +604,14 @@ def _record_procedural_outcome(prompt: str, graph: Any, output: dict) -> None:
 
 
 def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = None) -> dict[str, Any]:
-    """
-    S5 Goal Graph Execution Engine: Plan -> Act -> Observe -> Reflect (Critic).
-    Executes a GoalGraph node-by-node in dependency-respecting topological order.
+    """Execute a dependency graph under per-action authorization and a finite budget.
 
-    Security & Verification Invariants:
-    1. Every step emitted by the planner MUST pass through validate_steps() before execution.
-    2. Postcondition observer checks real OS state after each step.
-    3. Resident Critic evaluates the observation and bounds replans to MAX_REPLANS.
-    4. Data chaining ({{LAST_RESULT}}, {{step_id.result}}) is resolved dynamically as parent steps complete.
-    5. S4 budget: the whole plan runs under a PlanBudget (action count + wall time).
-       When it's spent, the plan stops cleanly — remaining nodes are marked
-       skipped, not executed. Defaults to the direct-human ceiling; S6 passes a
-       tighter autonomous one.
-    6. S4 snapshot: before a step with a derivable write target runs, the prior
-       state of that path is captured. On plan SUCCESS the captures are
-       discarded; on ANY failure (a step failed, budget spent, cancelled,
-       validation denied mid-plan) they are restored, newest first — a
-       half-done plan does not leave half-done filesystem changes.
-    """
+    Resolved and replanned actions are checked before dispatch. Supported filesystem
+    paths are snapshotted for partial rollback. Failed observations trigger bounded
+    replanning; changed guarded actions stop until explicitly confirmed."""
     from agentic_core.budget import FAILURE_CATEGORY_BUDGET_EXCEEDED, budget_for
     from agentic_core.critic import critic
+    from agentic_core.execution_authority import AuthorizationDenied, authorize_action, trusted_postconditions
     from agentic_core.executor import (
         FAILURE_CATEGORY_CANCELLED,
         FAILURE_CATEGORY_PIPELINE_ERROR,
@@ -773,7 +669,6 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
         return payload
 
     for node in ordered_nodes:
-        # ── S4 BUDGET GATE: stop the plan cleanly if its ceiling is spent ─────
         budget_reason = budget.check()
         if budget_reason:
             for pending in graph.nodes.values():
@@ -816,6 +711,14 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
 
         # Dynamic data resolution (e.g. {{LAST_RESULT}})
         resolved_step = graph.resolve_data_dependencies(node)
+        try:
+            resolved_step = trusted_postconditions(authorize_action(resolved_step))
+            node.expected_state = resolved_step.get("expected_state")
+        except AuthorizationDenied as exc:
+            graph.mark_node_failed(node.step_id, str(exc))
+            return _finish({"validation": "Denied", "execution": "Blocked", "response": f"Step blocked by security validation/authorization: {exc}",
+                            "failure_category": FAILURE_CATEGORY_PIPELINE_ERROR, "replanned": replanned_any,
+                            "results": results, "budget": budget.snapshot(), "graph": graph.to_dict()}, ok=False)
 
         # ── DETERMINISTIC SECURITY GATE: validate_steps() MUST RUN FIRST ─────
         is_valid, validation_msg, _ = validate_steps([resolved_step])
@@ -838,9 +741,6 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
                 resolved_step["expected_state"] = derived
                 node.expected_state = derived
 
-        # ── S4 SNAPSHOT: capture the prior state of this step's write target ──
-        # (no-op for steps with no derivable target — read-only, GUI, arbitrary
-        # shell). Idempotent per path across replans of the same node.
         capture(plan_snapshot, _paths_for_step(resolved_step))
 
         # ── EXECUTION & OBSERVATION PASS ──────────────────────────────────────
@@ -871,6 +771,14 @@ def execute_goal_graph_observed(graph: Any, cancel_event=None, budget: Any = Non
             node = graph.nodes[node.step_id]
 
             resolved_step = graph.resolve_data_dependencies(node)
+            try:
+                resolved_step = trusted_postconditions(authorize_action(resolved_step))
+                node.expected_state = resolved_step.get("expected_state")
+            except AuthorizationDenied as exc:
+                graph.mark_node_failed(node.step_id, str(exc))
+                return _finish({"validation": "Denied", "execution": "Blocked", "response": f"Step blocked by security validation/authorization: {exc}",
+                                "failure_category": FAILURE_CATEGORY_PIPELINE_ERROR, "replanned": True,
+                                "results": results, "budget": budget.snapshot(), "graph": graph.to_dict()}, ok=False)
             is_valid, validation_msg, _ = validate_steps([resolved_step])
             if not is_valid:
                 graph.mark_node_failed(node.step_id, f"Replanned step denied: {validation_msg}")

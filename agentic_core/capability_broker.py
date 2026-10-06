@@ -1,22 +1,3 @@
-# agentic_core/capability_broker.py
-# Capability broker for SentinAL's S4 containment substrate.
-#
-# Runs AFTER agentic_core/validator.py's validate_steps() — it never re-decides
-# whether an action is allowed on allowlist/denylist grounds (that is settled and
-# untouched). Its one job is the containment decision: given an already-validated
-# step, what risk tier is it, and does it need a human confirmation or an
-# outright denial before it may run.
-#
-# Two caller contexts, one param:
-#   autonomous=False (every caller today)  — a human typed/spoke this command.
-#       T0/T1: proceed. T2/T3: proceed, but flag requires_confirmation=True so a
-#       HITL layer can gate it. Nothing is newly hard-blocked, because there is
-#       no confirmation-provision channel yet and blocking would break
-#       FileDeletionIntent etc.
-#   autonomous=True  (S6 background goals — does not exist yet)
-#       T0/T1: proceed. T2: denied (no snapshot infra to make it reversible).
-#       T3: denied (never autonomous, by definition — CONTAINMENT_ARCHITECTURE.md
-#       §6). Exercised only by tests for now; ready for S6.
 
 from __future__ import annotations
 
@@ -65,15 +46,15 @@ def grant(step: dict, *, autonomous: bool = False) -> GrantDecision:
                 tier=tier,
                 requires_confirmation=False,
                 reason=(
-                    f"{intent} is T2 (real write, no snapshot to reverse it) and cannot run "
-                    f"autonomously until overlay/snapshot containment exists."
+                    f"{intent} is T2 and cannot run autonomously: supported path snapshots "
+                    f"do not provide complete rollback for this capability."
                 ),
             )
         return GrantDecision(
             allowed=True,
             tier=tier,
             requires_confirmation=True,
-            reason=f"{intent} is T2 — needs human confirmation (no snapshot-backed undo yet).",
+            reason=f"{intent} is T2 — needs human confirmation; complete rollback is unavailable.",
         )
 
     # tier == T3

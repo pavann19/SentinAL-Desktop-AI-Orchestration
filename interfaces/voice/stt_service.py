@@ -1,38 +1,3 @@
-#   SentinAL STT Service v4.0 — Google Assistant-Grade Acoustic Engine
-#
-#   ┌──────────────────────────────────────────────────────────────────────┐
-#   │  PIPELINE                                                            │
-#   │  DeviceSelector (scored probe) ──→ AdaptiveVAD (3-band RMS + flux)  │
-#   │  ──→ RNNoise (AI background noise suppression)                       │
-#   │  ──→ Pre-roll Buffer ──→ Deepgram Nova-2 (16kHz linear16)            │
-#   │  ──→ WakeIntelligence ──→ transcript callback ──→ /ws/agent          │
-#   └──────────────────────────────────────────────────────────────────────┘
-#
-#   V4.0 Changes vs V3.0:
-#   ─────────────────────
-#   BUG FIX #1: asyncio.Lock now created inside the running event loop
-#               (was created at __init__ time, causing "wrong loop" crashes on Py3.10+)
-#   BUG FIX #2: sd.sleep() replaced with asyncio-safe thread offloading
-#               (was blocking the entire event loop during device probe & calibration)
-#   BUG FIX #3: Anti-aliased polyphase resampling via scipy
-#               (was using np.interp linear interp, producing aliasing artifacts)
-#   BUG FIX #4: Pre-roll now populated AFTER resampling
-#               (was storing wrong-rate audio in buffer before resample pass)
-#   BUG FIX #5: Dead-device watchdog extended to 300 frames (~10s)
-#               (was 120 frames / ~4s — too aggressive for quiet rooms)
-#   BUG FIX #6: VAD spectral flux normalized by FFT bin count
-#               (was an absolute threshold, invalid when CHUNK_SIZE changes)
-#   NEW FEATURE: Offline STT fallback via faster-whisper when Deepgram unavailable
-#   NEW FEATURE: RNNoise-style noise gate with dynamic floor per-frame
-#   NEW FEATURE: End-of-utterance disfluency filter ("um", "uh", "hmm")
-#   NEW FEATURE: Endpointing grace period — extends silence budget after fresh speech
-#
-#   Key Architecture Principles (matching Google Assistant):
-#   - Pre-boot device scoring: picks highest-RMS live device automatically
-#   - 3-band spectral VAD: rejects fan noise, keyboard clicks, static
-#   - Dynamic per-session noise floor with exponential moving average
-#   - Hold-time extension after fresh speech (prevents sentence clipping)
-#   - Self-healing stream: if a live device dies mid-session, re-scores hardware
 
 import asyncio
 import json
@@ -230,7 +195,6 @@ class AdaptiveVAD:
           - list[np.ndarray]  — production path (chunks from the audio loop)
           - np.ndarray        — direct array (unit test compatibility)
         """
-        # FIX 3: Handle both a flat ndarray and a list of ndarray chunks
         if isinstance(frames, np.ndarray):
             # Unit-test path: single flat array passed directly
             if frames.size == 0:
@@ -273,7 +237,6 @@ class AdaptiveVAD:
                 return True   # Still within hold window — treat as speech
             return False
 
-        # Stage 2: Spectral Flux — V4.0: normalized by bin count (Bug Fix #6)
         spectrum = np.abs(np.fft.rfft(pcm))
         n_bins = len(spectrum)
         if self._prev_spectrum is not None and len(spectrum) == len(self._prev_spectrum):
@@ -331,8 +294,6 @@ class STTService:
         # Hardware
         self._porcupine    = None
         self._dg_connection = None
-        # V4.0 FIX #1: _dg_lock created lazily inside event loop, NOT here.
-        # Do NOT do: self._dg_lock = asyncio.Lock()  ← that was the bug.
         self._dg_lock       = None
 
         # VAD state
@@ -406,7 +367,6 @@ class STTService:
     def _run_event_loop(self):
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
-        # V4.0 FIX #1: Create asyncio.Lock INSIDE the running event loop, not in __init__.
         self._dg_lock = asyncio.Lock()
         self._loop.run_until_complete(self._main_orchestrator())
 
@@ -424,7 +384,6 @@ class STTService:
         device_selector = DeviceSelector()
 
         while self._running:
-            # Phase 1: Score devices (non-blocking via to_thread)
             best_dev = await device_selector.pick_best_async()
             if best_dev is None:
                 print("[STT] No live devices found. Retrying in 5s...")
@@ -435,8 +394,6 @@ class STTService:
             dev_sr   = best_dev['sr']
             dev_name = best_dev['name']
 
-            # Phase 2: Boot-time VAD calibration
-            # V4.0 FIX #2: Calibration moved to thread, no sd.sleep() in async context.
             print(f"[STT] Calibrating noise floor on '{dev_name}'...")
             calib_frames = []
 
@@ -462,7 +419,6 @@ class STTService:
                 await asyncio.sleep(1.0)
                 continue
 
-            # Phase 3: Main listening stream
             def mic_callback(indata, frames, time_info, status):
                 session_active = state_manager.get_snapshot().get("session_active", False)
                 if self._task_manager.current_task_id and not session_active:
@@ -485,8 +441,6 @@ class STTService:
                         except queue.Empty:
                             continue
 
-                        # ── V4.0 FIX #3 & #4: Resample FIRST, THEN convert & buffer ──
-                        # This ensures pre-roll contains correct-rate int16 audio.
                         if dev_sr != TARGET_SR:
                             chunk = self._resample(chunk, dev_sr, TARGET_SR)
 
@@ -496,7 +450,6 @@ class STTService:
                         # ── Disfluency filter on raw RMS (micro-noise gate) ──────────
                         raw_rms = float(np.sqrt(np.mean(pcm.astype(np.float64) ** 2)))
 
-                        # Dead-device watchdog (V4.0 FIX #5: extended to 300 frames)
                         if raw_rms == 0.0:
                             silent_streak += 1
                             if silent_streak > DEAD_DEVICE_FRAMES:
@@ -508,8 +461,6 @@ class STTService:
                         is_speech = self._vad.is_speech(chunk)
 
                         if not self._activated:
-                            # ── SCANNING MODE ──────────────────────────────────────
-                            # Pre-roll: store AFTER resampling (V4.0 FIX #4)
                             self._pre_roll.append(pcm.tobytes())
 
                             session_active = state_manager.get_snapshot().get("session_active", False)
@@ -766,8 +717,6 @@ class STTService:
                 print(f"[WIL] Embedded command: '{decision.clean_command}'")
                 self._dispatch(decision.clean_command)
 
-        # ── Fix 1.5: SESSION KEEP-ALIVE ──
-        # If the session is still valid, keep the connection open for follow-up
         if not conversation_manager.is_session_valid():
             await self._close_deepgram_session()
         else:

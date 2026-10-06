@@ -1,7 +1,9 @@
-# policy_registry.py
+# Policy and evaluation constants.
+EMBEDDING_MODEL_ID = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_MODEL_REVISION = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
 # Unified OS Governance and Policies for SentinAL
 
-# ── Allowlist: Only these Enterprise NLP Intents are permitted ──────────────
+# ── Allowlist: Supported intent allowlist ──────────────
 ALLOWLIST_INTENTS = {
     "ApplicationLaunchIntent",
     "WebNavigationIntent",
@@ -11,9 +13,9 @@ ALLOWLIST_INTENTS = {
     "FileDeletionIntent",
     "ConversationalIntent",      # General chat — no OS permissions required
     "ContinuationIntent",        # Memory / Context expansion
-    "ProcessManagementIntent",   # Phase 3: tasklist + safe taskkill
-    "ProjectScaffoldIntent",     # Phase 3: npx / create-react-app style flows
-    "DependencyInstallIntent",   # Phase 3: npm install / pip install
+    "ProcessManagementIntent",
+    "ProjectScaffoldIntent",
+    "DependencyInstallIntent",
     "CodeActIntent",             # Advanced CodeAct LLM scripts for complex tasks
     "AcademicResearchIntent",    # Academic PDF analysis
     "DataModelingIntent",        # Pandas/SciKit EDA
@@ -25,8 +27,6 @@ ALLOWLIST_INTENTS = {
     "UnknownIntent"
 }
 
-# ── Blocked Keys: Dangerous OS-level keystrokes ────────────────────────────────
-# Relaxed (Fix 1.7): Removed 'win' and 'alt' to allow desktop navigation shortcuts
 BLOCKED_KEYS = {'f4', 'del', 'esc', 'ctrl'}
 
 # ── Sensitive keywords: Any command target containing these strings is blocked ─
@@ -40,8 +40,6 @@ SENSITIVE_TARGETS = [
     "reg delete",
     "net stop",
     "vssadmin",
-    # NOTE: 'taskkill' removed from SENSITIVE_TARGETS — Phase 3 ProcessManagementIntent
-    # handles it safely via process_manager.py with its own protected-process guard.
     "icacls",
     "diskpart",
     "bcdedit",
@@ -49,8 +47,6 @@ SENSITIVE_TARGETS = [
 ]
 
 
-# ── Soft Sensitive keywords: These trigger a WARNING but are ALLOWED (unless deleting) ──
-# (Fix 1.7): Moved system-level browsing keywords here to allow exploration
 SOFT_SENSITIVE_TARGETS = [
     "system32",
     "\\windows\\",

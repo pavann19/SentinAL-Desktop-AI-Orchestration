@@ -265,7 +265,9 @@ class TestDeriveExpectedState:
         monkeypatch.setattr(executor, "execute_pipeline", lambda steps, cancel_event=None: "claimed success")
         monkeypatch.setattr(executor, "MAX_REPLANS", 0)
 
-        observed = executor.execute_pipeline_observed([step])
+        from agentic_core.execution_authority import ExecutionAuthority, action_fingerprint, execution_scope
+        with execution_scope(ExecutionAuthority(autonomous=False, confirmed_actions=frozenset({action_fingerprint(step)}))):
+            observed = executor.execute_pipeline_observed([step])
 
         assert observed["failure_category"] == "postcondition_mismatch"
         assert observed["step_observations"][0]["observation"].tier_used == "filesystem"
@@ -653,9 +655,6 @@ class TestDeriveExpectedStateRobustness:
         ) is None
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# _paths_for_step — which steps the S4 snapshot mechanism can protect
-# ══════════════════════════════════════════════════════════════════════════════
 class TestPathsForStep:
     def test_file_deletion_target_is_snapshotted(self):
         paths = _paths_for_step({"intent": "FileDeletionIntent", "target": r"C:\tmp\doc.txt"})

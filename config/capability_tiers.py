@@ -1,25 +1,3 @@
-# config/capability_tiers.py
-# Risk-tier map for SentinAL's capability broker (S4 containment substrate).
-#
-# Every allowlisted intent is assigned a containment tier. The tier answers one
-# question: "how bad is it if this action runs when it shouldn't have, and can
-# the effect be taken back?" — NOT "is this action allowed" (that stays with
-# agentic_core/validator.py's allowlist + denylists, which run first and are
-# untouched by this file).
-#
-#   T0  read-only, nothing to reverse            -> fully autonomous
-#   T1  scoped/low-harm write, trivially undone  -> autonomous within scope
-#   T2  real write, reversible only with a saved snapshot (which does NOT
-#       exist yet — see CONTAINMENT_ARCHITECTURE.md §6 "today every capability
-#       effectively runs at T2 without the snapshot")
-#   T3  irreversible: delete, terminate, run arbitrary code, send, purchase
-#       -> never autonomous; a direct human command still proceeds (with a
-#          confirmation flag), an autonomous/background goal is denied outright
-#
-# Tier assignments below are a judgement call, documented per-intent. They are
-# deliberately conservative: when a sub-action could be lower-tier but detecting
-# that reliably is fragile (the same problem api_wrapper._derive_expected_state()
-# hits), the whole intent keeps the higher tier.
 
 T0 = "T0"
 T1 = "T1"
@@ -36,7 +14,7 @@ INTENT_TIERS: dict[str, str] = {
     "InformationRetrievalIntent": T0, # web search, read-only
 
     # T1 — low-harm, trivially reversible
-    "ApplicationLaunchIntent": T1,    # starts a process; undo = close it
+    "ApplicationLaunchIntent": T1,    # fixed application names; other launches are T3
     "WebNavigationIntent": T1,        # opens a browser tab; undo = close it
     "MediaStreamingIntent": T1,       # opens a media page; undo = close it
     "MediaControlIntent": T1,         # volume/playback virtual keys; transient
@@ -45,7 +23,7 @@ INTENT_TIERS: dict[str, str] = {
     "DataModelingIntent": T1,         # reads a CSV, writes a PNG to DATA_DIR; additive, contained
     "AcademicResearchIntent": T1,     # reads a PDF, writes a .txt to DATA_DIR; additive, contained
 
-    # T2 — real write, not snapshot-backed, not trivially reversible
+    # T2 — writes without complete rollback
     "DictationIntent": T2,            # types text into whatever has focus — could land in a real document
     "SysUtilityIntent": T2,           # changes registry / display / mic settings — real system writes
     "ProjectScaffoldIntent": T2,      # creates a project dir + runs npx/create-react-app — filesystem + network
@@ -53,7 +31,7 @@ INTENT_TIERS: dict[str, str] = {
 
     # T3 — irreversible
     "FileDeletionIntent": T3,         # delete — the canonical irreversible action
-    "CodeActIntent": T3,             # arbitrary LLM-generated PowerShell on the host — the widest surface
+    "CodeActIntent": T3,             # generated PowerShell; requires Windows Sandbox
     "GeneralizedOSIntent": T3,        # can run arbitrary shell + GUI actions per its own docstring
     "ProcessManagementIntent": T3,    # default (kill) — terminating a process can lose unsaved work
 
@@ -95,6 +73,17 @@ def tier_for(step: dict) -> str:
 
     intent = str(step.get("intent", "") or "").strip()
     base = INTENT_TIERS.get(intent, T3)
+    if intent == "SysUtilityIntent":
+        from capabilities.system.sys_utility import resolve_system_action
+        action = resolve_system_action(step.get("target", ""), step.get("prompt", ""))
+        return T3 if action in {"recycle_bin", "unknown"} else T2
+    if intent == "ApplicationLaunchIntent":
+        target = str(step.get("target", "") or "").strip().lower()
+        # Arbitrary executables, scripts and explicit paths are code execution.
+        # Only fixed application names retain the low-risk launch classification.
+        if target and target not in {"notepad", "notepad.exe", "calc", "calc.exe",
+                                     "calculator", "mspaint", "mspaint.exe"}:
+            return T3
 
     overrides = ACTION_TIER_OVERRIDES.get(intent)
     if overrides:

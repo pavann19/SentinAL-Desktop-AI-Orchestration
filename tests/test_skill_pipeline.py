@@ -1,6 +1,3 @@
-# tests/test_skill_pipeline.py
-# S8-3 (replay-validation), S8-4 (promotion + matcher), S8-5 (monitor).
-# Injected runners / stubbed embedder — no real desktop, no LLM.
 
 from __future__ import annotations
 
@@ -35,7 +32,6 @@ def reg(tmp_path):
     return SkillRegistry(memory=mm)
 
 
-# ── S8-3 replay validation ───────────────────────────────────────────────
 
 def test_validate_skill_all_pass():
     seen = []
@@ -61,7 +57,6 @@ def test_validate_skill_never_raises():
     assert skill_validator.validate_skill({"slots": []}, runner=lambda s: 1 / 0) == 0.0
 
 
-# ── S8-4 promotion path ──────────────────────────────────────────────────
 
 def test_promote_if_ready_activates_on_clean_validation(reg):
     tpl = _template()
@@ -90,7 +85,6 @@ def test_promote_if_ready_needs_instances(reg):
                                             registry=reg) == "not_enough_instances"
 
 
-# ── S8-4 matcher ─────────────────────────────────────────────────────────
 
 class _FakeEmb:
     """cosine 1.0 for identical strings, ~0 otherwise (word-set overlap)."""
@@ -135,7 +129,6 @@ def test_match_skill_none_for_autonomous(matcher_env):
                                      autonomous=True) is None
 
 
-# ── S8-5 monitor ─────────────────────────────────────────────────────────
 
 @pytest.fixture
 def mon(reg, monkeypatch):

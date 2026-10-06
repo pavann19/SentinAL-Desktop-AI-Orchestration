@@ -47,7 +47,7 @@ const useSystemStore = create((set, get) => ({
   // 'connecting' | 'connected' | 'disconnected' | 'error'
   wsStatus: { telemetry: 'connecting', agent: 'connecting' },
 
-  // ── FIX 6: Confirmation Dialog State ──
+  // ── Confirmation Dialog State ──
   // Populated when a destructive operation requires explicit user approval.
   confirmationPending: false,
   confirmationCommand: null,  // The raw command text awaiting approval
@@ -58,8 +58,6 @@ const useSystemStore = create((set, get) => ({
   setBootPhase: (phase) => set({ bootPhase: phase }),
 
   setSystemState: (state) => set({ state }),
-
-  // FIX 6: Confirmation dialog actions
   requestConfirmation: (command, token) => set({ confirmationPending: true, confirmationCommand: command, confirmationToken: token }),
   resolveConfirmation: () => set({ confirmationPending: false, confirmationCommand: null, confirmationToken: null }),
   

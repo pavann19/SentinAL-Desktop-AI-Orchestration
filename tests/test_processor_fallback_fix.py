@@ -1,17 +1,4 @@
-"""
-Independent verification tests for the LLM-fallback JSON parsing fix in
-agentic_core/processor.py (commit 00e46d8, landed directly to main without
-gates — written after the fact per VERIFICATION_PROTOCOL.md Gate 2, since
-the fix was never dispatched through the normal context-pack/branch flow).
-
-The fix changed the fallback prompt (agentic_core/processor.py, inside
-extract_intent) from asking the LLM to "Output EXACTLY the intent name,
-nothing else" (a bare string) to asking for a JSON array
-'[{"intent": "..."}]'. It kept the old bare-string parsing as a secondary
-fallback when JSON parsing fails, so this suite verifies BOTH paths still
-work and that a step_query with genuinely low router confidence gets
-correctly attributed to whichever intent the LLM (mocked here) returns.
-"""
+"""Regression tests for processor fallback fix."""
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -41,7 +28,6 @@ def test_fallback_parses_new_json_array_format(monkeypatch):
     with patch("agentic_core.router.router", _mock_router(0.1)):
         steps = processor.extract_intent("some genuinely obscure phrasing xyz")
     assert steps[0]["intent"] == "InformationRetrievalIntent"
-    # prompt/confidence auto-filled per the fix's new lines
     assert steps[0]["prompt"] == "some genuinely obscure phrasing xyz"
     assert steps[0]["confidence"] == 1.0
 
@@ -100,14 +86,6 @@ def test_fallback_not_triggered_when_confidence_is_high(monkeypatch):
     llm.invoke.assert_not_called()
 
 
-# ── Dead-zone fix (0.35 <= confidence < 0.40, matched_intent == UnknownIntent) ──
-# Regression suite for the fix documented in processor.py's "Fix [dead-zone]"
-# comment. Measured impact before this fix: 54/704 (7.7%) of
-# eval/intent_dataset.json fell in this band and failed permanently with zero
-# recovery attempt, because the old condition required BOTH confidence < 0.35
-# AND matched_intent == "UnknownIntent" — a redundant, harmful extra gate,
-# since router.py's own logic already guarantees matched_intent can only be
-# "UnknownIntent" when confidence < 0.40 in the first place.
 
 def test_fallback_now_triggers_in_the_former_dead_zone(monkeypatch):
     """The specific band (0.35 <= confidence < 0.40) that used to be silently

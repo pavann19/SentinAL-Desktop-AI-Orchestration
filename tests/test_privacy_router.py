@@ -1,8 +1,4 @@
-"""
-tests/test_privacy_router.py
-Fix 4.4: Privacy router unit tests.
-Covers 10 cases: Windows paths, env vars, PII patterns, false-positive fixes.
-"""
+"""Regression tests for privacy router."""
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

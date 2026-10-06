@@ -228,7 +228,6 @@ class TestMakeEventHandler:
         assert self.broadcasts[0]["execution"] == "Error"
 
 
-# ── S7 world model rides this loop ─────────────────────────────────────────
 
 class TestWorldModelSampleWiring:
     def test_env_sample_delegates_to_world_model(self, monkeypatch):

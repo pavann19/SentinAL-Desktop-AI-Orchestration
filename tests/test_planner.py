@@ -143,7 +143,6 @@ def test_replan_failed_node_increments_replan_count():
     assert updated_graph.nodes["step_1"].status == "pending"
 
 
-# ── S6 semantic memory (increment 2): advisory plan hint ─────────────────────
 
 class TestSemanticPlanHint:
     """recall_plan() feeds the planner an advisory step-shape from a similar
@@ -201,7 +200,6 @@ class TestSemanticPlanHint:
         assert graph.nodes["step_1"].intent == "GeneralizedOSIntent"
 
 
-# ── S6 procedural memory: deterministic recipe replay ───────────────────────
 
 class TestProceduralReplay:
     """recall_recipe() REPLACES the planner LLM when it returns a graph, and is
@@ -256,7 +254,6 @@ class TestProceduralReplay:
         assert len(graph.nodes) >= 1
 
 
-# ── S7 A3: advisory current-environment context ────────────────────────────
 
 class TestWorldContextInPlannerPrompt:
     def _llm(self):

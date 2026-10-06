@@ -1,14 +1,3 @@
-# agentic_core/improvement_engine.py
-# S9-2 proposer + S9-3 shadow-eval orchestration + S9-4 control-plane review.
-#
-# CONTAINMENT_ARCHITECTURE §10.1: the cognition plane PROPOSES; the control
-# plane EVALUATES against fixed, human-set criteria and PROMOTES. The proposer
-# here is deliberately tiny and safe — it may only suggest a param value
-# inside a declared range or flip a heuristic from a fixed list. It never
-# touches the policy engine, capability tiers, the allowlist, or these
-# criteria. Nothing is applied to the live system by this module.
-#
-# Never raises out of the public functions.
 
 from __future__ import annotations
 
@@ -31,7 +20,6 @@ def _store():
     return improvement_store
 
 
-# ── S9-2: proposer ────────────────────────────────────────────────────────
 
 def propose_from_outcomes(drift=None) -> list[str]:
     """Read the drift report (S7 Half B) and emit conservative candidate
@@ -90,7 +78,6 @@ def _nudge(name: str, cur, lo: int, hi: int):
     return min(hi, base + step)
 
 
-# ── S9-3: shadow evaluation (orchestration only) ──────────────────────────
 
 def shadow_eval(version_id: str, *, benchmark_runner=None) -> dict:
     """Replay the candidate against the fixed benchmark OFFLINE and record the
@@ -145,7 +132,6 @@ class _applied:
                 os.environ.pop(self.name, None)
 
 
-# ── S9-4: control-plane review ───────────────────────────────────────────
 
 def review(version_id: str) -> str:
     """Apply the fixed acceptance criteria to a shadow-evaluated candidate.

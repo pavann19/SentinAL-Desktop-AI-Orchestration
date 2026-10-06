@@ -1,8 +1,4 @@
-"""
-tests/test_validator.py
-Fix 4.2: Security layer unit tests for validator.py.
-Covers 8 critical test cases including sandbox bypass, BLOCKED_KEYS, and allowlist enforcement.
-"""
+"""Regression tests for validator."""
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

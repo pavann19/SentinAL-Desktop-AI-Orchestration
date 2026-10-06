@@ -1,14 +1,4 @@
-"""
-Tests for P1-4: failure taxonomy + bounded replan on postcondition mismatch,
-implemented as an extension of agentic_core.executor.execute_pipeline_observed().
-
-Same process note as tests/test_executor_observed.py (P1-1): the integrator is
-both implementer and test-author here (task never delegated, security-critical).
-A second-party review of P1-1 has been dispatched
-(_context_packs/P1-1_review_gate2_secondparty.md); the same review should
-eventually cover this P1-4 extension too since it lives in the same function.
-Flagged in STATE.md.
-"""
+"""Regression tests for executor replan."""
 import capabilities.system.postcondition_observer as pco
 from agentic_core import executor
 
@@ -72,7 +62,7 @@ def test_replan_triggers_once_on_mismatch_then_succeeds(monkeypatch):
         )
 
     monkeypatch.setattr(executor, "_run_and_observe", _fake_run_and_observe)
-    result = executor.execute_pipeline_observed([{"intent": "ApplicationLaunchIntent", "expected_state": {"process_name": "notepad.exe"}}])
+    result = executor.execute_pipeline_observed([{"intent": "ApplicationLaunchIntent", "target": "notepad", "expected_state": {"process_name": "notepad.exe"}}])
 
     assert call_count["n"] == 2
     assert result["attempts"] == 2
@@ -161,7 +151,7 @@ def test_observe_postcondition_raising_does_not_lose_execute_pipeline_result(mon
         raise RuntimeError("simulated violation of the never-raises contract")
     monkeypatch.setattr(pco, "observe_postcondition", _raise)
 
-    steps = [{"intent": "ApplicationLaunchIntent", "expected_state": {"process_name": "notepad.exe"}}]
+    steps = [{"intent": "ApplicationLaunchIntent", "target": "notepad", "expected_state": {"process_name": "notepad.exe"}}]
     result = executor.execute_pipeline_observed(steps)
 
     # Must not raise. Must still carry the real execute_pipeline result through.

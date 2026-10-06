@@ -1,21 +1,3 @@
-# agentic_core/world_model.py
-# S7 — live environment model (increments A1 sampler + A2 read API).
-#
-# "World context" for a desktop agent, scoped honestly (CONTAINMENT_ARCHITECTURE
-# §10.3): the user's DIGITAL environment — running processes, the foreground
-# window, time. NOT camera/microphone (a materially higher privacy category,
-# deliberately excluded), NOT screenshots (cost — capture_state_snapshot()
-# already avoids them).
-#
-# A1: sample_tick() is called once per resident event-bus tick. It records a
-#     bounded, pruned rolling history in the env_state table, reusing
-#     postcondition_observer.capture_state_snapshot() for the process list.
-# A2: current_state() / changes_since() are pure reads the planner can query
-#     ("what's open now", "what changed in the last 10 minutes"). This is what
-#     turns memory from a log into a world model.
-#
-# Off unless SENTINAL_ENV_MODEL_ENABLED. Never raises — a sampling or read
-# failure degrades to "no world model", never to a crashed background loop.
 
 from __future__ import annotations
 

@@ -1,15 +1,4 @@
-"""
-Tests for the tie-break disambiguation fix (router.py margin/is_ambiguous +
-processor.py's tie-break fallback trigger).
-
-Empirically motivated: measured this session that a targeted phrase-bank
-expansion to fix the WebNavigation/InformationRetrieval collision produced
-+10.4pp on WebNavigation but -5.4pp on InformationRetrieval (net +0.2pp,
-a wash) — proving genuinely ambiguous requests can't be fixed by more
-phrase-bank tuning alone. This fix instead detects the ambiguity at
-routing time (margin between top-2 candidates < 0.05) and defers to the
-LLM fallback rather than confidently guessing.
-"""
+"""Regression tests for tiebreak fix."""
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -42,13 +31,7 @@ def test_clearly_confident_match_is_not_ambiguous(router):
 
 
 def test_margin_reflects_gap_between_top_two_intents_not_a_single_score(router):
-    """Structural check on the margin computation itself: verify it is
-    genuinely top1-minus-top2, not just echoing confidence. A hand-picked
-    "known ambiguous phrase" comparison was deliberately NOT used here — the
-    real embedding output shifts across phrase-bank edits made this session,
-    making any specific phrase pairing fragile to couple a test to. The
-    functional trigger logic (the part that actually matters) is covered by
-    the mocked processor.py tests below instead."""
+    """Structural check on the margin computation itself: verify it is."""
     result = router.route("open notepad")
     assert result["margin"] is None or result["margin"] >= 0
     assert result["margin"] != result["confidence"]  # not the same number

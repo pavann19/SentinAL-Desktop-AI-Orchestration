@@ -1,5 +1,3 @@
-# tests/test_skill_abstraction.py
-# S8-1 — typed-slot abstraction. Pure functions, no DB, no LLM.
 
 from __future__ import annotations
 

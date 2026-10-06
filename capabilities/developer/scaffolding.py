@@ -115,5 +115,4 @@ def scaffold_project(framework: str, project_name: str, location: str = "") -> s
         return f"ERROR scaffolding '{framework}': {e}"
 
 
-# ── Missing import fix ────────────────────────────────────────────────────────
 import re

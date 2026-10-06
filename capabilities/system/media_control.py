@@ -10,10 +10,6 @@ def handle_media_control(target: str, prompt: str) -> str:
     if not prompt_text:
         return "I couldn't understand the media command."
 
-    # _get_routing_llm() moved INSIDE the try: see window_manager.py's
-    # identical fix. Here a fetch failure now hits the SAME except block as
-    # an .invoke() failure and returns the same honest error, instead of
-    # propagating uncaught out of this function.
     try:
         from agentic_core.processor import _get_routing_llm
         llm = _get_routing_llm("Media Action Classification")

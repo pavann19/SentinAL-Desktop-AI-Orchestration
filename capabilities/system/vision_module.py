@@ -7,7 +7,6 @@ import pyautogui
 from langchain_core.messages import HumanMessage
 from langchain_ollama import ChatOllama
 
-# Fix 3.4: Vision model is now configurable via env var
 VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "llama3.2-vision")
 _VISION_TIMEOUT = 10.0  # Max seconds to wait for VLM response
 
@@ -48,7 +47,6 @@ def verify_screen_state(query: str) -> bool:
 
         print(f"[Vision Module] Analyzing screen for query: '{query}'...")
 
-        # Fix 3.4: Hard timeout — don't block the executor thread indefinitely
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
             future = pool.submit(llm.invoke, [message])
             try:
@@ -62,7 +60,6 @@ def verify_screen_state(query: str) -> bool:
 
     except Exception as e:
         err_str = str(e).lower()
-        # Fix 3.4: Return False (fail-safe) on model-not-found, NOT True (fail-open)
         if "404" in str(e) or "not found" in err_str or "model" in err_str:
             print(f"[Vision Module] Model '{VISION_MODEL}' not found — returning False (fail-safe).")
             return False

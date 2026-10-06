@@ -1,20 +1,3 @@
-# agentic_core/improvement_store.py
-# S9-1 — versioned self-improvement change store.
-#
-# Every candidate tuning change (a param tweak or a heuristic flip proposed by
-# the cognition plane) is a row here. Lifecycle:
-#
-#   proposed -> shadow_passed / shadow_failed -> promoted / rejected
-#   promoted -> reverted   (one step back; the previous promoted value for the
-#                           same target becomes current again)
-#
-# current(target) is the newest promoted-and-not-reverted value. Nothing in
-# the live pipeline reads current() yet — wiring that in is the S9 activation
-# step, gated on a real shadow-eval run existing.
-#
-# CONTAINMENT_ARCHITECTURE §10.1: the store records; the control-plane review
-# (improvement_engine.review) is the only thing that moves a row to 'promoted',
-# and only against fixed criteria.
 
 from __future__ import annotations
 

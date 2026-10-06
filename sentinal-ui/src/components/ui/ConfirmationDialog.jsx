@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
-   CONFIRMATION DIALOG  — FIX 6
-   
+   CONFIRMATION DIALOG
+
    Blocks the UI with an explicit approve/deny prompt whenever
    the backend marks a command as `requires_confirmation: true`.
    Designed to match the SentinAL sci-fi aesthetic.

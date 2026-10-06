@@ -1,27 +1,3 @@
-"""
-capabilities/system/scheduler.py
-Real local task/reminder persistence for SchedulerIntent.
-
-Replaces the fabricated-success stub (see git history / MERGE_LOG.md): the
-previous version returned "Got it. I will remind you..." without ever
-registering anything anywhere. This version genuinely persists tasks to
-SQLite (agentic_core/memory_hook.py's scheduled_tasks table) and can list
-and cancel them for real.
-
-SCOPE, STATED HONESTLY: this makes tasks/reminders real, queryable, and
-persistent across restarts. It does NOT add active notification delivery —
-there is no background timer that pops a toast or speaks a reminder when
-due_at arrives. That is a genuinely separate feature (a resident scheduler
-loop, wired into main.py's lifecycle, plus a delivery mechanism) and belongs
-with the "proactive triggers" work already scoped in
-SENTINAL_V2_RECONCILED_ARCHITECTURE.md (§5) rather than bolted on here.
-Every response that saves a timed reminder says so explicitly, so nobody
-reasonably concludes they'll be notified when nothing will notify them —
-the same fabricated-confidence failure this rewrite exists to fix.
-
-Note this is unrelated to agentic_core/scheduler.py, which is the
-pipeline's internal task queue.
-"""
 import logging
 import re
 import time
@@ -46,13 +22,6 @@ _LEADIN_PATTERN = re.compile(
 )
 
 
-# Lazily-created, module-level shared instance — not one MemoryManager() per
-# call. Same leak, same fix as capabilities/developer/data_modeler.py and
-# academic_research.py: each instance opens its own sqlite3 connection that
-# only closes at process exit, so instantiating fresh per call leaked one
-# connection per add/list/cancel. Tests monkeypatch this function directly
-# (see tests/test_scheduler.py's isolated_memory fixture), which still works
-# fine against a singleton-returning function.
 _memory_singleton = None
 
 

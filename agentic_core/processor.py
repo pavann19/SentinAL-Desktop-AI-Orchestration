@@ -15,10 +15,8 @@ if TYPE_CHECKING:
 from agentic_core.capability_registry import registry
 from agentic_core.memory_hook import MemoryManager
 from config.constants import ALLOWLIST_INTENTS
-
-# ── Structured Logger (Fix 5.2) ─────────────────────────────────────────────
 from config.paths import LOGS_DIR  # Resolves to AppData\SentinAL\logs in prod
-from config.prompts import EXTRACTION_SYSTEM_PROMPT as SYSTEM_PROMPT  # Fix 3.6: externalized
+from config.prompts import EXTRACTION_SYSTEM_PROMPT as SYSTEM_PROMPT
 from config.settings import BrainConfig
 
 _logger = logging.getLogger("Processor")
@@ -45,8 +43,6 @@ def _semantic_context(query: str) -> str:
     except Exception:
         return ""
 
-# SYSTEM_PROMPT is now imported from config.prompts (Fix 3.6)
-# It is retained as module-level name for LLM calls below, but managed centrally.
 
 
 # ── App-name extraction ──────────────────────────────────────────────────────
@@ -112,13 +108,6 @@ _PROCESS_LIST_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Per-intent verb/filler prefixes to strip when falling back to the raw
-# utterance after an LLM target-extraction call returns empty. One shared
-# pattern across intents would either under-strip ("delete the file X" left
-# with "the file X" as the target) or over-strip ("open X" losing "the" from
-# a target that legitimately contains it) — each intent's own command grammar
-# needs its own pattern. Only intents in needs_target (agentic_core/processor
-# PHASE 2) need an entry here.
 _FALLBACK_STRIP_PATTERNS = {
     "MediaStreamingIntent": r'^(?:search for|tell me about|play|find|look up)\s+',
     "InformationRetrievalIntent": r'^(?:search for|tell me about|play|find|look up)\s+',
@@ -141,9 +130,6 @@ def deterministic_fast_path(prompt: str) -> list | None:
         now = datetime.now().strftime("%I:%M %p")  # noqa: DTZ005
         return [{"intent": "ConversationalIntent", "message": f"The time is {now}.", "speech_response": f"It is {now}."}]
 
-    # Checked BEFORE the app-launch path: "show me the running programs" contains
-    # no launch verb, but the embedding router scored it as an app launch, so a
-    # deterministic rule is the reliable fix for a high-frequency phrasing.
     if _PROCESS_LIST_RE.search(p):
         return [{"intent": "ProcessManagementIntent", "action": "list", "target": "",
                  "speech_response": "Checking what's running."}]
@@ -302,33 +288,6 @@ def split_multistep(query: str) -> list:
     if not parts:
         return [query]
 
-    # Fix 3.7: Only keep a split if both resulting parts have >= 2 words
-    # Prevents object-phrase splits: 'pizza and calorie info' → wrong
-    #
-    # Refined after benchmarking: the word-count rule alone also rejected
-    # "open notepad and calculator", because "calculator" is one word — so a
-    # genuine two-app request collapsed into a single unsplittable step and one
-    # of the two apps was silently never opened.
-    #
-    # A short part is now rescued when it names a known app. That keeps the
-    # original guard intact for object phrases — "calorie info" resolves to
-    # nothing, so that split is still correctly refused — while allowing the
-    # case where the short part is a real target the leading verb can be
-    # inherited onto.
-    #
-    # Checks _DEFAULT_APP_MAP_SEED first (a static dict, always available at
-    # import time), THEN the live capability registry as a best-effort
-    # enhancement for user-learned apps. Found live via CI: the registry-only
-    # version of this check passed on the local dev machine — where hours of
-    # manual testing had already seeded "calculator" into the on-disk SQLite
-    # registry — but failed on a clean CI checkout, because registry.seed_
-    # defaults() only runs inside main.py's FastAPI startup hook. split_
-    # multistep() is a pure function callable from tests, eval scripts, or any
-    # code that imports processor.py without booting the full server, so a
-    # correctness-affecting check must not depend on that hook having already
-    # run. The static dict removes that ordering dependency entirely; the
-    # registry lookup still adds real value for apps the user has taught the
-    # system that aren't in the static seed.
     MIN_WORDS_PER_PART = 2
     if len(parts) > 1:
         def _is_valid_part(part: str) -> bool:
@@ -381,8 +340,6 @@ def extract_intent(prompt: str, autonomous: bool = False) -> list:
     `autonomous` is forwarded to the planner so procedural memory never replays
     a cached recipe for a background goal (S6).
     """
-    # ── DEMO GHOST PROTOCOL (Fix 1.4: gated behind SENTINAL_DEBUG env var) ────────
-    # Only active when SENTINAL_DEBUG=true in .env. Disabled in production.
     if os.getenv("SENTINAL_DEBUG", "false").lower() == "true":
         text_lower = re.sub(r'[.,!?]', '', prompt.lower()).strip()
         if "initiate presentation protocol" in text_lower or "run diagnostic" in text_lower:
@@ -440,11 +397,6 @@ def extract_intent(prompt: str, autonomous: bool = False) -> list:
                 "speech_response": "On it. I'm generating a script and will open a terminal to run everything step by step.",
             }]
 
-        # ── PHASE 1: S5 GOAL GRAPH PLANNER (ON-DEMAND MULTI-STEP) ─────────────
-        # Gated behind is_multistep_query(): single-step commands (~94% traffic)
-        # pay ZERO extra latency and NO planner LLM call.
-        # When multi-step is detected, the Goal Graph Planner decomposes the goal
-        # into a dependency-aware DAG (GoalGraph) with data-chaining.
         if is_multistep_query(prompt):
             print(f"[AUDIT] Multi-Step Goal detected for: '{prompt}'. Engaging S5 Goal Graph Planner.")
             goal_graph = planner.plan_goal(prompt, context={"autonomous": autonomous})
@@ -503,16 +455,6 @@ def extract_intent(prompt: str, autonomous: bool = False) -> list:
             print(f"[AUDIT] Router Matched: {matched_intent} (Confidence: {confidence}"
                   f"{', AMBIGUOUS margin=' + str(intent_data.get('margin')) if is_ambiguous else ''})")
 
-            # --- CONFIDENCE REDUNDANCY LOOP (LLM FALLBACK) ---
-            # Fix [tie-break]: also engage fallback when the router itself flags
-            # the top-2 candidates as too close to trust (agentic_core/router.py
-            # "Fix [tie-break]"), even when confidence is >= 0.40 and
-            # matched_intent is NOT UnknownIntent. This is the case the
-            # dead-zone fix (below) does not cover: a confident-looking answer
-            # that is actually a coin-flip between two semantically adjacent
-            # intents (e.g. "browse to wikipedia" between WebNavigationIntent
-            # and InformationRetrievalIntent). Original matched_intent is kept
-            # as a fallback-of-last-resort if the LLM call itself fails.
             if is_ambiguous and matched_intent != "UnknownIntent":
                 print(f"[AUDIT] Ambiguous match for '{step_query}' (top candidate "
                       f"'{matched_intent}' margin={intent_data.get('margin')} < 0.05). "
@@ -545,23 +487,6 @@ def extract_intent(prompt: str, autonomous: bool = False) -> list:
                     print(f"[SRE] Tie-break LLM fallback failed: {e}. Keeping router's top "
                           f"candidate '{matched_intent}' as last resort.")
 
-            # Fix [dead-zone]: router.route() (agentic_core/router.py) demotes
-            # ANY match below its 0.40 threshold to matched_intent="UnknownIntent",
-            # while still returning the raw pre-demotion score as "confidence" —
-            # meaning confidence for an UnknownIntent result can legitimately be
-            # anywhere in [0.0, 0.40). The old "confidence < 0.35" sub-condition
-            # here created a silent dead zone: any query landing at
-            # 0.35 <= confidence < 0.40 was classified UnknownIntent by the
-            # router but NEVER got a chance at LLM fallback recovery, since this
-            # condition required BOTH criteria. Measured impact on the 704-item
-            # labeled eval/intent_dataset.json: 54 queries (7.7%) fell in this
-            # band and failed permanently with zero recovery attempt (e.g.
-            # "search for python tutorials please" -> straight to UnknownIntent,
-            # no LLM ever consulted). matched_intent == "UnknownIntent" is BY
-            # ITSELF already a strict superset guarantee of confidence < 0.40
-            # (see router.py's own "if highest_score < 0.40: best_intent =
-            # UnknownIntent"), so the extra confidence check was redundant at
-            # best and actively harmful in the 0.35-0.40 band. Dropped.
             if matched_intent == "UnknownIntent":
                 print(f"[AUDIT] Confidence too low for '{step_query}'. Engaging strict LLM fallback.")
                 llm_fb = _get_routing_llm("Confidence Fallback")
@@ -583,7 +508,6 @@ def extract_intent(prompt: str, autonomous: bool = False) -> list:
                 except Exception as e:
                     print(f"[SRE] LLM Fallback failed: {e}")
             
-            # ── PHASE 2: PARAMETER EXTRACTION ─────────────────────────────────
             target_val = ""
             actions_val = []
             
@@ -602,7 +526,6 @@ def extract_intent(prompt: str, autonomous: bool = False) -> list:
                     past_context = memory.get_context_for_prompt(intent_filter="InformationRetrievalIntent", limit=3)
                 past_context = "\n".join(p for p in (past_context, _semantic_context(step_query)) if p)
 
-                # --- ENHANCED EXTRACTION PROMPT (Fix 1.5) ---
                 llm_extractor = _get_routing_llm("Target Extraction")
                 extract_prompt = (
                     f"{past_context}\n\n"

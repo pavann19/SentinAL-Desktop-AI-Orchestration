@@ -1,19 +1,4 @@
-"""
-Independent verification tests for the observe-wire fix in
-capabilities/system/api_wrapper.py.
-
-FINDING: agentic_core/executor.py::execute_pipeline_observed() (built and
-unit-tested in a prior session, P1-1/P1-2/P1-4) was NEVER actually invoked by
-the live system — process_command() called raw execute_pipeline() directly,
-meaning the whole observe-act-replan mechanism was dead code from the live
-pipeline's perspective despite being tested and merged. This fix wires it in.
-
-This is the highest-blast-radius change of the session (api_wrapper.py is the
-literal entry point for every pipeline-integration test and the real HTTP
-API), so it gets thorough, careful coverage: backward compatibility for every
-existing behavior, the new expected_state derivation logic in isolation, and
-the new additive output fields.
-"""
+"""Regression tests for api wrapper observe wire."""
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -173,7 +158,7 @@ async def test_execute_pipeline_observed_is_actually_called_not_raw_execute_pipe
 
 
 @pytest.mark.asyncio
-async def test_step_with_preexisting_expected_state_is_not_overwritten():
+async def test_planner_expected_state_is_replaced_by_trusted_derivation():
     with patch("agentic_core.executor.execute_pipeline_observed") as mock_observed:
         mock_observed.return_value = {
             "result": "ok", "snapshot_diff": {}, "step_observations": [],
@@ -188,7 +173,8 @@ async def test_step_with_preexisting_expected_state_is_not_overwritten():
             await process_command("open notepad")
 
     called_steps = mock_observed.call_args[0][0]
-    assert called_steps[0]["expected_state"] == {"process_name": "already_set.exe"}
+    assert called_steps[0]["expected_state"]["process_name"] == "notepad"
+    assert called_steps[0]["planner_hint"] == {"process_name": "already_set.exe"}
 
 
 @pytest.mark.asyncio

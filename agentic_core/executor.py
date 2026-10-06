@@ -1,13 +1,3 @@
-# executor.py
-# Thin execution layer for SentinAL.
-# The LLM determines what to execute; this module only performs safe dispatch.
-#
-# V2.0 Fixes:
-#   Fix 1.1 — Shell injection guard: blocks &&, ||, |, ; chain operators in LLM payloads
-#   Fix 1.2 — YouTube HTML scraper removed: replaced with webbrowser.open (ToS compliant)
-#   Fix 2.9 — Path cache routed through thread-safe MemoryManager (not raw sqlite3.connect)
-#   Fix 2.10 — Hardcoded time.sleep(0.5) and sleep(2.0) replaced with env-configurable values
-#   Fix 5.1 — Structured logging via logging module instead of print()
 
 import logging
 import os
@@ -25,12 +15,8 @@ from agentic_core.validator import validate_sandbox
 from capabilities.developer.dependency_installer import npm_install, pip_install
 from capabilities.developer.scaffolding import scaffold_project
 from capabilities.system.gui_resolver import resolve_element
-
-# Phase 3 capability modules
 from capabilities.system.process_manager import kill_process, list_processes
 from config.constants import SENSITIVE_TARGETS
-
-# ── Structured Logger (Fix 5.1) ───────────────────────────────────────────────
 from config.paths import LOGS_DIR  # Resolves to AppData\SentinAL\logs in prod
 
 _logger = logging.getLogger("Executor")
@@ -43,10 +29,7 @@ if not _logger.handlers:
     _sh.setFormatter(logging.Formatter('[%(name)s] %(message)s'))
     _logger.addHandler(_sh)
 
-# ── Configuration ─────────────────────────────────────────────────────────────
-# Fix 2.10: Configurable step delay (default 0.1s, was hardcoded 0.5s)
 STEP_DELAY     = float(os.getenv("EXECUTOR_STEP_DELAY", "0.1"))
-# Fix 2.10: Configurable GUI focus wait (default 1.0s, was hardcoded 2.0s)
 GUI_FOCUS_WAIT = float(os.getenv("GUI_FOCUS_WAIT", "1.0"))
 
 # ── Initialize Dynamic URL Cache ──────────────────────────────────────────────
@@ -128,7 +111,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
     Returns:
         str: Success message or the error that halted the pipeline.
     """
-    blackboard = []  # Fix 1.6: Stores textual results of each step for {{LAST_RESULT}} injection
+    blackboard: list[str] = []
     master_stdout_buffer = ""
 
     for index, step in enumerate(validated_steps):
@@ -139,8 +122,6 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                 print("[RELIABILITY] ABORTING Executor: Cancellation signal detected.")
                 return "Mission interrupted by system."
 
-            # ── Fix 1.6: VARIABLE INJECTION ──
-            # Recursively replace {{LAST_RESULT}} with the last item in the blackboard
             def inject_vars(obj):
                 if isinstance(obj, str):
                     if "{{LAST_RESULT}}" in obj:
@@ -154,6 +135,11 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                 return obj
 
             step = inject_vars(step)
+            from agentic_core.execution_authority import AuthorizationDenied, authorize_action
+            try:
+                step = authorize_action(step)
+            except AuthorizationDenied as exc:
+                return f"ERROR authorization: {exc}"
 
             intent = step.get("intent", "").strip()
             target = step.get("target", "")
@@ -167,25 +153,15 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                     prompt_val = step.get("prompt", "")
                     if not prompt_val:
                         return f"ERROR Step {index+1}: CodeAct missing prompt."
-                    
+
                     from capabilities.developer.codeact_engine import generate_and_run
                     from config.settings import BrainConfig
-                    
+
                     # Use the most capable LLM for code generation
                     llm = BrainConfig.get_cloud_llm(max_tokens=2048) or BrainConfig.get_local_llm(num_predict=2048)
                     result_msg = generate_and_run(prompt_val, llm)
-                    
+
                     master_stdout_buffer += f"CodeAct Execution:\n{result_msg}\n"
-                    # Fix (ruff F821): `SESSION_MEMORY` was referenced here but never
-                    # defined anywhere in this module — every CodeActIntent step raised
-                    # NameError immediately after successfully launching its script,
-                    # was caught by the broad except below, and retried up to 3 times
-                    # (each retry re-invoking the LLM and re-launching a real PowerShell
-                    # window) before ultimately reporting failure to the user despite
-                    # having actually run. Record the result the same way every other
-                    # intent does (`blackboard`, used for {{LAST_RESULT}} injection —
-                    # Fix 1.6) instead, and fall through to the loop's normal
-                    # step_success=True/break so a real success is reported as one.
                     step_result = result_msg
 
                 # ── 0.5. NEW SKILLS EXPANSION (Part 1, 2, 3) ────────────────────────
@@ -219,18 +195,18 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                 elif intent == "ApplicationLaunchIntent":
                     if not target:
                         return f"ERROR Step {index+1}: '{intent}' missing target."
-                    # ── Fix 1.6: Application Launch Retry Loop ──
                     max_launch_retries = 3
                     launched = False
                     for launch_attempt in range(max_launch_retries):
+                        authorize_action(step)
                         # Support Windows environment variables (e.g., %USERPROFILE%)
                         expanded_target = os.path.expandvars(target)
                         if os.path.exists(expanded_target):
                             os.startfile(expanded_target)
                         else:
                             subprocess.Popen(
-                                f'start "" "{expanded_target}"',
-                                shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                [expanded_target],
+                                shell=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                 start_new_session=True
                             )
                         # Wait for the window to appear before proceeding to next step
@@ -368,6 +344,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                     was_explorer = False
 
                     for action_idx, action in enumerate(actions):
+                        authorize_action(step)
                         action_type = action.get("type", "").lower()
                         payload = action.get("payload", "")
                         value = action.get("value", "")
@@ -395,8 +372,6 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                             if is_visual:
                                 safe_target = re.sub(r'^(?:dir|ls)\s+', 'explorer ', safe_target, flags=re.IGNORECASE)
 
-                            # Fix 1.1: Sanitize LLM shell payloads for chain operators
-                            # Explorer commands are whitelisted inside _sanitize_shell_cmd
                             commands = [safe_target]  # Execute as single command (no && splitting by executor)
                             try:
                                 _sanitize_shell_cmd(safe_target)
@@ -418,12 +393,10 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                     # 1. Verify the LLM's guessed path
                                     if not os.path.exists(clean_path):
                                         _logger.info(f"Path not found: {clean_path}. Searching MemoryManager cache for '{folder_name}'.")
-                                        # Fix 2.9: Use thread-safe MemoryManager instead of raw sqlite3.connect
                                         found_path = memory.get_cached_path(folder_name)
 
                                         if found_path:
-                                            clean_path = found_path
-                                            _logger.info(f"Cache HIT: Located at {clean_path}")
+                                            return "ERROR authorization: cached replacement paths require a new request."
                                         else:
                                             _logger.info(f"Cache MISS for '{folder_name}'")
                                             return f"I checked my memory index, but I could not locate the {folder_name} folder."
@@ -436,20 +409,6 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                         print(f"      [Error] OS blocked folder execution: {e}")
                                         return f"I found the {folder_name} folder, but the operating system blocked me from opening it."
 
-                                # ── STRICT PROCESS ROUTING (GUI vs CLI / VISIBLE vs HIDDEN) ──
-                                # Fix (benchmark: multi_open_then_close, flaky 2/3): the previous
-                                # check was `f" {t}" in cmd`, a substring match anywhere in the
-                                # string. "taskkill /IM notepad.exe /F" contains " notepad" and was
-                                # therefore classified as a GUI LAUNCH — routed through detached
-                                # Popen + sleep(1.0) + continue, which never waits for completion or
-                                # checks a return code. A command meant to CLOSE notepad was handled
-                                # as if it were opening it, so the kill sometimes hadn't finished by
-                                # the time the step reported success.
-                                #
-                                # Now matched on the command's own executable (first token, or the
-                                # token after "start"), not on any trigger word appearing anywhere in
-                                # the command line — so a GUI app name used as an ARGUMENT to another
-                                # command (taskkill, tasklist, findstr) no longer qualifies.
                                 _cmd_tokens = cmd.strip().split()
                                 _first_tok = _cmd_tokens[0].lower() if _cmd_tokens else ""
                                 if _first_tok == "start" and len(_cmd_tokens) > 1:
@@ -486,23 +445,6 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                     continue  # Move to the next command in the chain
 
                                 if is_visible_install:
-                                    # This is the GeneralizedOSIntent raw-shell path (a literal
-                                    # "npm install ..." etc. command extracted from the request).
-                                    #
-                                    # Fix (same PID bug as DependencyInstallIntent, see
-                                    # capabilities/developer/dependency_installer.py's _run_install):
-                                    # previously launched via `start powershell -NoExit -Command "..."`
-                                    # (shell=True). `start` spawns the console detached and returns
-                                    # immediately, so Popen.pid was the transient cmd.exe, not the
-                                    # PowerShell actually running the install — registering that pid
-                                    # as a watch would report "completed" about a second later, a
-                                    # confident wrong answer, which is worse than no observation.
-                                    #
-                                    # Fixed identically to DependencyInstallIntent: write the command
-                                    # into a generated .ps1 with a completion sentinel footer and launch
-                                    # it directly (list-form Popen, CREATE_NEW_CONSOLE, no `start`
-                                    # wrapper), so Popen.pid is the real process and the supervisor can
-                                    # tell success from failure, not just that the process died.
                                     print(f"      [Process] Opening visible terminal for: {cmd}")
                                     sentinel_path = None
                                     script_path = None
@@ -575,6 +517,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                 success = False
 
                                 while attempt <= max_retries and not success:
+                                    authorize_action(step)
                                     try:
                                         process = subprocess.Popen(
                                             cmd, shell=True, cwd=current_cwd,
@@ -638,7 +581,10 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                                 )
                                                 try:
                                                     resp = llm.invoke([("system", prompt)])
-                                                    cmd = resp.content.strip().replace('```', '').strip()
+                                                    corrected = resp.content.strip().replace('```', '').strip()
+                                                    if corrected != cmd:
+                                                        return "ERROR authorization: corrected commands require a new request and confirmation."
+                                                    cmd = corrected
                                                     print(f"      [Healing] New Command: {cmd}")
                                                 except Exception as e:
                                                     print(f"      [Healing] LLM correction failed: {e}")
@@ -657,9 +603,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                             action_label = payload  # e.g. 'click', 'type', 'scroll'
                             gui_target   = value
 
-                            # Phase 3 FIX: If action is 'click' but resolved_x/y is missing,
-                            # use gui_resolver to locate the element first
-                            resolved_coords = (None, None)
+                            resolved_coords: tuple[int | None, int | None] = (None, None)
                             if action_label == "click" and not (step.get("resolved_x") and step.get("resolved_y")):
                                 label    = action.get("label", gui_target)
                                 app_name = action.get("app", "")
@@ -682,7 +626,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                 "resolved_x": resolved_coords[0] or step.get("resolved_x"),
                                 "resolved_y": resolved_coords[1] or step.get("resolved_y"),
                             }
-                            result = execute_gui_command(simulated_intent)
+                            result = execute_gui_command(simulated_intent, authorized_parent=step)
 
                             if result.startswith("ERROR"):
                                 return f"ERROR Step {index+1}.{action_idx+1}: {result}"
@@ -700,17 +644,6 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                         return speech
 
                     if master_stdout_buffer.strip():
-                        # Fix (found writing coverage for this block): _get_routing_llm()
-                        # itself was OUTSIDE the try/except, only llm.invoke() was guarded.
-                        # The healing block earlier in this same function wraps its
-                        # equivalent _get_routing_llm() call in an outer try (the
-                        # while-loop's own try/except), so a fetch failure there is
-                        # caught and degrades to "Task failed after multiple attempts".
-                        # Here there was no outer guard at all: a fetch failure would
-                        # propagate past this whole intent handler to the per-step retry
-                        # loop, retried 3 times, then surfaced as a raw ERROR string -
-                        # inconsistent with every other LLM-call failure in this function,
-                        # all of which degrade to a spoken explanation instead.
                         try:
                             from agentic_core.processor import _get_routing_llm
                             llm = _get_routing_llm("Summarize terminal output")
@@ -751,9 +684,6 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
 
                     url_template, query, platform = _resolve_url_template(step, default_platform="youtube")
 
-                    # ── YOUTUBE: Direct search via webbrowser (Fix 1.2) ────────────
-                    # Removed fragile HTML scraper (violates ToS, regex false positives).
-                    # Now just opens the YouTube search results page — always works.
                     if platform == "youtube":
                         search_q   = urllib.parse.quote(target)
                         search_url = f"https://www.youtube.com/results?search_query={search_q}"
@@ -774,16 +704,6 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                     print("[Executor] ConversationalIntent — logging AI message.")
                     step_result = message
 
-                # ── 6.5. ContinuationIntent ──────────────────────────────────────────
-                # Fix: this intent was reachable via the router (see the router.py
-                # classifier-blind-spot fix) but had no dispatch branch at all here,
-                # falling through to "Unrecognized Enterprise Intent" - a hard error
-                # on every "continue"/"go on"/"tell me more" request. It relies on
-                # memory.log_interaction() below (also previously never called
-                # anywhere) to have something to continue FROM; the
-                # InformationRetrievalIntent prompt above was already written
-                # assuming this existed ("Do NOT output the full details unless the
-                # user's prompt explicitly contains 'continue'...").
                 elif intent == "ContinuationIntent":
                     print("[Executor] ContinuationIntent — retrieving prior context.")
                     prior_context = memory.get_context_for_prompt(limit=1)
@@ -809,7 +729,6 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                 elif intent == "UnknownIntent":
                     return f"ERROR Step {index+1}: The intent layer could not understand the request."
 
-                # ── Phase 3a. ProcessManagementIntent ──────────────────────────────
                 elif intent == "ProcessManagementIntent":
                     action = step.get("action", "list").lower().strip()
                     process_target = step.get("target", "").strip()
@@ -835,7 +754,6 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                     else:
                         step_result = f"Unknown ProcessManagementIntent action '{action}'. Use 'list' or 'kill'."
 
-                # ── Phase 3b. ProjectScaffoldIntent ───────────────────────────────
                 elif intent == "ProjectScaffoldIntent":
                     framework    = step.get("framework", "").strip()
                     project_name = step.get("project_name", "my-project").strip()
@@ -851,7 +769,6 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                             location=location,
                         )
 
-                # ── Phase 3c. DependencyInstallIntent ─────────────────────────────
                 elif intent == "DependencyInstallIntent":
                     manager  = step.get("manager", "pip").lower().strip()
                     packages = step.get("packages", "").strip()
@@ -874,15 +791,6 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                 if step_result:
                     blackboard.append(step_result)
 
-                    # Fix: memory.get_context_for_prompt() has been read by
-                    # processor.py (InformationRetrievalIntent/GeneralizedOSIntent
-                    # target extraction) and now by ContinuationIntent above, but
-                    # nothing ever called log_interaction() to populate the table
-                    # those reads query - interaction_history was permanently
-                    # empty, so every "contextual memory injection" silently had
-                    # no context to inject. Skip logging ContinuationIntent itself
-                    # so a chain of "continue" requests doesn't bury the actual
-                    # prior interaction it should keep referring back to.
                     if intent != "ContinuationIntent":
                         try:
                             memory.log_interaction(
@@ -907,13 +815,12 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                 time.sleep(1)
                 continue
 
-            # Fix 2.10: Configurable step delay between multi-step command execution
             time.sleep(STEP_DELAY)
             step_success = True
             break
 
         if not step_success:
-            return last_error
+            return last_error or f"ERROR Step {index+1}: Execution did not complete."
 
     if blackboard:
         return blackboard[-1]
@@ -922,8 +829,6 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
     return f"Pipeline successfully completed ({num_steps} steps)."
 
 
-# ── P1-4: Failure taxonomy + bounded replan on postcondition mismatch ────────
-# Fix P1-4.1: whole-pipeline replan cap, configurable like STEP_DELAY/GUI_FOCUS_WAIT.
 MAX_REPLANS = int(os.getenv("EXECUTOR_MAX_REPLANS", "1"))
 
 FAILURE_CATEGORY_SUCCESS = "success"
@@ -935,26 +840,16 @@ _CANCELLATION_MESSAGE = "Mission interrupted by system."  # exact string execute
 
 
 def _classify_result(result: str, step_observations: list) -> str:
-    """
-    Failure taxonomy for a completed execute_pipeline() run.
-    Order matters: an ERROR/cancellation result always wins over a postcondition
-    mismatch, since those are execute_pipeline()'s own authoritative signals —
-    a postcondition check on a run that already failed outright is meaningless.
-
-    Fix P1-4.4 (from the continued Gate-2 review — same review task as
-    P1-4.2/P1-4.3): a malformed "expected_state" (e.g. a bare string or bool
-    instead of a dict) makes observe_postcondition() fall through to
-    tier_used="none", verified=False — correctly not a crash, but naively
-    counting THAT as a postcondition mismatch would waste a full bounded
-    replan on garbage input that was never actually checkable in the first
-    place. Only an observation where something concrete WAS checked
-    (tier_used in {"process", "window", "vlm"}) and came back unverified
-    counts as a genuine mismatch worth replanning over.
+    """Prioritize cancellation and execution errors over observation failures.
+    Unavailable observers do not trigger retries; supported mismatches may.
     """
     if result == _CANCELLATION_MESSAGE:
         return FAILURE_CATEGORY_CANCELLED
     if isinstance(result, str) and result.startswith("ERROR"):
         return FAILURE_CATEGORY_PIPELINE_ERROR
+    if any(not entry["observation"].verified and entry["observation"].tier_used == "observer_error"
+           for entry in step_observations):
+        return "observation_unavailable"
     if any(
         (not entry["observation"].verified and entry["observation"].tier_used != "none")
         for entry in step_observations
@@ -967,105 +862,49 @@ def _run_and_observe(validated_steps: list, cancel_event) -> tuple:
     """One full execute_pipeline() call + its before/after snapshot diff and
     per-step postcondition observations. Extracted so both the initial run
     and any bounded replan attempt share identical logic."""
+    from agentic_core.execution_authority import AuthorizationDenied, authorize_action, trusted_postconditions
     from capabilities.system.postcondition_observer import (
         capture_state_snapshot,
         diff_snapshots,
         observe_postcondition,
     )
-
+    try:
+        validated_steps = [trusted_postconditions(authorize_action(step)) for step in validated_steps]
+    except AuthorizationDenied as exc:
+        return f"ERROR authorization: {exc}", {}, []
     before = capture_state_snapshot()
     result = execute_pipeline(validated_steps, cancel_event=cancel_event)
 
-    # Fix P1-4.3 (from an independent Gate-2 review of P1-1 —
-    # _context_packs/P1-1_review_gate2_secondparty.md /
-    # tests/test_executor_observed_review.py): capture_state_snapshot()'s
-    # "after" call and diff_snapshots() both run AFTER execute_pipeline()
-    # has already completed (and possibly mutated real system state, e.g.
-    # deleted a file or launched an app). If either raised, the previous
-    # implementation propagated the exception straight out of this function
-    # and lost that already-completed result entirely — a real, confirmed
-    # gap, not a hypothetical one. Same principle as the observe_postcondition
-    # guard above: never let a downstream observability failure erase real
-    # work that already happened.
     try:
         after = capture_state_snapshot()
         snapshot_diff = diff_snapshots(before, after)
     except Exception as exc:
-        _logger.warning(f"[P1-4] snapshot/diff computation raised unexpectedly: {exc}")
+        _logger.warning(f"[observation] snapshot/diff computation raised unexpectedly: {exc}")
         snapshot_diff = {"error": str(exc)}
 
     step_observations = []
     for index, step in enumerate(validated_steps):
         expected_state = step.get("expected_state") if isinstance(step, dict) else None
         if expected_state:
-            # Fix P1-4.2 (pre-emptive hardening): postcondition_observer.py's own
-            # spec guarantees observe_postcondition() never raises, but this is a
-            # cheap belt-and-suspenders guard anyway — if that guarantee is ever
-            # violated, we must not lose the execute_pipeline() result that
-            # already ran and may have mutated real system state.
             try:
                 observation = observe_postcondition(expected_state)
             except Exception as exc:
                 from capabilities.system.postcondition_observer import Observation
                 observation = Observation(
-                    verified=False, tier_used="none", confidence=0.0,
+                    verified=False, tier_used="observer_error", confidence=0.0,
                     latency_ms=0.0, detail=f"observe_postcondition raised unexpectedly: {exc}",
                 )
-                _logger.warning(f"[P1-4] observe_postcondition raised for step {index}: {exc}")
+                _logger.warning(f"[observation] observe_postcondition raised for step {index}: {exc}")
             step_observations.append({"step_index": index, "observation": observation})
 
     return result, snapshot_diff, step_observations
 
 
 def execute_pipeline_observed(validated_steps: list, cancel_event=None) -> dict:
-    """
-    P1-1 (Agentic OS roadmap, Phase 1 — close the loop): observe-act wrapper
-    around execute_pipeline(), extended in P1-4 with a failure taxonomy and
-    one bounded whole-pipeline replan on postcondition mismatch.
+    """Execute and observe supported action postconditions, with bounded retries.
 
-    Design note: execute_pipeline() is deliberately left UNTOUCHED, in both
-    P1-1 and this P1-4 extension. It is 600+ lines of security-critical logic
-    (shell sanitization, its OWN 3-attempt per-step retry loop, LLM
-    self-healing, sandbox validation) with an established `str` return
-    contract that capabilities/system/api_wrapper.py and the existing test
-    suite depend on byte-for-byte. Rewriting it in place would be exactly the
-    kind of invasive, hard-to-verify change this project's verification
-    protocol (VERIFICATION_PROTOCOL.md) exists to prevent.
-
-    Why a WHOLE-PIPELINE replan, not per-step: execute_pipeline() already
-    retries individual steps up to 3 times on EXCEPTION internally. What it
-    cannot detect is a step that runs without raising, reports success, but
-    did not actually achieve the intended effect (e.g. "launch notepad"
-    returns "I have launched notepad." but no notepad.exe process exists).
-    That is a fundamentally different failure mode — a silent one — and can
-    only be caught by checking real system state AFTER the run, which is
-    exactly what postcondition_observer.py (P1-2) does. Re-running the whole
-    pipeline once is the safe, bounded response: single retry, capped by
-    MAX_REPLANS (env: EXECUTOR_MAX_REPLANS, default 1), never retried on
-    "cancelled" or "pipeline_error" categories (those are execute_pipeline's
-    own authoritative failure signals, already exhausted its own internal
-    retries, and blindly re-running a whole pipeline that errored partway
-    through risks duplicate side effects like a second file deletion).
-
-    IMPORTANT — currently a dormant, forward-compatible mechanism: no step
-    anywhere in the codebase sets "expected_state" today (that is Phase 2
-    processor/validator work), so step_observations is always [] and this
-    replan path never actually triggers in production yet. It activates the
-    moment Phase 2 wires expected_state onto steps. This mirrors P1-1's own
-    forward-compatible design — shipping the mechanism now, safely inert,
-    rather than coupling this change to unrelated Phase 2 work.
-
-    Returns:
-        {
-            "result": str,                    # execute_pipeline()'s FINAL return value
-                                                # (post-replan, if a replan happened)
-            "snapshot_diff": dict,             # from the run that produced "result"
-            "step_observations": list[dict],   # from the run that produced "result"
-            "failure_category": str,           # one of the FAILURE_CATEGORY_* constants
-            "attempts": int,                   # 1 = no replan happened, 2 = one replan happened
-            "replanned": bool,
-        }
-    """
+    Every attempt passes authorization again. Predicates are derived from the action;
+    planner hints cannot verify success. Retries are not an exactly-once guarantee."""
     result, snapshot_diff, step_observations = _run_and_observe(validated_steps, cancel_event)
     category = _classify_result(result, step_observations)
     attempts = 1
@@ -1073,7 +912,7 @@ def execute_pipeline_observed(validated_steps: list, cancel_event=None) -> dict:
 
     while category == FAILURE_CATEGORY_POSTCONDITION_MISMATCH and attempts <= MAX_REPLANS:
         _logger.info(
-            f"[P1-4] Postcondition mismatch detected — bounded replan "
+            f"[observation] Postcondition mismatch detected — bounded replan "
             f"attempt {attempts}/{MAX_REPLANS}."
         )
         result, snapshot_diff, step_observations = _run_and_observe(validated_steps, cancel_event)
@@ -1091,8 +930,15 @@ def execute_pipeline_observed(validated_steps: list, cancel_event=None) -> dict:
     }
 
 
-def execute_gui_command(intent: dict) -> str:
+def execute_gui_command(intent: dict, *, authorized_parent=None) -> str:
     """Handles physical screen interaction via PyAutoGUI (mouse/keyboard/scroll)."""
+    from agentic_core.execution_authority import AuthorizationDenied, authorize_action
+    try:
+        if authorized_parent is None:
+            raise AuthorizationDenied("GUI dispatch requires an authorized parent action.")
+        authorize_action(authorized_parent)
+    except AuthorizationDenied as exc:
+        return f"ERROR authorization: {exc}"
     action     = intent.get("action", "").lower()
     target     = intent.get("target", "")
     resolved_x = intent.get("resolved_x")
@@ -1115,7 +961,6 @@ def execute_gui_command(intent: dict) -> str:
         elif action == "type":
             if not target:
                 return "ERROR: Typing failed — no text provided."
-            # Fix 2.10: Use configurable GUI_FOCUS_WAIT instead of hardcoded 2.0s
             time.sleep(GUI_FOCUS_WAIT)
             try:
                 pyautogui.write(target, interval=0.05)

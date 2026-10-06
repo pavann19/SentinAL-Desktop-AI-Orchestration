@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════
-   JARVIS AI OS — REFINED DESIGN SYSTEM
+   SentinAL desktop interface — REFINED DESIGN SYSTEM
    Clean, minimal, premium aesthetic
    ═══════════════════════════════════════════════════ */
 
@@ -34,7 +34,7 @@ body {
 /* ══════════════════════════════════════════════════
    ROOT
    ══════════════════════════════════════════════════ */
-.jarvis-root {
+.sentinal-root {
   position: relative;
   width: 100vw;
   height: 100vh;
@@ -279,7 +279,7 @@ body {
   justify-content: center;
 }
 
-.core-text-jarvis {
+.core-text-sentinal {
   color: rgba(255, 255, 255, 0.9);
   text-shadow:
     0 0 15px rgba(0, 243, 255, 0.3),
@@ -287,7 +287,7 @@ body {
   animation: corePulse 4s ease-in-out infinite;
 }
 
-.security-mode .core-text-jarvis {
+.security-mode .core-text-sentinal {
   text-shadow:
     0 0 15px rgba(255, 0, 60, 0.3),
     0 0 40px rgba(255, 0, 60, 0.08);

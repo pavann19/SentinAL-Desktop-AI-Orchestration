@@ -1,38 +1,16 @@
-# agentic_core/embedding_backend.py
-# Router memory swap: the router's embedding model is the single largest
-# resident-memory cost in the idle process (torch + sentence-transformers +
-# BertModel weights). This module lets that cost be swapped for an ONNX
-# Runtime backend that returns numerically equivalent vectors, without
-# touching anything that consumes `.encode()` — router.py,
-# semantic_memory.py, procedural_memory.py, skill_matcher.py all call
-# `model.encode(list[str]) -> ndarray of shape (N, 384)` and neither know nor
-# care which backend produced it.
-#
-# Measured on this machine (venv, cold process, RSS via psutil):
-#   torch backend (sentence-transformers, current default)
-#     import + load + first encode: ~458 MB resident
-#   onnx backend (fastembed's ONNX export of the SAME checkpoint,
-#   sentence-transformers/all-MiniLM-L6-v2)
-#     import + load + first encode: ~202 MB resident  (~56% smaller)
-#
-# Numerical equivalence measured across 14 router-style phrases: cosine
-# similarity between the two backends' output vectors was 0.999999+ on every
-# phrase (min 0.9999999, mean 1.0000000 — float32 noise, not a real
-# difference), and nearest-neighbour ranking agreed 14/14. Locally generated
-# classifier heads are fit on sentence-transformers MiniLM vectors; this level
-# of equivalence means their decision boundaries transfer to the ONNX backend's
-# output without retraining.
-#
-# Still defaults to the proven "torch" backend — same discipline as every
-# other flag this session: ship it, validate it, then flip the default.
-# SENTINAL_EMBEDDING_BACKEND=onnx opts in.
+"""CPU embedding adapters: Torch by default, optional ONNX backend.
 
+Backend equivalence and model compatibility require evaluation for the selected
+versions. Backend selection does not establish a performance guarantee.
+"""
 from __future__ import annotations
 
 import logging
 import os
 
 import numpy as np
+
+from config.constants import EMBEDDING_MODEL_ID, EMBEDDING_MODEL_REVISION
 
 _logger = logging.getLogger("EmbeddingBackend")
 
@@ -49,7 +27,7 @@ class _TorchBackend:
 
     def __init__(self):
         from sentence_transformers import SentenceTransformer
-        self._model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
+        self._model = SentenceTransformer(EMBEDDING_MODEL_ID, revision=EMBEDDING_MODEL_REVISION, device="cpu")
 
     def encode(self, texts: list[str]) -> np.ndarray:
         return self._model.encode(texts)

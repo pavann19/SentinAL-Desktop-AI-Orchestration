@@ -1,23 +1,3 @@
-# agentic_core/procedural_memory.py
-# S6 proactive autonomy — procedural memory.
-#
-# Semantic memory increment 2 shows the planner an ADVISORY hint but still
-# calls the planning LLM every time. Procedural memory is the deterministic
-# step: when a multi-step goal is a near-verbatim match for one that has
-# SUCCEEDED organically several times with the same plan structure, replay the
-# stored GoalGraph and skip the planner LLM entirely.
-#
-# The recipe is a PLAN SHAPE ONLY. The replayed graph still enters
-# execute_goal_graph_observed(), which re-runs validate_steps() -> risk ->
-# authorization -> policy -> HITL -> sandbox on every step. A recipe can never
-# be an execution grant, and every step's intent is re-checked against
-# ALLOWLIST_INTENTS at load time so a recipe stored before an allowlist change
-# cannot smuggle a now-forbidden intent.
-#
-# Own flag, default OFF (this one changes execution by skipping an LLM call, so
-# it must not ride on SENTINAL_SEMANTIC_MEMORY_ENABLED). Never raises. An
-# autonomous background goal NEVER replays a cached recipe — the world may have
-# drifted and there is no human to catch a bad replay.
 
 from __future__ import annotations
 

@@ -1,15 +1,3 @@
-# agentic_core/skill_abstraction.py
-# S8-1 — typed-slot abstraction.
-#
-# Procedural memory (S6) stores the VERBATIM structure of a repeatedly-
-# successful multi-step plan, and replays it only for a near-identical goal.
-# A learned SKILL generalises: given several successful concrete instances of
-# the same plan structure that differ only in literal values (a filename, an
-# app, a URL), abstract the varying spans into typed slots so the recipe can
-# be reused for a goal with different literals.
-#
-# Pure functions, stdlib only. This module produces a template; registering,
-# validating and using it are S8-2 .. S8-5.
 
 from __future__ import annotations
 

@@ -48,7 +48,6 @@ class MemoryManager:
                     url_template TEXT
                 )
             """)
-            # Fix 2.9: Thread-safe path cache — replaces raw sqlite3.connect in executor
             self.cursor.execute("""
                 CREATE TABLE IF NOT EXISTS path_cache (
                     folder_name   TEXT PRIMARY KEY,
@@ -89,31 +88,14 @@ class MemoryManager:
                     completed_at REAL
                 )
             """)
-            # S6 event bus (increment 1): notified_at records when the resident
-            # event-bus loop fired a "reminder due" notification for a row, so a
-            # due reminder is announced exactly once, not every poll tick.
-            # Additive migration — SQLite has no ADD COLUMN IF NOT EXISTS, so
-            # check PRAGMA first (older DBs created before this column exists).
             cols = {r[1] for r in self.cursor.execute("PRAGMA table_info(scheduled_tasks)").fetchall()}
             if "notified_at" not in cols:
                 self.cursor.execute("ALTER TABLE scheduled_tasks ADD COLUMN notified_at REAL")
-            # S6 event bus (increment 2): kind distinguishes a plain reminder
-            # (default — the event bus just notifies) from an autonomous goal
-            # (the event bus runs it through process_command(autonomous=True),
-            # only when SENTINAL_AUTONOMOUS_GOALS_ENABLED). Nothing sets 'goal'
-            # yet — there is no user-facing way to create one; increment 2
-            # ships the execution capability, inert by default.
             if "kind" not in cols:
                 self.cursor.execute(
                     "ALTER TABLE scheduled_tasks ADD COLUMN kind TEXT NOT NULL DEFAULT 'reminder'"
                 )
 
-            # S6 semantic memory (increment 1): past interactions embedded with
-            # the router's all-MiniLM-L6-v2, for retrieval by MEANING rather
-            # than only recency (interaction_history / get_context_for_prompt
-            # give recency). embedding is a raw float32 array as BLOB — a
-            # brute-force cosine scan over recent rows, no vector server (per
-            # SENTINAL_V2_RECONCILED_ARCHITECTURE.md §7).
             self.cursor.execute("""
                 CREATE TABLE IF NOT EXISTS memory_semantic (
                     id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -125,22 +107,10 @@ class MemoryManager:
                     ts        REAL NOT NULL
                 )
             """)
-            # S6 semantic memory (increment 2): plan holds the JSON step-shape
-            # ([{intent, target}, ...]) of a SUCCESSFUL multi-step run, so the
-            # planner can be shown how a similar past goal was decomposed.
-            # NULL for single-step and failed runs, and for rows written by
-            # increment 1. Additive migration — same PRAGMA-first pattern.
             sem_cols = {r[1] for r in self.cursor.execute("PRAGMA table_info(memory_semantic)").fetchall()}
             if "plan" not in sem_cols:
                 self.cursor.execute("ALTER TABLE memory_semantic ADD COLUMN plan TEXT")
 
-            # S6 procedural memory: a recipe is the STRUCTURE of a multi-step
-            # plan that has succeeded organically several times. When a new goal
-            # is a near-verbatim match, the planner replays the stored graph
-            # instead of calling the planning LLM. fingerprint is a hash of the
-            # canonical node structure; graph_json is GoalGraph.to_dict() reduced
-            # to structural fields. success_count promotes; a single failed
-            # replay retires the recipe (failure_count > 0).
             self.cursor.execute("""
                 CREATE TABLE IF NOT EXISTS memory_procedural (
                     fingerprint     TEXT PRIMARY KEY,
@@ -154,11 +124,6 @@ class MemoryManager:
                 )
             """)
 
-            # S7 world model (increment A1): a rolling record of the digital
-            # environment — running processes + foreground window — sampled by
-            # the resident event-bus loop. Turns memory from a log into a
-            # queryable "what's open now / what changed" model. Retention is
-            # bounded (row count + age) and pruned on every write.
             self.cursor.execute("""
                 CREATE TABLE IF NOT EXISTS env_state (
                     id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -171,12 +136,6 @@ class MemoryManager:
                 )
             """)
 
-            # S7 world model (Half B): one row per executed capability per run —
-            # verified (did the run succeed), failure_category, whole-command
-            # latency, containment tier. A sustained drop in one capability's
-            # rolling success rate is the drift signal (an app updated its UI, a
-            # site redesigned) — independent of everything else. S7 produces the
-            # signal; acting on it (targeted re-learning) is S8.
             self.cursor.execute("""
                 CREATE TABLE IF NOT EXISTS capability_outcomes (
                     id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -189,13 +148,6 @@ class MemoryManager:
                 )
             """)
 
-            # S8 skill learning: a learned skill is a validated capability
-            # recipe originated from observed successes rather than hand-
-            # written. skeleton_json + slots_json are the abstracted
-            # (typed-slot) recipe; state moves candidate -> active -> demoted
-            # / retired; tier is ALWAYS T1 for origin='learned' (a learned
-            # skill starts more restricted than a hand-authored one and earns
-            # trust). learned_skill_events is the append-only audit trail.
             self.cursor.execute("""
                 CREATE TABLE IF NOT EXISTS learned_skills (
                     skill_id          TEXT PRIMARY KEY,
@@ -223,9 +175,6 @@ class MemoryManager:
                     detail   TEXT
                 )
             """)
-            # S8-5: per-skill live outcomes, for drift-based demotion — the
-            # same signal shape as capability_outcomes (S7 Half B) but keyed
-            # by skill_id instead of intent.
             self.cursor.execute("""
                 CREATE TABLE IF NOT EXISTS learned_skill_outcomes (
                     id       INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -235,11 +184,6 @@ class MemoryManager:
                 )
             """)
 
-            # S9-1: versioned self-improvement changes. Every applied tuning
-            # change is a new row; revert = mark the latest promoted one
-            # reverted so the previous value becomes current. state:
-            # proposed | shadow_passed | shadow_failed | promoted | rejected |
-            # reverted.
             self.cursor.execute("""
                 CREATE TABLE IF NOT EXISTS tuning_versions (
                     version_id   TEXT PRIMARY KEY,
@@ -350,7 +294,6 @@ class MemoryManager:
             )
             self.conn.commit()
 
-    # ── Semantic Memory (S6 increment 1) ─────────────────────────────────────
 
     def add_semantic_memory(self, text: str, embedding_blob: bytes, intent: str | None,
                             target: str | None, result: str | None, ts: float,
@@ -382,7 +325,6 @@ class MemoryManager:
             for r in rows
         ]
 
-    # ── Procedural Memory (S6) ──────────────────────────────────────────────
 
     def upsert_procedural_recipe(self, fingerprint: str, goal_text: str,
                                  embedding_blob: bytes, graph_json: str,
@@ -450,7 +392,6 @@ class MemoryManager:
             for r in rows
         ]
 
-    # ── World Model (S7) ──────────────────────────────────────────────────
 
     def add_env_state(self, ts: float, proc_hash: str, proc_count: int,
                       fg_app: str | None, fg_title: str | None,
@@ -562,7 +503,6 @@ class MemoryManager:
             self.conn.commit()
         return before - after
 
-    # ── Learned Skills (S8) ───────────────────────────────────────────────
 
     def upsert_learned_skill(self, skill_id: str, fingerprint: str,
                              skeleton_json: str, slots_json: str,
@@ -665,7 +605,6 @@ class MemoryManager:
             )
             return [{"ts": r[0], "verified": bool(r[1])} for r in self.cursor.fetchall()]
 
-    # ── Self-improvement / tuning versions (S9) ───────────────────────────
 
     def add_tuning_version(self, version_id: str, target: str, from_value: str | None,
                            to_value: str, proposed_by: str | None, rationale: str | None,
@@ -740,9 +679,6 @@ class MemoryManager:
             url_template (str): The URL template string (e.g., 'https://open.spotify.com/search/{query}').
         """
         import re
-        # ── Security: URL Template Sanitization (Tests 2.1-2.3 fix) ────────────
-        # Only accept https:// URLs that contain the {query} placeholder.
-        # Rejects: http://, file://, javascript:, data:, phishing URLs.
         SAFE_TEMPLATE_PATTERN = re.compile(
             r'^https://[a-zA-Z0-9\-._~:/?#\[\]@!$&\'()*+,;=%{}]+$'
         )

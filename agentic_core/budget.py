@@ -1,15 +1,3 @@
-# agentic_core/budget.py
-# Per-plan resource budget for SentinAL's S4 containment substrate.
-#
-# A PlanBudget is created once per goal-graph execution and threaded through it.
-# It tracks how many actions the plan has spent and how long it has been
-# running, and reports when either ceiling is hit. It never raises — the caller
-# checks check() / would_exceed_actions() and stops the plan cleanly, the same
-# non-raising style as capabilities/system/postcondition_observer.py.
-#
-# The ceilings themselves live in config/budgets.py (env-overridable), with a
-# tighter set for autonomous/background callers (S6) than for a direct human
-# command.
 
 from __future__ import annotations
 

@@ -205,13 +205,6 @@ def find_by_description(description: str) -> tuple[int, int] | None:
         (x, y) or None — note: VLM coordinate estimation is approximate
     """
     try:
-        # Fix: this called `from config.settings import get_llm`, a function
-        # that does not exist in that module (only BrainConfig.get_local_llm/
-        # get_cloud_llm, neither vision-capable). Every call raised ImportError,
-        # silently caught by this function's own broad except below - Tier 4
-        # (the VLM fallback) has never worked at all. Mirrors the working
-        # pattern in capabilities/system/vision_module.py::verify_screen_state
-        # instead of inventing a new one.
         from langchain_ollama import ChatOllama
 
         from capabilities.system.vision_module import VISION_MODEL, take_screenshot_base64

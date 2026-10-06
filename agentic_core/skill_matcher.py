@@ -1,14 +1,3 @@
-# agentic_core/skill_matcher.py
-# S8-4 (matching half) — select a validated, active learned skill for a goal.
-#
-# Mirrors procedural_memory.recall_recipe: if an ACTIVE learned skill's
-# example goals are close to this prompt AND every slot can be filled from the
-# prompt, return its filled GoalGraph (provenance-stamped). Otherwise None.
-#
-# Behind SENTINAL_LEARNED_SKILLS_ENABLED (default off); never for an
-# autonomous goal (a background goal always gets a fresh plan). Every returned
-# step is still allowlist / budget / cycle checked downstream — a skill graph
-# is a plan shape, never an execution grant. Never raises.
 
 from __future__ import annotations
 

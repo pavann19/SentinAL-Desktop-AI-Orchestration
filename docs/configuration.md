@@ -20,6 +20,15 @@ outside the checkout. Otherwise development runs write ignored runtime directori
 Never package that directory or local `.env`. Learning, autonomous goals, semantic
 memory and self-improvement flags are experimental and default off.
 
-`SENTINAL_REQUIRE_CONFIRMATION` defaults to true. Guarded T2/T3 actions return a
-one-time token for an explicit second request. Setting false enables unsafe legacy
-compatibility behavior and changes benchmark semantics; do not use it for normal operation.
+Guarded T2/T3 actions require one-time confirmation of the exact resolved action.
+`SENTINAL_REQUIRE_CONFIRMATION=false` blocks guarded requests; it does not enable
+an execution bypass. Changed targets, arguments and dynamic substitutions require
+a new resolved request. Autonomous T2/T3 actions are denied.
+
+## Electron packaging dependencies
+
+The download helper uses a scoped `global-agent` 4.1.3 override to remove the
+`roarr`/`sprintf-js` dependency chain affected by
+[GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c).
+The helper retains its `bootstrap()` interface. Review this override when
+upgrading `@electron/get`; the Electron installer remains experimental.

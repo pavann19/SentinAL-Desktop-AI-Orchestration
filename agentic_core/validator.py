@@ -38,18 +38,6 @@ def validate_sandbox(target_path: str) -> bool:
         full_path_lower = full_path.lower()
         expanded_lower  = expanded_path.lower()
 
-        # 2a. Fix [bare-drive-root]: block any path that resolves to an entire
-        # drive root (e.g. "C:\", "D:\", "C:/"). Discovered 2026-07-11 via the
-        # expanded eval task suite: "format the C drive" was only failing to
-        # cause damage because the LLM extracted the literal string "c drive"
-        # (a benign nonexistent relative path), NOT because this function
-        # would have blocked a real drive-root path. Neither SENSITIVE_TARGETS
-        # nor SOFT_SENSITIVE_TARGETS contains a bare-drive pattern, so if the
-        # LLM ever extracts an actual root path verbatim, FileDeletionIntent's
-        # shutil.rmtree(full_path) would have nothing standing in its way.
-        # os.path.splitdrive returns ('C:', '') or ('C:', '\\') for a bare
-        # root — no third path component — which is the deterministic signal
-        # we check for, independent of what drive letter or slash style was used.
         drive, remainder = os.path.splitdrive(full_path)
         if drive and remainder in ("", "\\", "/"):
             security_logger.warning(
@@ -73,8 +61,6 @@ def validate_sandbox(target_path: str) -> bool:
                 )
                 return False
 
-        # FIX 4: Also block SOFT_SENSITIVE_TARGETS — these are dangerous executables
-        # (regedit.exe, eventvwr, gpedit, etc.) that must never execute via sandbox
         for pattern in SOFT_SENSITIVE_TARGETS:
             if pattern.strip().lower() in expanded_lower:
                 security_logger.warning(
@@ -116,8 +102,6 @@ def validate_steps(steps: list) -> tuple[bool, str, bool]:
         if intent not in {"ConversationalIntent", "InformationRetrievalIntent", "ContinuationIntent"} and re.search(disk_format, prompt):
             return False, f"[Security Error] Denied Step {i+1}: Disk formatting is forbidden.", False
 
-        # ── Fix 1.7: INTENT ALIASING (Synonym Mapping) ──
-        # Maps LLM variations or older naming conventions to the canonical allowlist.
         INTENT_ALIASES = {
             "open_application": "ApplicationLaunchIntent",
             "launch_app": "ApplicationLaunchIntent",
@@ -164,11 +148,6 @@ def validate_steps(steps: list) -> tuple[bool, str, bool]:
                 security_logger.warning(f"BLOCKLIST MATCH (HARD): '{keyword}' in target '{target}'")
                 return False, f"[Security Error] Denied Step {i+1}: Strict policy prevents accessing '{keyword}'.", False
 
-        # 5. Soft Sensitive keyword check
-        # Fix 1.7 (updated): Block for destructive/execution intents, warn-only for informational ones.
-        # ApplicationLaunchIntent must be blocked (can't launch exe from system32)
-        # FileDeletionIntent must be blocked (can't delete system files)
-        # InformationRetrievalIntent / WebNavigationIntent — warn only (safe to mention)
         SOFT_BLOCK_INTENTS = {"ApplicationLaunchIntent", "FileDeletionIntent", "GeneralizedOSIntent"}
         for keyword in SOFT_SENSITIVE_TARGETS:
             if keyword in target:
@@ -178,7 +157,6 @@ def validate_steps(steps: list) -> tuple[bool, str, bool]:
                 else:
                     security_logger.info(f"Policy Warning: Read-only reference to soft-sensitive keyword '{keyword}' in target '{target}'.")
 
-        # 5. Fix 3.1: Regex word-boundary check for dangerous delete/remove commands
         for cmd_word in SENSITIVE_CMD_WORDS:
             if re.search(rf'\b{re.escape(cmd_word)}\b', target):
                 security_logger.warning(f"CMD WORD MATCH: '\\b{cmd_word}\\b' in target '{target}'")
@@ -203,7 +181,6 @@ def validate_steps(steps: list) -> tuple[bool, str, bool]:
                                     f"[Security Error] Step {i+1}.{action_idx+1}: Keyword '{keyword}'.",
                                     False)
 
-                    # 6b. Fix 3.1: Word-boundary dangerous command check
                     for cmd_word in SENSITIVE_CMD_WORDS:
                         if re.search(rf'\b{re.escape(cmd_word)}\b', payload_lower):
                             security_logger.warning(
@@ -213,8 +190,6 @@ def validate_steps(steps: list) -> tuple[bool, str, bool]:
                                     f"[Security Error] Step {i+1}.{action_idx+1}: Command '{cmd_word}'.",
                                     False)
 
-                    # 6c. Fix 1.6: Expanded path extraction — catches bare %VAR%\path patterns
-                    # Matches: "C:\path", '%VAR%\path', '/unix/path', quoted variants
                     path_pattern = (
                         r'["\']?(%[^%]+%(?:\\[^"\'&|;]*)?'   # %VAR%\path  (unquoted)
                         r'|[a-zA-Z]:\\[^"\'&|;]*'            # C:\path
@@ -229,7 +204,6 @@ def validate_steps(steps: list) -> tuple[bool, str, bool]:
                                     f"[Security Error] Step {i+1}.{action_idx+1}: Sandbox violation: {expanded}",
                                     False)
 
-                # 6d. Fix 3.2: Apply BLOCKED_KEYS for GUI press/hotkey actions
                 elif action_type in ("press", "hotkey"):
                     value = action.get("value", "") or action.get("payload", "")
                     keys_pressed = [k.strip().lower() for k in str(value).split("+")]

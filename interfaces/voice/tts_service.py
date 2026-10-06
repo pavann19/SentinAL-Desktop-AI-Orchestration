@@ -1,12 +1,3 @@
-# services/tts_service.py
-# Modular Text-to-Speech Service using the Kokoro-ONNX model.
-# Features: Natural-sounding offline voice, low-latency playback, and auto-sanitization.
-#
-# V2.0 Fixes:
-#   Fix 2.2 — FAST_PHRASE_CACHE is now LRUCache(maxsize=50) — prevents unbounded memory leak.
-#   Fix 2.3 — sd.get_stream().active polling wrapped in try/except RuntimeError.
-#              Prevents crash when stream finishes before polling loop starts.
-#   Fix 2.4 — Removed `sd.default.device[1] = None` global mutation (thread-unsafe no-op).
 
 import os
 import re
@@ -26,9 +17,8 @@ VOICE_NAME  = 'af_heart'
 import threading
 
 _tts_instance = None
-_tts_init_lock = threading.Lock()  # FIX 5: Prevents race-condition re-init from asyncio.to_thread
+_tts_init_lock = threading.Lock()
 
-# Fix 2.2: Bounded LRU cache (max 50 entries) — replaces unbounded `{}` dict
 FAST_PHRASE_CACHE: LRUCache = LRUCache(maxsize=50)
 
 
@@ -142,13 +132,9 @@ class TTSService:
             if samples is not None and len(samples) > 0:
                 print(f"[AUDIT] TTS playing at {sample_rate}Hz")
                 try:
-                    # Fix 2.4: Removed `sd.default.device[1] = None` — it was a
-                    # thread-unsafe global mutation. sd.play() uses system default automatically.
                     sd.play(samples, sample_rate)
 
                     if cancel_event:
-                        # Fix 2.3: Wrapped in try/except RuntimeError — sd.get_stream()
-                        # raises RuntimeError if stream already finished before polling starts.
                         try:
                             while sd.get_stream().active:
                                 if cancel_event.is_set():

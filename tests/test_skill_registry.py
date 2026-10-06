@@ -1,5 +1,3 @@
-# tests/test_skill_registry.py
-# S8-2 — learned-skill registry + lifecycle. Isolated SQLite DB, no LLM.
 
 from __future__ import annotations
 

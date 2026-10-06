@@ -1,7 +1,3 @@
-# critic.py
-# Resident Critic for SentinAL S5 Cognition Plane.
-# Evaluates step and plan outcomes against real OS postcondition observations
-# and bounds replanning loops to prevent runaway retries.
 
 from __future__ import annotations
 
@@ -76,6 +72,11 @@ class ResidentCritic:
                 reason=f"Pipeline error: {execution_result}",
                 feedback=f"Step execution encountered a hard error: {execution_result}",
             )
+
+        if observation is not None and not observation.verified and observation.tier_used == "observer_error":
+            return CriticVerdict(approved=False, needs_replan=False,
+                                 failure_category="observation_unavailable",
+                                 reason="The required observation failed; completion is unverified.", feedback="")
 
         # 3. Check postcondition observation
         if observation is not None and not observation.verified and observation.tier_used != "none":

@@ -12,7 +12,7 @@ import Terminal from '../components/hud/Terminal';
 import TaskPanel from '../components/hud/TaskPanel';
 import Notifications from '../components/ui/Notifications';
 import CommandInput from '../components/ui/CommandInput';
-import ConfirmationDialog from '../components/ui/ConfirmationDialog'; // FIX 6
+import ConfirmationDialog from '../components/ui/ConfirmationDialog';
 
 /* ═══════════════════════════════════════════════════
    MAIN UI — Full-screen AI OS Layout
@@ -85,7 +85,7 @@ export default function MainUI() {
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={`jarvis-root ${bodyClasses}`}>
+    <div className={`sentinal-root ${bodyClasses}`}>
       {/* ═══ BACKGROUND CANVAS ═══ */}
       <Background />
 
@@ -95,7 +95,7 @@ export default function MainUI() {
       {/* ═══ STANDBY HINT — visible only before boot ═══ */}
       {!booted && (
         <div className="standby-hint">
-          <span className="standby-text">Say "Hey Jarvis" to begin</span>
+          <span className="standby-text">Use the configured wake word to begin</span>
           <span className="standby-sub">or press Enter</span>
         </div>
       )}
@@ -125,7 +125,7 @@ export default function MainUI() {
       {/* ═══ NOTIFICATIONS ═══ */}
       <Notifications />
 
-      {/* ═══ FIX 6: CONFIRMATION DIALOG — blocks UI for destructive commands ═══ */}
+      {/* ═══ CONFIRMATION DIALOG — blocks UI for destructive commands ═══ */}
       <ConfirmationDialog />
     </div>
   );

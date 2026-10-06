@@ -1,13 +1,3 @@
-"""
-capabilities/developer/data_modeler.py
-CSV loading and pandas-based exploratory data analysis (EDA) for DataModelingIntent.
-
-Replaces the fabricated-success stub (see git history / MERGE_LOG.md): the
-previous version returned a hardcoded "found a strong positive correlation"
-claim without ever opening a file. This version does the real work — reads
-the actual CSV, computes real summary statistics from it, and saves a real
-correlation heatmap — or returns an honest ERROR if any of that fails.
-"""
 import logging
 import os
 import re

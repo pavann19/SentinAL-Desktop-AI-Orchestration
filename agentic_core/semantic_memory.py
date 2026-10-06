@@ -1,21 +1,3 @@
-# agentic_core/semantic_memory.py
-# S6 proactive autonomy — semantic memory, increment 1.
-#
-# interaction_history / get_context_for_prompt() give the agent RECENCY memory
-# (the last few things you did). This adds retrieval by MEANING: on a new
-# request, surface the past interactions most semantically similar to it, even
-# if they were days ago.
-#
-# Reuses the embedding model the router already loaded (all-MiniLM-L6-v2 on
-# CPU) — no second model, no new dependency, no vector server. Storage is a
-# BLOB column in the existing SQLite DB; retrieval is a brute-force cosine scan
-# over the most-recent N rows (fine at personal-assistant scale — thousands,
-# not millions; add an index only if it is ever measurably slow).
-#
-# Never raises. Off unless SENTINAL_SEMANTIC_MEMORY_ENABLED, and a no-op if the
-# router is in keyword-fallback mode (no model). Off by default because the
-# retrieved context feeds the LLM prompt and can shift intent extraction /
-# benchmark results — opt in, then flip once validated.
 
 from __future__ import annotations
 

@@ -1,9 +1,4 @@
-"""
-tests/test_stress.py
-Stress, concurrency, and load tests for SentinAL Phase 1.
-These tests detect memory leaks, deadlocks, and race conditions under sustained load.
-Run separately: pytest tests/test_stress.py -v --timeout=120
-"""
+"""Regression tests for stress."""
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -223,7 +218,6 @@ class TestSchedulerStress:
         async def capture(prompt, ws, cancel_event):
             completed.append(prompt)
 
-        # FIX 9: Import AsyncMock BEFORE first use — was causing UnboundLocalError
         from unittest.mock import AsyncMock
         ws = type("FakeWS", (), {"send_json": AsyncMock()})()
         ws.send_json = AsyncMock()

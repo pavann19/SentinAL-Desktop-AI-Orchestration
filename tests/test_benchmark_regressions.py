@@ -1,13 +1,4 @@
-"""
-tests/test_benchmark_regressions.py
-
-Unit-level regression tests for the five defects found by the 40x3 end-to-end
-benchmark baseline (74.2%, commit 9cb48b6). Each test names the benchmark task
-that exposed it, so the link between the measurement and the fix stays visible.
-
-These are the cheap, fast guard rails; benchmarks/run_benchmark.py remains the
-real end-to-end verification.
-"""
+"""Regression tests for benchmark regressions."""
 import os
 import sys
 from unittest.mock import patch
@@ -185,23 +176,12 @@ class TestSysUtilityFailsHonestly:
         handler must fall back to the prompt like every comparable handler."""
         from capabilities.system import sys_utility
 
-        captured = {}
-
-        class _FakeLLM:
-            def invoke(self, msgs):
-                captured["prompt"] = str(msgs)
-                class _R:
-                    content = "light_mode"
-                return _R()
-
-        with patch.object(sys_utility, "_get_routing_llm", create=True, return_value=_FakeLLM()), \
-             patch("agentic_core.processor._get_routing_llm", return_value=_FakeLLM()), \
-             patch("subprocess.run") as run:
-            run.return_value = None
+        with patch("subprocess.run") as run:
             result = sys_utility.handle_sys_utility("", "switch to light mode")
-
-        assert "light mode" in captured.get("prompt", "").lower()
         assert not result.startswith("ERROR"), result
+        assert run.call_count == 1
+        assert "AppsUseLightTheme -Value 1" in run.call_args[0][0][-1]
+
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -1,7 +1,3 @@
-# planner.py
-# Goal Graph Planner for SentinAL S5 Cognition Plane.
-# Decomposes multi-step goals into dependency-aware GoalGraphs (DAGs).
-# Invoked ON-DEMAND only behind the multi-step signal; single-step requests bypass this entirely.
 
 from __future__ import annotations
 
@@ -201,17 +197,8 @@ class GoalGraphPlanner:
 
         _logger.info(f"[Planner] Multi-step goal detected. Engaging Goal Graph Planner for: '{prompt}'")
 
-        # S6 procedural memory: if this goal is a near-verbatim match for one
-        # that has succeeded organically several times, replay the stored graph
-        # and skip the planning LLM entirely. The replayed graph is still
-        # re-validated here (allowlist / step-count / cycle) inside
-        # recall_recipe(), and again per-step by validate_steps() downstream —
-        # a recipe is a plan shape, never an execution grant. No-op unless
-        # SENTINAL_PROCEDURAL_MEMORY_ENABLED, and never for an autonomous goal.
         autonomous = bool((context or {}).get("autonomous", False))
 
-        # S8-4: a validated, active learned skill outranks a raw procedural
-        # recipe — it has passed held-out replay validation in the overlay.
         skill_graph = _match_skill(prompt, autonomous=autonomous)
         if skill_graph is not None:
             _logger.info(f"[Planner] Learned-skill match — {len(skill_graph.nodes)} steps")
@@ -231,21 +218,10 @@ class GoalGraphPlanner:
                 f"intent, target, prompt, depends_on, and speech_response."
             )
 
-            # S6 semantic memory (increment 2): if a very similar past goal
-            # succeeded, show the planner its step-shape as an ADVISORY prior.
-            # Hint-only — the LLM still generates the plan, and every step it
-            # returns is still intent-allowlisted / step-count-clamped /
-            # cycle-checked below, so a stale or bad hint cannot smuggle a
-            # capability or an unbounded plan. No-op unless the flag is on.
             hint = _plan_hint(prompt)
             if hint:
                 plan_prompt = f"{plan_prompt}\n\n{hint}"
 
-            # S7 A3: advisory current-environment context (foreground window,
-            # open apps) so the planner can resolve deictic references. Same
-            # discipline as the plan hint — advisory, every returned step is
-            # still allowlisted / clamped / cycle-checked. '' unless
-            # SENTINAL_ENV_MODEL_ENABLED and a sample exists.
             world = _world_context(prompt)
             if world:
                 plan_prompt = f"{plan_prompt}\n\n{world}"

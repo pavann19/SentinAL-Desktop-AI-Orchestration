@@ -1,6 +1,3 @@
-# tests/test_self_improvement.py
-# S9-1 store, S9-2 proposer, S9-3 shadow-eval orchestration, S9-4 review.
-# Injected benchmark runner — no real benchmark run.
 
 from __future__ import annotations
 
@@ -22,7 +19,6 @@ def _enabled(monkeypatch):
     monkeypatch.setattr(eng, "SELF_IMPROVEMENT_ENABLED", True)
 
 
-# ── S9-1 store ───────────────────────────────────────────────────────────
 
 def test_propose_and_current_lifecycle(store):
     vid = store.propose("param:EXECUTOR_MAX_REPLANS", 1, 3, rationale="drift")
@@ -54,7 +50,6 @@ def test_malformed_target_rejected(store):
     assert store.propose("EXECUTOR_MAX_REPLANS", 1, 2) is None    # no 'param:' prefix
 
 
-# ── S9-2 proposer ────────────────────────────────────────────────────────
 
 def test_proposer_emits_only_under_hard_drift(store, monkeypatch):
     monkeypatch.setattr(eng, "_store", lambda: store)
@@ -77,7 +72,6 @@ def test_proposer_noop_when_disabled(store, monkeypatch):
     assert eng.propose_from_outcomes(drift=[{"intent": "X", "drop": 0.9}]) == []
 
 
-# ── S9-3 shadow eval ─────────────────────────────────────────────────────
 
 def test_shadow_eval_records_before_after(store, monkeypatch):
     monkeypatch.setattr(eng, "_store", lambda: store)
@@ -111,7 +105,6 @@ def test_applied_context_restores_env(monkeypatch):
     assert "EXECUTOR_MAX_REPLANS" not in os.environ
 
 
-# ── S9-4 review ──────────────────────────────────────────────────────────
 
 def test_review_promotes_on_gain_and_no_regressions(store, monkeypatch):
     monkeypatch.setattr(eng, "_store", lambda: store)

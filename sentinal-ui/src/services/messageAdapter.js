@@ -108,7 +108,7 @@ export function adaptAgentMessage(payload) {
     taskAction = 'speech_end';
   }
 
-  // FIX 6: Handle requires_confirmation from backend (FileDeletionIntent)
+  // Preserve confirmation requests from the backend.
   if (type === 'requires_confirmation') {
     useSystemStore.getState().requestConfirmation(payload.command || message);
   }

@@ -201,25 +201,18 @@ class TestSysUtility:
     @patch("capabilities.system.sys_utility.subprocess")
     @patch("agentic_core.processor._get_routing_llm")
     def test_prompt_is_used_when_target_is_empty(self, mock_get_llm, mock_subprocess):
-        captured = {}
-
-        def _capture_classification(msgs):
-            captured["prompt"] = msgs[0][1]
-            return MagicMock(content="dark_mode")
-
-        llm = MagicMock()
-        llm.invoke.side_effect = _capture_classification
-        mock_get_llm.return_value = llm
-
-        handle_sys_utility("", "turn on dark mode")
-        assert "turn on dark mode" in captured["prompt"]
+        result = handle_sys_utility("", "turn on dark mode")
+        assert not result.startswith("ERROR")
+        mock_get_llm.assert_not_called()
+        mock_subprocess.run.assert_called_once()
+        assert "AppsUseLightTheme -Value 0" in mock_subprocess.run.call_args[0][0][-1]
 
     @pytest.mark.parametrize("action", ["recycle_bin", "dark_mode", "light_mode"])
     @patch("capabilities.system.sys_utility.subprocess")
     @patch("agentic_core.processor._get_routing_llm")
     def test_subprocess_backed_actions_invoke_powershell(self, mock_get_llm, mock_subprocess, action):
         mock_get_llm.return_value = _llm_returning(action)
-        result = handle_sys_utility(action.replace("_", " "))
+        result = handle_sys_utility(action)
         mock_subprocess.run.assert_called_once()
         args = mock_subprocess.run.call_args[0][0]
         assert args[0] == "powershell"
@@ -231,7 +224,7 @@ class TestSysUtility:
     def test_subprocess_failure_is_reported_as_error(self, mock_get_llm, mock_subprocess, action):
         mock_get_llm.return_value = _llm_returning(action)
         mock_subprocess.run.side_effect = Exception("powershell not found")
-        result = handle_sys_utility(action.replace("_", " "))
+        result = handle_sys_utility(action)
         assert result.startswith("ERROR")
 
     @pytest.mark.parametrize("action", ["mute_mic", "brightness_down"])
@@ -239,7 +232,7 @@ class TestSysUtility:
     @patch("agentic_core.processor._get_routing_llm")
     def test_unimplemented_actions_report_error_without_touching_subprocess(self, mock_get_llm, mock_subprocess, action):
         mock_get_llm.return_value = _llm_returning(action)
-        result = handle_sys_utility(action.replace("_", " "))
+        result = handle_sys_utility(action)
         mock_subprocess.run.assert_not_called()
         assert result.startswith("ERROR")
         assert "Nothing was changed" in result
@@ -255,4 +248,5 @@ class TestSysUtility:
         mock_get_llm.return_value = _llm_returning("reboot_bios")
         result = handle_sys_utility("do something exotic")
         assert result.startswith("ERROR")
-        assert "reboot_bios" in result
+        assert "unknown" in result
+        mock_get_llm.assert_not_called()

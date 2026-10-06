@@ -23,13 +23,17 @@ flowchart LR
     P --> V[Deterministic validator]
     V --> B[Capability policy and budgets]
     B --> C[Confirmation where required]
-    C --> E[Executor]
+    C --> D[Resolved-action authorization]
+    D --> E[Executor]
     E --> O[Independent OS postcondition]
     O --> A[Outcome and audit record]
 ```
 
 The core boundary consists of an intent allowlist, filesystem/command policy,
 capability tiers, bounded budgets, confirmation, and postcondition checks.
+Every resolved action is authorized at dispatch, including retries and replans.
+Confirmation binds all executable fields; changed guarded actions require a new
+request. Planner-supplied expected state is only a hint, never verification proof.
 REST commands require a bearer token. Both WebSockets require a token handshake;
 foreign browser origins are rejected. Keep the backend on loopback.
 
@@ -59,7 +63,7 @@ Use a Windows virtual environment with development tools installed:
 ```powershell
 python -m pytest tests/ --timeout=60
 python -m ruff check main.py agentic_core system_services config capabilities interfaces scripts/check_release.py scripts/audit_dependencies.py --ignore E501,E402,BLE001,S110,S112
-python -m mypy agentic_core/validator.py agentic_core/memory_hook.py system_services/privacy_router.py --ignore-missing-imports
+python -m mypy --explicit-package-bases --follow-imports=silent agentic_core/execution_authority.py agentic_core/capability_broker.py agentic_core/confirmation.py agentic_core/executor.py capabilities/system/api_wrapper.py config/capability_tiers.py agentic_core/validator.py agentic_core/memory_hook.py system_services/privacy_router.py --ignore-missing-imports
 python scripts/check_release.py
 python scripts/audit_dependencies.py
 ```
@@ -67,7 +71,7 @@ python scripts/audit_dependencies.py
 CI makes these checks blocking, runs the browser UI checks, builds the Python
 package, and validates the headless Docker image. Coverage requires 70% over the
 configured scope; voice/vision and other explicitly omitted modules are listed in
-`.coveragerc`. Mypy currently covers three modules, not the whole application.
+`.coveragerc`. Mypy currently covers nine policy, execution, orchestration and privacy modules, not the whole application.
 [Local verification checkpoint](docs/verification.md) records results and unverified boundaries.
 
 Reproduce routing or supervised task measurements:
@@ -155,7 +159,7 @@ token in a URL, frontend build configuration, screenshot or public issue.
 - GUI outcomes depend on focus, permissions, DPI, application versions and timing.
 - Postcondition coverage varies by intent; no universal exactly-once guarantee.
 - Artifact-free routing scored 61.98% on the current 3,230-row synthetic dataset; see the result summary.
-- Historical metrics came from a particular machine, model and routing mode.
+- Component benchmarks use self-authored synthetic inputs and the documented reference environment.
 - Learning, long-running autonomy and Electron packaging remain experimental.
 
 ## Project structure

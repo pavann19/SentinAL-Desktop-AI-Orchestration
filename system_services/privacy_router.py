@@ -50,19 +50,11 @@ class PrivacyRouter:
             r'\.bashrc\b'
         ]
 
-        # Fix 3.3: Removed 'desktop' — path_patterns already catch real desktop paths.
-        # 'What is a desktop app?' was incorrectly routing to local.
         self.sensitive_folders = [
             'documents', 'downloads', 'system32',
             'program files', 'roaming', 'windows/system'
         ]
 
-        # ── Tier 2: System & Destructive Commands ────────────────────────────
-        # Fix 3.3: All entries checked with \b word boundaries uniformly.
-        # 'cmd' no longer matches 'command'.
-        # 'ping' and 'netstat' removed — their word-boundary regex still matches
-        # conversational contexts like 'ping pong' and 'gymnast at competition'.
-        # Actual shell execution is blocked by executor._sanitize_shell_cmd.
         self.system_commands = [
             'cmd', 'powershell', 'regedit', 'taskkill', 'format',
             'rm -rf', 'del', 'format c:', 'shutdown', 'restart pc',
@@ -118,7 +110,6 @@ class PrivacyRouter:
                 privacy_logger.info(f"LOCAL | {result['reason']} | query='{query[:60]}'")
                 return result
 
-        # 2. Check system commands — Fix 3.3: uniform \b word boundary on all entries
         for cmd in self.system_commands:
             if re.search(rf'\b{re.escape(cmd)}\b', normalized):
                 result = {"route": "local", "reason": f"System command detected: '{cmd}'"}

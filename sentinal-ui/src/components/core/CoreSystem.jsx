@@ -172,9 +172,9 @@ export default function CoreSystem() {
         {!booted ? (
           null
         ) : state === 'booting' ? (
-          <span style={{ color: 'var(--stark-gold)', animation: 'none' }}>IGNITING KERNEL...</span>
+          <span style={{ color: 'var(--stark-gold)', animation: 'none' }}>Starting SentinAL...</span>
         ) : (
-          <span className="core-text-jarvis">J.A.R.V.I.S.</span>
+          <span className="core-text-sentinal">SentinAL</span>
         )}
       </div>
     </div>

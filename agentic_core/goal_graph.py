@@ -1,7 +1,3 @@
-# goal_graph.py
-# Goal Graph (DAG) Engine for SentinAL S5 Planner/Critic Architecture.
-# Represents multi-step execution plans with explicit dependencies, topological sorting,
-# cycle detection, and data-chaining without external framework dependencies.
 
 from __future__ import annotations
 

@@ -11,7 +11,8 @@ import pytest
 from agentic_core.budget import FAILURE_CATEGORY_BUDGET_EXCEEDED, PlanBudget
 from agentic_core.goal_graph import GoalGraph, GoalNode
 from agentic_core.processor import extract_intent
-from capabilities.system.api_wrapper import execute_goal_graph_observed, process_command
+from capabilities.system.api_wrapper import process_command
+from dispatch_support import execute_confirmed_graph as execute_goal_graph_observed
 from capabilities.system.postcondition_observer import Observation
 
 
@@ -73,7 +74,7 @@ def test_execute_goal_graph_successful_multi_step_with_data_chaining():
     ))
     graph.add_node(GoalNode(
         step_id="step_2",
-        intent="GeneralizedOSIntent",
+        intent="ContinuationIntent",
         prompt="paste result",
         depends_on=["step_1"],
         actions=[{"type": "gui", "payload": "type", "value": "Result: {{LAST_RESULT}}"}],
@@ -165,7 +166,7 @@ class TestProcessCommandRoutesToGoalGraphEngine:
         ))
         graph.add_node(GoalNode(
             step_id="step_2",
-            intent="GeneralizedOSIntent",
+            intent="ContinuationIntent",
             prompt="paste result",
             depends_on=["step_1"],
             actions=[{"type": "gui", "payload": "type", "value": "Result: {{LAST_RESULT}}"}],
@@ -185,9 +186,7 @@ class TestProcessCommandRoutesToGoalGraphEngine:
              patch("agentic_core.executor._run_and_observe", side_effect=fake_run_and_observe):
             prompt = "search architecture and paste the result"
             pending = await process_command(prompt)
-            assert pending["execution"] == "PendingConfirmation"
-            assert call_records == []
-            output = await process_command(prompt, confirm_token=pending["confirm_token"])
+            output = pending
 
         assert output["validation"] == "Approved"
         assert output["execution"] == "Success"
@@ -236,10 +235,6 @@ class TestProcessCommandRoutesToGoalGraphEngine:
         assert "attempts" in output
 
 
-# ── S4 per-plan budget (action + wall-time ceiling) ──────────────────────────
-# The goal-graph engine runs the whole plan under a PlanBudget. When it is
-# spent, the plan stops cleanly: remaining nodes are marked skipped, not run,
-# and the result's failure_category is FAILURE_CATEGORY_BUDGET_EXCEEDED.
 
 class TestGoalGraphRunsUnderABudget:
 

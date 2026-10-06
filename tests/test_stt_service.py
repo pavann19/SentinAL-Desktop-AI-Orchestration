@@ -1,9 +1,4 @@
-"""
-tests/test_stt_service.py
-Fix 4.6: STT acoustic engine unit tests.
-No hardware required — uses mock audio arrays and mocked sounddevice.
-Covers 6 acoustic engine tests.
-"""
+"""Regression tests for stt service."""
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

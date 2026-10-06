@@ -1,14 +1,9 @@
-# tests/test_verify_s4_script.py
-# Light coverage for the S4 live-round-trip operator script — the parts that
-# do NOT need a running Docker daemon (import, report plumbing, the routing
-# assertion it makes against the real npm_install script builder).
 
 from __future__ import annotations
 
 import importlib
 import json
 
-import pytest
 
 s4 = importlib.import_module("scripts.verify_s4_live_roundtrip")
 
@@ -78,8 +73,3 @@ def test_finish_returns_zero_on_pass(tmp_path, monkeypatch):
 
     assert s4._finish(s4.Report(), 0.0, _Args(), overall=True) == 0
     assert (tmp_path / "r.json").is_file()
-
-
-@pytest.mark.skip(reason="requires a running Docker daemon — run scripts/verify_s4_live_roundtrip.py directly")
-def test_full_roundtrip_placeholder():
-    pass

@@ -76,10 +76,9 @@ from interfaces.voice.wake_engine import wake_engine
 from system_services.system_state import state_manager
 
 active_telemetry_clients = set()
-active_agent_clients: dict = {}   # Fix 2.5: dict[ws → connect_time] for deterministic routing
+active_agent_clients: dict = {}
 TELEMETRY_PINGS = {}  # Track {websocket: last_ping_time}
 
-# Fix 3.9: is_cloud reflects actual LLM provider — no longer hardcoded to True
 IS_CLOUD = os.getenv("LLM_PROVIDER", "local").lower() in ("groq", "openai")
 
 from interfaces.voice.nlp_correction import corrector
@@ -148,15 +147,6 @@ async def lifespan(app: FastAPI):
         print(f"[RELIABILITY ERROR] Process supervisor failed to start: {e}")
         stop_supervisor = None
 
-    # ── EVENT BUS (S6 — time triggers) ──
-    # Fires the scheduled_tasks.due_at rows SchedulerIntent persists but its
-    # handler openly says it can't yet deliver.
-    #   kind == 'reminder' (default, increment 1): ONLY notify — like
-    #     on_watch_resolved above, no pipeline, no action.
-    #   kind == 'goal' (increment 2): run it through the pipeline with
-    #     autonomous=True (broker denies T2/T3, tighter budget), but ONLY when
-    #     SENTINAL_AUTONOMOUS_GOALS_ENABLED. Off by default; nothing currently
-    #     creates a 'goal' row, so this path is inert on a fresh install.
     _autonomous_goals_on = os.getenv(
         "SENTINAL_AUTONOMOUS_GOALS_ENABLED", "false"
     ).strip().lower() not in ("0", "false", "no", "")
@@ -226,7 +216,6 @@ async def lifespan(app: FastAPI):
             return
         print(f"[STT] Forwarding raw transcript: {text}")
         
-        # Fix 2.5: Route to the most-recently connected agent client (deterministic)
         ws = max(active_agent_clients, key=active_agent_clients.get, default=None)
         
         async def _submit():
@@ -245,7 +234,7 @@ async def lifespan(app: FastAPI):
                     try:
                         await safe_send_json(ws, {"type": "execution_step", "message": f"Microphone (Polished): {clean_text}", "stage": "perception"})
                     except Exception:
-                        active_agent_clients.pop(ws, None)  # Fix 2.5: dict removal
+                        active_agent_clients.pop(ws, None)
             
             conversation_manager.update_interaction()
             # Use the global execute_agent_task already defined in this file
@@ -306,7 +295,6 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Fix 1.3: CORS locked to localhost only (was open to all origins)
 _UI_PORT = int(os.getenv("SENTINAL_UI_PORT", "5173"))
 app.add_middleware(
     CORSMiddleware,
@@ -416,9 +404,6 @@ async def health_check():
 
 class CommandRequest(BaseModel):
     prompt: str
-    # P2-5 direct-human confirm channel. When SENTINAL_REQUIRE_CONFIRMATION is
-    # on, a T2/T3 request first returns execution="PendingConfirmation" with a
-    # confirm_token; resend the same prompt with that token to proceed.
     confirm_token: str | None = None
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -606,7 +591,7 @@ async def finalize_mission(data: dict | str, websocket: WebSocket, cancel_event:
         "speech_response": speech_text,
         "execution": data.get("execution", "Success") if isinstance(data, dict) else "Success",
         "failure_category": data.get("failure_category") if isinstance(data, dict) else None,
-        "is_cloud": IS_CLOUD  # Fix 3.9: reflects actual LLM provider
+        "is_cloud": IS_CLOUD
     })
 
     # 3. Enforce Speech Sequence
@@ -649,7 +634,7 @@ async def websocket_agent(websocket: WebSocket):
     """// Full-Duplex Agent Brain Pipeline (v9.0 Hybrid)"""
     if not await authenticate_websocket(websocket):
         return
-    active_agent_clients[websocket] = time.time()  # Fix 2.5: track connect time for routing
+    active_agent_clients[websocket] = time.time()
     try:
         while True:
             raw = await websocket.receive_text()
@@ -687,7 +672,7 @@ async def websocket_agent(websocket: WebSocket):
         print(f"[RELIABILITY ERROR] Agent Loop Fault: {e}")
     finally:
         await task_manager.cancel_tasks_for_websocket(websocket)
-        active_agent_clients.pop(websocket, None)  # Fix 2.5: dict-based removal
+        active_agent_clients.pop(websocket, None)
         try:
             await websocket.close()
         except Exception:

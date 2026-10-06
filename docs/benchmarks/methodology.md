@@ -21,8 +21,22 @@ Record the commit and dirty state, Python/dependency versions, machine/OS, provi
 model identity, feature flags, classifier hash/presence, dataset hash, task selection,
 seed and repetitions. Router-only evaluation is exhaustive; full-pipeline sampling
 must state its sample seed. Finetuning uses stratified splits with random seed 42.
-Downloaded model revisions and ranged dependencies can drift; exact numeric replay
-requires preserving those resolved versions alongside results.
+The Torch model revision is pinned in `config/constants.py`. The reference
+[manifest](../../eval/reference_environment.json) contains full dataset hashes,
+seed and model identity; [dependency pins](../../requirements-evaluation.txt)
+record the Windows CPython 3.13.3 evaluation environment. In a separate environment:
+
+```powershell
+python -m pip install -r requirements-evaluation.txt
+python -m pip install --no-deps -e .
+python -m pip check
+python scripts/reproduce_router_accuracy.py --run-id reference
+python -m eval.finetune_classifier --run-id reference
+```
+
+The pins do not include distribution hashes and are not a supply-chain integrity
+lock. Other platforms and ONNX may resolve different artifacts. Exact numerical
+replay still depends on the stated backend, versions and configuration.
 
 Benchmark summaries use Wilson confidence intervals. Preserve failures; do not
 cherry-pick repetitions or treat a launched process as completed work. Postcondition

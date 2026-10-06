@@ -9,7 +9,7 @@ from capabilities.system import gui_resolver, process_manager, vision_module
 @dataclass
 class Observation:
     verified: bool
-    tier_used: Literal["process", "filesystem", "window", "vlm", "memory", "none"]
+    tier_used: Literal["process", "filesystem", "window", "vlm", "memory", "none", "observer_error"]
     confidence: float
     latency_ms: float
     detail: str

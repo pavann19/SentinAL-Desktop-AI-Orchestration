@@ -14,7 +14,7 @@ Use a virtual environment. The package metadata defines runtime dependencies;
 python -m pytest tests/test_<area>.py --no-cov --timeout=60
 python -m pytest tests/ --timeout=60
 python -m ruff check main.py agentic_core system_services config capabilities interfaces scripts/check_release.py --ignore E501,E402,BLE001,S110,S112
-python -m mypy agentic_core/validator.py agentic_core/memory_hook.py system_services/privacy_router.py --ignore-missing-imports
+python -m mypy --explicit-package-bases --follow-imports=silent agentic_core/execution_authority.py agentic_core/capability_broker.py agentic_core/confirmation.py agentic_core/executor.py capabilities/system/api_wrapper.py config/capability_tiers.py agentic_core/validator.py agentic_core/memory_hook.py system_services/privacy_router.py --ignore-missing-imports
 python scripts/check_release.py
 python -m build
 ```

@@ -14,11 +14,9 @@ except ImportError:
 
 load_dotenv()
 
-# Fix 2.8: max_results now configurable via env var
 _MAX_RESULTS   = int(os.getenv("TAVILY_MAX_RESULTS", "3"))
 _TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 
-# Fix 2.8: Module-level singleton client — only instantiated once, not per call
 _tavily_client: "TavilyClient | None" = None
 
 

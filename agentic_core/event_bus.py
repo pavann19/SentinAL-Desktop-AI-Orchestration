@@ -1,25 +1,3 @@
-# agentic_core/event_bus.py
-# ═══════════════════════════════════════════════════════════════════════════
-# EVENT BUS — S6 proactive autonomy, increment 1: time triggers, notify-only
-# ═══════════════════════════════════════════════════════════════════════════
-#
-# A single resident asyncio loop, started once from main.py's lifecycle
-# alongside the process supervisor. Every tick it asks the memory store for
-# scheduled_tasks rows whose due_at has passed and that have not yet been
-# announced, and calls on_event(task) for each — then stamps the row notified
-# so it fires exactly once.
-#
-# INCREMENT 1 IS DELIBERATELY NOTIFY-ONLY. on_event's job in main.py is to
-# push a "reminder due" message on the telemetry websocket. It does NOT run
-# the pipeline, take an action, or re-enter execution — same invariant the
-# process supervisor's on_resolved has (see main.py's comment there).
-# Autonomous action execution from a trigger is increment 2, separately gated,
-# and is where the "week unattended, no unwanted action" gate actually bites.
-#
-# Mirrors agentic_core/process_supervisor.py's loop/start/stop shape on
-# purpose — same failure handling (a bad callback is logged and swallowed, an
-# unexpected sweep error is logged and the loop continues, CancelledError
-# stops it cleanly), same idempotent start.
 
 import asyncio
 import contextlib
@@ -82,7 +60,6 @@ async def event_bus_loop(on_event=None, memory: MemoryManager | None = None,
     if not ENABLED:
         _logger.info("Event bus disabled (SENTINAL_EVENT_BUS_ENABLED=false) — loop idle.")
         while True:
-            # S7 world model still samples even with the reminder sweep off.
             await asyncio.to_thread(_env_sample)
             await asyncio.sleep(tick)
 
@@ -90,7 +67,7 @@ async def event_bus_loop(on_event=None, memory: MemoryManager | None = None,
 
     while True:
         try:
-            await asyncio.to_thread(_env_sample)  # S7 world model sample
+            await asyncio.to_thread(_env_sample)
             due = await asyncio.to_thread(_poll_once, mem)
             for task in due:
                 _logger.info(f"[event] reminder due: {task['task_id'][:8]} '{task['description']}'")

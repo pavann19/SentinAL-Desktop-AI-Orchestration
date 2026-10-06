@@ -46,9 +46,11 @@ jobs:
       - name: Runtime lint
         run: python -m ruff check main.py agentic_core system_services config capabilities interfaces scripts/check_release.py scripts/audit_dependencies.py --ignore E501,E402,BLE001,S110,S112
       - name: Type-check security modules
-        run: python -m mypy agentic_core/validator.py agentic_core/memory_hook.py system_services/privacy_router.py --ignore-missing-imports
+        run: python -m mypy --explicit-package-bases --follow-imports=silent agentic_core/execution_authority.py agentic_core/capability_broker.py agentic_core/confirmation.py agentic_core/executor.py capabilities/system/api_wrapper.py config/capability_tiers.py agentic_core/validator.py agentic_core/memory_hook.py system_services/privacy_router.py --ignore-missing-imports
       - name: Validate release source and links
         run: python scripts/check_release.py
+      - name: Authorization and trusted-verification regressions
+        run: python -m pytest tests/test_execution_authority.py tests/test_shared_transport.py tests/test_websocket_auth.py --no-cov --timeout=60
       - name: Complete test suite, including router, voice mocks, security and stress
         run: python -m pytest tests/ --timeout=60 --cov-report=xml:coverage.xml --cov-fail-under=70
       - name: Focused offline pipeline evaluation
@@ -88,7 +90,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run lint -- --max-warnings=0
       - run: npm run build
-      - run: npm audit --audit-level=high
+      - run: npm audit --audit-level=moderate
 
   docker:
     name: Headless evaluation image

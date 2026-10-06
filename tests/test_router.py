@@ -1,6 +1,6 @@
 """
 tests/test_router.py
-Industry-grade tests for SemanticRouter.
+SemanticRouter behavioral tests.
 Covers: obvious intents, edge cases, unknown threshold, fallback mode, caching.
 """
 import sys, os

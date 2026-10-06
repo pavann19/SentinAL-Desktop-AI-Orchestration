@@ -1,3 +1,4 @@
+from dispatch_support import execute_confirmed_pipeline as execute_pipeline
 """
 tests/test_executor.py
 Fix 4.3: OS execution layer unit tests.
@@ -10,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
 from unittest.mock import patch, MagicMock
-from agentic_core.executor import execute_pipeline, _sanitize_shell_cmd
+from agentic_core.executor import _sanitize_shell_cmd
 
 
 class TestSanitizeShellCmd:
@@ -55,7 +56,8 @@ class TestExecutePipeline:
         steps = [{"intent": "ApplicationLaunchIntent", "target": "notepad", "speech_response": "Opening."}]
         result = execute_pipeline(steps)
         # Pipeline should complete (Popen may not be called if os.startfile handles it)
-        assert "ERROR" not in str(result) or mock_popen.call_count >= 0
+        assert not result.startswith("ERROR")
+        mock_popen.assert_called_once()
 
     @patch("webbrowser.open")
     def test_web_navigation_mnemonic(self, mock_open):

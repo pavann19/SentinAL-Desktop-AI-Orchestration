@@ -1,21 +1,3 @@
-# agentic_core/snapshot.py
-# Pre-action filesystem snapshot + restore for SentinAL's S4 containment
-# substrate (the T2 "reversal" half of the tier gate — the capability broker
-# gives the tier, this makes a T2/T3 filesystem effect undoable).
-#
-# Not a union/overlay filesystem — Windows has no native one. This captures the
-# prior state of the specific paths a step declares it will touch, then either
-# discards the capture (plan succeeded) or restores from it (plan failed):
-#
-#   path was a FILE that existed  -> copied aside; restore = delete current, copy back
-#   path was a FILE, absent       -> restore = delete it if the step created it
-#   path was a DIR that existed   -> top-level entry manifest recorded; restore =
-#                                    remove entries added since (additions only —
-#                                    pre-existing content is never touched)
-#   path was a DIR, absent        -> restore = rmtree it if the step created it
-#
-# Never raises: every restore operation is guarded, failures are logged and the
-# rest continue. Same non-raising contract as postcondition_observer.py.
 
 from __future__ import annotations
 

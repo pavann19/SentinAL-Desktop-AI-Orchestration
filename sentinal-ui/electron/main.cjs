@@ -30,9 +30,7 @@ function resolveBackendPath() {
     // Check if we are running from a packaged installation
     if (app.isPackaged) {
         return {
-            // Priority 1: User's absolute dev path (for convenience on this machine)
-            devRoot: 'c:/Users/Gannoju Pavan/OneDrive/Desktop/Major project',
-            // Priority 2: Installed resources folder
+            devRoot: process.resourcesPath,
             prodRoot: process.resourcesPath
         };
     }
@@ -42,7 +40,8 @@ function resolveBackendPath() {
 async function ensureServices(window) {
     const updateStatus = (msg, pct) => {
         window.webContents.send('status-update', { message: msg, progress: pct });
-        window.webContents.executeJavaScript(`window.postMessage({ type: 'status', message: '${msg}', progress: ${pct} }, '*')`);
+        const payload = JSON.stringify({ type: 'status', message: msg, progress: pct });
+        window.webContents.executeJavaScript(`window.postMessage(${payload}, '*')`);
     };
 
     const paths = resolveBackendPath();
@@ -57,7 +56,7 @@ async function ensureServices(window) {
             ollamaProcess = spawn('ollama', ['serve'], { 
                 detached: false, 
                 windowsHide: true,
-                shell: true 
+                shell: false
             });
             await delay(3000); // Give it a head start
         }
@@ -169,11 +168,16 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
     },
   });
 
   // ── Load Boot Screen First ────────────────────────────────────
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const allowed = IS_DEV && new URL(url).origin === new URL(DEV_URL).origin;
+    if (!allowed) event.preventDefault();
+  });
   mainWindow.loadFile(BOOT_INDEX);
 
   mainWindow.once('ready-to-show', () => {
@@ -203,7 +207,7 @@ function createWindow() {
 app.whenReady().then(() => {
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
     const allowed = ['media', 'microphone', 'audioCapture'];
-    if (allowed.includes(permission)) {
+    if (allowed.includes(permission) && IS_DEV && new URL(webContents.getURL()).origin === new URL(DEV_URL).origin) {
       callback(true);
     } else {
       callback(false);
@@ -227,7 +231,8 @@ app.on('before-quit', () => {
         console.debug("Terminating Backend Process...");
         backendProcess.kill();
     }
-    // We optionally keep Ollama alive as it's often a shared service
+    // Only stop an Ollama process started by this application.
+    if (ollamaProcess) ollamaProcess.kill();
 });
 
 // ── IPC Handlers ────────────────────────────────────────────────

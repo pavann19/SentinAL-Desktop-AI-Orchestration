@@ -1,8 +1,4 @@
-"""
-tests/test_system_state.py
-E2E Coverage Fix: Covers system_state.py which had 0% coverage.
-Tests the singleton, state updates, callbacks, backward-compat, and snapshots.
-"""
+"""Regression tests for system state."""
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -12,10 +8,6 @@ import pytest
 from system_services.system_state import SystemState, state_manager
 
 
-# FIX 10 (final): Always restore SystemState._instance to the module-level
-# state_manager after each test. This guarantees:
-#   (a) test_state_manager_is_singleton_instance always passes (state_manager IS SystemState())
-#   (b) Mutated state (counters, callbacks, intents) doesn't bleed between tests
 @pytest.fixture(autouse=True)
 def reset_singleton():
     """Snapshot state before test; restore to state_manager with original state after."""

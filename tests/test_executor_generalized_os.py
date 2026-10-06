@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
 
-from agentic_core.executor import execute_pipeline
+from dispatch_support import execute_confirmed_pipeline as execute_pipeline
 
 
 def _os_step(actions, speech_response=""):
@@ -120,11 +120,11 @@ class TestExplorerInterceptor:
     @patch("agentic_core.executor.memory")
     @patch("os.startfile")
     @patch("os.path.exists", return_value=False)
-    def test_missing_path_falls_back_to_memory_cache_hit(self, mock_exists, mock_startfile, mock_memory):
+    def test_cached_replacement_path_requires_new_authorization(self, mock_exists, mock_startfile, mock_memory):
         mock_memory.get_cached_path.return_value = "C:\\Real\\Cached\\Path"
         result = execute_pipeline(_os_step([_shell_action("explorer C:\\guessed\\wrong\\path")]))
-        mock_startfile.assert_called_once_with("C:\\Real\\Cached\\Path")
-        assert not result.startswith("ERROR")
+        mock_startfile.assert_not_called()
+        assert result.startswith("ERROR authorization")
 
     @patch("agentic_core.executor.memory")
     @patch("os.path.exists", return_value=False)
@@ -163,7 +163,6 @@ class TestGuiVsCliRouting:
         proc.returncode = 0
         mock_popen.return_value = proc
         execute_pipeline(_os_step([_shell_action("taskkill /IM notepad.exe /F")]))
-        # Must wait for the kill to actually complete - the whole point of the fix.
         proc.communicate.assert_called_once()
 
 
@@ -265,7 +264,7 @@ class TestStandardCliExecution:
 
     @patch("agentic_core.processor._get_routing_llm")
     @patch("subprocess.Popen")
-    def test_failed_command_triggers_llm_self_healing_and_then_succeeds(self, mock_popen, mock_get_llm):
+    def test_changed_shell_repair_stops_before_replacement_execution(self, mock_popen, mock_get_llm):
         failing = MagicMock()
         failing.communicate.return_value = ("", "command not found")
         failing.returncode = 1
@@ -280,15 +279,9 @@ class TestStandardCliExecution:
 
         result = execute_pipeline(_os_step([_shell_action("mkdir badcmd")]))
 
-        assert mock_popen.call_count == 2
-        # _get_routing_llm is called twice from this single patched target: once
-        # to fix the failing command, once more afterward to summarize the
-        # (now successful) command's stdout for the spoken response.
-        assert fixer_llm.invoke.call_count == 2
-        first_call_prompt = fixer_llm.invoke.call_args_list[0][0][0][0][1]
-        assert "repair agent" in first_call_prompt
-        assert not result.startswith("ERROR")
-        assert "Task failed" not in result
+        assert mock_popen.call_count == 1
+        fixer_llm.invoke.assert_called_once()
+        assert result.startswith("ERROR authorization")
 
     @patch("agentic_core.processor._get_routing_llm")
     @patch("subprocess.Popen")
@@ -299,7 +292,7 @@ class TestStandardCliExecution:
         mock_popen.return_value = always_fails
 
         fixer_llm = MagicMock()
-        fixer_llm.invoke.return_value = MagicMock(content="still broken")
+        fixer_llm.invoke.return_value = MagicMock(content="permanently broken cmd")
         mock_get_llm.return_value = fixer_llm
 
         result = execute_pipeline(_os_step([_shell_action("permanently broken cmd")]))

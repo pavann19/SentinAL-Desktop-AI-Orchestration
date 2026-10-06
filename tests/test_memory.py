@@ -38,7 +38,6 @@ class TestMemoryManager(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.manager.save_url_template("missing", "https://safe.com/no_placeholder")
 
-    # Fix 4.8: New interaction history tests
 
     def test_log_and_retrieve_interaction(self):
         """log_interaction() must persist and be retrievable via get_recent_interactions."""

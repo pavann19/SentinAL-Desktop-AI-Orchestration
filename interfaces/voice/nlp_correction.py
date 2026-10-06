@@ -16,7 +16,6 @@ _REFUSAL_PATTERNS = [
 ]
 _REFUSAL_RE = re.compile("|".join(_REFUSAL_PATTERNS), re.IGNORECASE)
 
-# Fix 2.6: Timeout for LLM call — falls back to original transcript if Ollama is slow
 _CORRECTION_TIMEOUT = float(os.getenv("NLP_CORRECTION_TIMEOUT", "3.0"))
 
 
@@ -75,7 +74,6 @@ RULES:
                 HumanMessage(content=f"INPUT: {raw_text}\nOUTPUT:")
             ]
 
-            # Fix 2.6: Hard timeout — don't stall the STT→Intent pipeline
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
                 future = pool.submit(self.llm.invoke, messages)
                 try:

@@ -1,19 +1,12 @@
-# config/self_improvement.py
-# S9 self-improvement loop configuration.
 
 import os
 
-# Gates the whole loop. Default off. Even on, S9-4 only PROPOSES + REVIEWS —
-# consuming a promoted value in the live path is a later, separately-gated
-# activation step.
 SELF_IMPROVEMENT_ENABLED = os.getenv("SENTINAL_SELF_IMPROVEMENT_ENABLED", "false").strip().lower() not in ("0", "false", "no", "")
 
 # Control-plane acceptance criteria (fixed, human-set — never self-tuned).
 MIN_BENCHMARK_GAIN = float(os.getenv("SENTINAL_SI_MIN_GAIN", "0.05"))   # >= +5% overall
 ALLOW_REGRESSIONS = False                                              # zero new task regressions
 
-# What the proposer is allowed to touch (S9-2 first cut). Prompt templates
-# are IN SCOPE per §10.1 but deliberately excluded from this increment.
 TUNABLE_PARAMS = {
     # name -> (env var, min, max) — proposer may suggest a value in [min, max]
     "SENTINAL_PLANNER_MAX_STEPS": (2, 12),

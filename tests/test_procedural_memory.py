@@ -1,9 +1,3 @@
-# tests/test_procedural_memory.py
-# S6 procedural memory — deterministic recipe replay.
-#
-# Deterministic fake embedder (bag-of-words over a fixed vocabulary) so the
-# real all-MiniLM-L6-v2 never loads: fast, hermetic, "more shared words ->
-# higher cosine".
 
 from __future__ import annotations
 

@@ -1,12 +1,3 @@
-# agentic_core/skill_monitor.py
-# S8-5 — learned-skill monitoring -> demotion / retirement.
-#
-# CONTAINMENT_ARCHITECTURE §10.2 step 5: a learned skill whose live success
-# rate drops below its validated confidence over a rolling window is
-# automatically demoted, not silently kept. Same drift signal as S7 Half B's
-# capability_health(), keyed by skill_id.
-#
-# Never raises.
 
 from __future__ import annotations
 

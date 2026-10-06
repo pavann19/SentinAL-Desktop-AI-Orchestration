@@ -1,5 +1,3 @@
-# tests/test_capability_manifest.py
-# P2-4 — capability contract manifest + parallel contract dispatch.
 
 from __future__ import annotations
 

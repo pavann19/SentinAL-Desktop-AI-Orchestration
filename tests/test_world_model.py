@@ -1,8 +1,3 @@
-# tests/test_world_model.py
-# S7 world model — A1 sampler + A2 read API.
-#
-# _process_names / _foreground_window are stubbed so nothing touches the real
-# OS: the tests drive a scripted sequence of environment states.
 
 from __future__ import annotations
 

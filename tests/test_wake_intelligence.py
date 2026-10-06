@@ -1,9 +1,4 @@
-"""
-tests/test_wake_intelligence.py
-Fix 4.5: Wake word engine unit tests.
-Covers 8 cases: exact match, phonetic alias, false positive, suppression,
-interrupt, embedded command, interrupt-in-wake edge case, low confidence.
-"""
+"""Regression tests for wake intelligence."""
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

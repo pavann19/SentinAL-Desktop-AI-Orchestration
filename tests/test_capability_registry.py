@@ -1,8 +1,4 @@
-"""
-tests/test_capability_registry.py
-E2E Coverage Fix: Tests for the CapabilityRegistry to achieve 100% coverage on this file.
-Uses an in-memory SQLite database to prevent disk IO and isolate tests.
-"""
+"""Regression tests for capability registry."""
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

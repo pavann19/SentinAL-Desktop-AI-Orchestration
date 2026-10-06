@@ -163,8 +163,6 @@ class BrainConfig:
 
         print(f"[AUDIT] Privacy Router [{purpose}]: CLOUD-SAFE - {reason}")
         
-        # Cloud Failover Chain: Groq -> Ollama
-        # V2.7 FIX: Actually invoke a ping to verify connectivity (was a no-op before)
         cloud_llm = BrainConfig.get_cloud_llm()
         if cloud_llm:
             try:
