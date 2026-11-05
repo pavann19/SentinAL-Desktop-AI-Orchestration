@@ -1,0 +1,14 @@
+flowchart TD
+    A["Extracted Intent + Parameters"] --> B{"Step 1: Intent Allowlist<br/>in ALLOWLIST_INTENTS (20)?"}
+    B -->|No| R1["DENY: unknown/hallucinated<br/>intent rejected categorically"]
+    B -->|Yes| C{"Step 2: Target required<br/>for this intent?"}
+    C -->|"Missing target"| R2["DENY: no target specified"]
+    C -->|OK| D{"Step 3: Sandbox Path Validation<br/>(expand vars, normalize, check)"}
+    D -->|"System32 / Windows core /<br/>bare drive root"| R3["DENY: sandbox violation"]
+    D -->|OK| E{"Step 4: Keyword Filtering<br/>(SENSITIVE_TARGETS / SOFT_SENSITIVE_TARGETS)"}
+    E -->|"Hard-blocked keyword<br/>(word-boundary match)"| R4["DENY: blocked keyword"]
+    E -->|OK| F{"Step 5: HITL required?<br/>(e.g. FileDeletionIntent)"}
+    F -->|Yes| G["Halt: render confirmation dialog,<br/>await explicit user authorization"]
+    F -->|No| H["APPROVED: proceed to execution"]
+    G -->|User confirms| H
+    G -->|User declines| R5["DENY: user declined"]

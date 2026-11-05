@@ -1,0 +1,18 @@
+flowchart TD
+    Q["Input Query"] --> T1
+    Q --> T2
+    Q --> T3
+    Q --> T4
+
+    T1["Tier 1: File Paths & Storage<br/>local drives (C:, D:, ~/, /home/),<br/>env vars (%appdata%, %USERPROFILE%),<br/>sensitive folders (documents, system32, .ssh)"]
+    T2["Tier 2: System & Destructive Commands<br/>shell commands (cmd, regedit, rm -rf, format)<br/>word-boundary matching to prevent false positives"]
+    T3["Tier 3: Personally Identifiable Information (PII)<br/>SSN pattern, credit card + Luhn validation,<br/>RFC 5322 emails, phone numbers,<br/>keywords ('my password', 'social security')"]
+    T4["Tier 4: Token/Credential Patterns<br/>JWTs (eyJ... header), API key formats,<br/>Bearer token prefix detection"]
+
+    T1 --> M{"Any tier matched?"}
+    T2 --> M
+    T3 --> M
+    T4 --> M
+
+    M -->|Yes| L["route = 'local'<br/>(forced on-device processing)"]
+    M -->|No| C["route = 'cloud'<br/>(permitted to use cloud API)"]

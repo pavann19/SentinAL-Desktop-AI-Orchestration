@@ -1,23 +1,30 @@
 # SentinAL — Secure AI Desktop Orchestration
 
-An **agent-safety research project** built around a voice-controlled Windows desktop agent.
-Its deterministic control plane validates proposed actions before they run and
-verifies OS state afterward where a durable postcondition exists.
+SentinAL is a voice- and text-controlled Windows desktop agent with a deterministic
+control plane. Proposed actions pass through policy validation before execution;
+where a durable postcondition exists, the system checks the resulting OS state.
 
-Its portfolio value is the safety architecture—untrusted-model containment, policy
-enforcement, postcondition verification, and evidence-backed evaluation—not general
-backend engineering or production SaaS scale.
+The implementation combines hybrid intent routing, privacy-aware LLM selection,
+bounded planning, capability controls, and postcondition verification. Optional memory
+and learning features remain disabled by default.
 
-**Positioning:** Gatekeeper decides whether a prompt may reach a model; SentinAL decides
-whether an agent's proposed OS action may execute, and checks durable OS state afterward
-when that action leaves a verifiable postcondition.
+> **Status: research prototype / early MVP.** The latest published CI run passed
+> 1,333 tests with 2 skipped and 86.75% coverage. The security suite passed all 66 cases.
+> A separate local, self-authored desktop benchmark reported **96.7%** task success
+> (116/120; 95% CI 91.7–98.7%). That result is not a CI measurement or evidence of
+> unattended reliability. [CI results](https://github.com/pavann19/SentinAL-Desktop-AI-Orchestration/actions/runs/37445301449).
 
-> **Status: research prototype / early MVP.** The security boundary and intent routing are
-> well tested (1,331 automated tests passing, 86.56% coverage, a 66-test adversarial fuzz suite at 100%
-> block rate). End-to-end task success on a real machine, independently OS-state-verified, is
-> **96.7%** (95% CI 91.7–98.7%, n=120) — good for supervised daily use, not yet unattended.
-> Public docs are intentionally compact; generated evidence and thesis drafts are kept out
-> of the public repo and regenerated locally when needed.
+## Documentation
+
+| Resource | Scope |
+|---|---|
+| [Thesis](thesis/Thesis.md) | Reserved document for the next revision; currently empty |
+| [Historical record](historical-record/README.md) | Earlier thesis documents, submission, and supporting figures |
+| [Goals and decisions](docs/DECISIONS.md) | Implementation decisions, feature status, and open work |
+| [Containment architecture](CONTAINMENT_ARCHITECTURE.md) | Dated architectural audit and containment design |
+
+Historical documents retain their original results and describe earlier project states.
+Generated evaluation reports and model artifacts remain outside the public repository.
 
 ## Why
 
@@ -98,7 +105,7 @@ suite. Full model, capability tiers, and the containment roadmap:
 | Fast-path resolution (no LLM call) | **88.45%** |
 | **End-to-end task success (real machine, OS-verified)** | **96.7%** (95% CI 91.7–98.7%, n=120) |
 | Security fuzzing block rate | **100%** (66/66) |
-| Test suite | 1,331 passing, 86.56% coverage |
+| Test suite (published CI) | 1,333 passing, 2 skipped; 86.75% coverage |
 
 **Reproduce with zero cloud API keys:**
 
@@ -142,8 +149,10 @@ config/             Security policy + tiers (single auditable source)
 interfaces/         Voice I/O (wake word, STT, TTS) and UI bridge
 eval/, benchmarks/  Reproducible accuracy + task-success evaluation
 scripts/            Standalone verification/reproduction/offline-mode entry points
-tests/              1,331 passing automated tests at the public head
-docs/                Compact public docs and current decision log
+tests/              Automated unit, integration, stress, and security tests
+docs/               Compact public docs and current decision log
+thesis/             Reserved thesis document
+historical-record/  Earlier thesis documents and supporting figures
 ```
 
 ## License

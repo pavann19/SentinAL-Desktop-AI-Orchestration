@@ -1,0 +1,16 @@
+flowchart TD
+    A[User Query] --> B{"is_developer_task():<br/>2+ developer keywords?"}
+    B -->|Yes| C["CodeAct Engine<br/>(bypasses router entirely)"]
+    B -->|No| D{"Tier 1: Keyword Fast-Path<br/>match? (greetings, etc.)"}
+    D -->|Yes| E["ConversationalIntent<br/>~microseconds, no model call"]
+    D -->|No| F["Tier 2: Encode query<br/>(all-MiniLM-L6-v2)"]
+    F --> G{"Intent in the classifier's<br/>15 trained classes?"}
+    G -->|"Yes (14 of 18 live)"| H["Phase A Classifier<br/>predict_proba, top-2 scores"]
+    G -->|"No (4 classifier-blind)"| I["Zero-shot cosine similarity<br/>vs. phrase-bank centroids"]
+    H --> J{"confidence >= 0.40?"}
+    I --> J
+    J -->|No| K["UnknownIntent"]
+    J -->|Yes| L{"margin < eps?<br/>(0.2207 classifier / 0.05 cosine)"}
+    L -->|"Yes (ambiguous)"| M["Tier 3: LLM Extraction Fallback<br/>structured JSON, LRU-cached"]
+    L -->|"No (confident)"| N["Return intent deterministically<br/>under 50ms, no LLM call"]
+    K --> M
