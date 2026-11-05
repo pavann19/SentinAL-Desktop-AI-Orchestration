@@ -146,6 +146,10 @@ class TestParseDueAt:
 
 def test_scheduler_parser_is_declared_as_runtime_dependency():
     """A package install must include the parser required by SchedulerIntent."""
-    pyproject = Path(__file__).parents[1] / "pyproject.toml"
-    dependencies = tomllib.loads(pyproject.read_text(encoding="utf-8"))["project"]["dependencies"]
-    assert any(dependency.startswith("dateparser") for dependency in dependencies)
+    root = Path(__file__).parents[1]
+    metadata = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    assert "dependencies" in metadata["project"]["dynamic"]
+    dependency_files = metadata["tool"]["setuptools"]["dynamic"]["dependencies"]["file"]
+    assert dependency_files == ["requirements.txt"]
+    dependencies = (root / dependency_files[0]).read_text(encoding="utf-8").splitlines()
+    assert any(dependency.strip().startswith("dateparser>=") for dependency in dependencies)
