@@ -1,0 +1,5 @@
+# Dependencies for router evaluation only; desktop and voice are excluded.
+sentence-transformers>=3.0.0,<4.0.0
+scikit-learn==1.8.0
+numpy>=2.0.2,<3.0.0
+joblib>=1.3.0

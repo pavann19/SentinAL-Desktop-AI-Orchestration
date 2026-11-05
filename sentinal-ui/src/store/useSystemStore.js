@@ -130,7 +130,7 @@ const useSystemStore = create((set, get) => ({
   })),
 
   dequeueTask: () => set((s) => {
-    const [next, ...rest] = s.taskQueue;
+    const [, ...rest] = s.taskQueue;
     return { taskQueue: rest };
   }),
 

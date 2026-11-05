@@ -1,9 +1,9 @@
 {
-  "name": "jarvis-ui-new",
+  "name": "sentinal-ui",
   "private": true,
   "version": "1.0.0",
   "author": "Pavan",
-  "description": "J.A.R.V.I.S. OS SentinAL — Desktop AI Interface",
+  "description": "SentinAL desktop interface",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "vite build && electron-builder",
-    "electron:start": "electron ."
+    "electron:start": "electron .",
+    "test": "node --test tests/*.test.cjs"
   },
   "dependencies": {
     "framer-motion": "^12.38.0",
@@ -51,14 +52,30 @@
       "build/**/*"
     ],
     "extraResources": [
-      { "from": "../main.py", "to": "main.py" },
-      { "from": "../.env", "to": ".env" },
-      { "from": "../agentic_core", "to": "agentic_core" },
-      { "from": "../system_services", "to": "system_services" },
-      { "from": "../capabilities", "to": "capabilities" },
-      { "from": "../interfaces", "to": "interfaces" },
-      { "from": "../config", "to": "config" },
-      { "from": "../data", "to": "data" }
+      {
+        "from": "../main.py",
+        "to": "main.py"
+      },
+      {
+        "from": "../agentic_core",
+        "to": "agentic_core"
+      },
+      {
+        "from": "../system_services",
+        "to": "system_services"
+      },
+      {
+        "from": "../capabilities",
+        "to": "capabilities"
+      },
+      {
+        "from": "../interfaces",
+        "to": "interfaces"
+      },
+      {
+        "from": "../config",
+        "to": "config"
+      }
     ],
     "win": {
       "target": "nsis",

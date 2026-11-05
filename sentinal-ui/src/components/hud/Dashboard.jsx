@@ -10,7 +10,7 @@ import DataValue from '../ui/DataValue';
 
 export default function Dashboard() {
   const { 
-    bootPhase, state, addNotification,
+    bootPhase, addNotification,
     envFiles, envDirs, sysUptime, sysThreat, govClearance 
   } = useSystemStore();
   const [filesOpen, setFilesOpen] = useState(false);

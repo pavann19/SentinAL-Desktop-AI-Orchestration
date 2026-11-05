@@ -156,7 +156,7 @@ export default function CoreSystem() {
     return () => cancelAnimationFrame(requestRef.current);
   }, []);
 
-  const { booted, state, bootPhase } = useSystemStore();
+  const { booted, state } = useSystemStore();
 
   return (
     <div className="core-container" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, height: 600 }}>

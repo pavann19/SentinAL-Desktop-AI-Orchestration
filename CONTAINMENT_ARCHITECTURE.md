@@ -1,5 +1,7 @@
 # SentinAL — Containment-First Autonomy Architecture
 
+> Historical architecture audit. This document includes proposed controls and dated findings, not a statement that every control is deployed. See [current security boundaries](SECURITY.md) and [evaluation scope](docs/EVALUATION.md).
+
 **Date:** 2026-08-04 · **Basis:** direct code audit at commit `2f631c0` (480 tests green, 76.95% coverage)
 **Relationship to existing docs:** extends `AGENTIC_OS_ROADMAP_AND_THESIS_PLAN.md`; proposes **one ordering change** to it (see §6).
 

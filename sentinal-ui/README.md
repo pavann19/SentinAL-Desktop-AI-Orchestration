@@ -1,16 +1,36 @@
-# React + Vite
+# SentinAL desktop interface
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React, Vite, Three.js and Zustand provide the desktop dashboard. Electron hosts the built interface and starts the Python backend and local Ollama service when needed.
 
-Currently, two official plugins are available:
+## Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Use Node.js 22.12+ and install the [Python backend](../README.md) separately. From this directory:
 
-## React Compiler
+```powershell
+npm ci
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Vite serves the interface at `http://localhost:5173`. Backend API/WebSocket traffic requires the separately configured local backend. To launch the Electron shell with its service-startup behavior:
 
-## Expanding the ESLint configuration
+```powershell
+npm run electron:dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Launching Electron can start real desktop/voice services; use a supervised test environment.
+
+## Checks
+
+```powershell
+npm run lint
+npm test
+npm run build
+```
+
+The Node tests verify backend path selection without launching Electron. The build checks the web bundle; it does not validate an installed Windows application or live audio. The current dashboard bundle produces a size warning; loading/performance optimization remains open.
+
+## Packaging
+
+`npm run electron:build` invokes the existing Windows packaging configuration. Development resolves the backend relative to the source tree; packaged startup resolves it from Electron resources. No personal checkout path is required. Existing application identifiers are retained for compatibility.
+
+The resource list includes backend source, excluding `.env` and runtime `data/`. Users must provision Python, dependencies, credentials and model assets separately. A packaged installer is not established as self-contained or end-to-end verified by the web build. Never include local credentials or runtime databases in release resources.

@@ -41,3 +41,10 @@ docs/reports/CODEBASE_ANALYSIS.md
 docs/reports/STATE.md
 docs/reports/THESIS_ACCURACY_SWEEP_PACK.md
 docs/reports/
+
+# Python distribution and CI report outputs
+/build/
+/dist/
+*.egg-info/
+coverage.xml
+test-results/

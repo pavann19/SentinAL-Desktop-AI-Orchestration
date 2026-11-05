@@ -1,8 +1,6 @@
 # SentinAL — Goals, Decisions, and State of the Project
 
-Last updated 2026-09-19. This is the continuity document: someone (or something) with no
-prior context should be able to read this plus `CONTRIBUTING.md`, `ROADMAP.md` and
-`CONTAINMENT_ARCHITECTURE.md` and continue the work at the same standard.
+Historical design checkpoint: September 19, 2026. Statements and measurements below describe that checkpoint, including proposals and local evidence. For current setup, CI scope and security limitations, use [the project overview](../README.md), [development guide](../CONTRIBUTING.md), [evaluation notes](EVALUATION.md) and [security boundaries](../SECURITY.md). The former roadmap is not part of this published tree.
 
 ## 1. What this is
 
@@ -44,7 +42,7 @@ Each entry: decision — reason — where it lives.
    was the largest source of false success. Postcondition observer; benchmark verifies
    by querying the OS, not the pipeline.
 3. **Containment before autonomy (S4 gates S6+)** — planning ahead of the sandbox that
-   contains its mistakes is the failure shape to avoid. `ROADMAP.md` ordering.
+   contains its mistakes is the failure shape to avoid. Historical S4-before-S6 ordering.
 4. **Trained classifier replaced the zero-shot router when a local classifier artifact is
    present** — logistic regression over all-MiniLM-L6-v2 embeddings; low-margin ties defer
    to the LLM. The generated classifier is not published in the public repo.
@@ -73,7 +71,7 @@ Each entry: decision — reason — where it lives.
 15. **Router accuracy is reproducible without keys** — `scripts/reproduce_router_accuracy.py`
     wraps `eval/measure_intent_accuracy.py --mode router-only`.
 16. **S10–S16 are scoped, not started** — each adds a new risk category and needs an
-    explicit decision plus its containment prerequisite (`ROADMAP.md` "Beyond S9").
+    explicit decision plus its containment prerequisite (historical “Beyond S9” planning).
 
 ## 4. Current state (verified numbers)
 

@@ -34,6 +34,7 @@ export default function DataValue({
     const [isStale, setIsStale] = useState(false);
     const [displayNum, setDisplayNum] = useState(null);
     const rafRef = useRef(null);
+    const displayRef = useRef(null);
   
     // ── Staleness Monitor ──
     const STALE_MS = 5000;
@@ -55,27 +56,30 @@ export default function DataValue({
     const wasNull = prevRef.current === null || prevRef.current === undefined;
     const isReal = value !== null && value !== undefined;
     
-    if (wasNull && isReal) {
-      setArrived(true);
-    }
     prevRef.current = value;
+    if (wasNull && isReal) {
+      const frame = requestAnimationFrame(() => setArrived(true));
+      return () => cancelAnimationFrame(frame);
+    }
   }, [value]);
 
   // ── Count-up animation for numeric values ──
   useEffect(() => {
     if (!countUp || value === null || value === undefined || typeof value !== 'number') {
-      setDisplayNum(value);
       return;
     }
 
     const target = value;
-    const start = displayNum ?? 0;
+    const start = displayRef.current ?? 0;
     const diff = target - start;
     
     // Skip animation for tiny changes
     if (Math.abs(diff) < 0.5) {
-      setDisplayNum(target);
-      return;
+      rafRef.current = requestAnimationFrame(() => {
+        displayRef.current = target;
+        setDisplayNum(target);
+      });
+      return () => cancelAnimationFrame(rafRef.current);
     }
 
     const duration = 400; // ms
@@ -86,25 +90,27 @@ export default function DataValue({
       const progress = Math.min(elapsed / duration, 1);
       // Ease-out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplayNum(start + diff * eased);
+      displayRef.current = start + diff * eased;
+      setDisplayNum(displayRef.current);
       
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(tick);
       } else {
+        displayRef.current = target;
         setDisplayNum(target);
       }
     }
 
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [value]); // intentionally only depend on value, not displayNum
+  }, [value, countUp]);
 
   // ── Render ──
   if (value === null || value === undefined) {
     return <span className={className} style={{ ...style, opacity: 0.25 }}>{fallback}</span>;
   }
 
-  const numToShow = countUp && displayNum !== null ? displayNum : value;
+  const numToShow = countUp && typeof value === 'number' && displayNum !== null ? displayNum : value;
   const text = format ? format(numToShow) : `${typeof numToShow === 'number' ? Math.round(numToShow) : numToShow}`;
   
   return (

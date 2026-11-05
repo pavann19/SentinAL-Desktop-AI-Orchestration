@@ -93,8 +93,9 @@ export default function Background() {
 
     // ── ANIMATION LOOP ──
     let time = 0;
+    let animationFrame;
     function animate() {
-      const animId = requestAnimationFrame(animate);
+      animationFrame = requestAnimationFrame(animate);
       time += 0.001;
 
       // System Mode Handling
@@ -141,6 +142,11 @@ export default function Background() {
     animate();
 
     cleanupRef.current = () => {
+      cancelAnimationFrame(animationFrame);
+      geometry.dispose();
+      material.dispose();
+      lineGeometry.dispose();
+      lineMaterial.dispose();
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('resize', onResize);
       renderer.dispose();

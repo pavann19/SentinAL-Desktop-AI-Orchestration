@@ -114,11 +114,11 @@ def test_goal_graph_data_dependency_resolution():
     graph.add_node(n1)
     graph.add_node(n2)
 
-    graph.mark_node_completed("step_1", result="Antigravity v2 Released")
+    graph.mark_node_completed("step_1", result="Version 2 Released")
 
     resolved = graph.resolve_data_dependencies(n2)
     action_val = resolved["actions"][0]["value"]
-    assert action_val == "Summary: Antigravity v2 Released / Antigravity v2 Released"
+    assert action_val == "Summary: Version 2 Released / Version 2 Released"
 
 
 def test_goal_graph_failure_blocks_downstream_dependents():

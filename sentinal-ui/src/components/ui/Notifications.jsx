@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 import useSystemStore from '../../store/useSystemStore';
 
 /* ═══════════════════════════════════════════════════
@@ -19,7 +19,7 @@ export default function Notifications() {
     <div className="notify-container">
       <AnimatePresence>
         {notifications.map((n) => (
-          <motion.div
+          <Motion.div
             key={n.id}
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -36,7 +36,7 @@ export default function Notifications() {
             }}
           >
             {n.msg}
-          </motion.div>
+          </Motion.div>
         ))}
       </AnimatePresence>
     </div>

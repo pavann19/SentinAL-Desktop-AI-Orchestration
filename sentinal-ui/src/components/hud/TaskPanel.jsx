@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import useSystemStore from '../../store/useSystemStore';
 
 /* ═══════════════════════════════════════════════════

@@ -9,6 +9,7 @@ const { app, BrowserWindow, ipcMain, session } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const http = require('http');
+const { resolveBackendPaths } = require('./backend-paths.cjs');
 
 // ── Configuration ────────────────────────────────────────────────
 const IS_DEV = !app.isPackaged;
@@ -25,18 +26,11 @@ let ollamaProcess = null;
  * Handles differences between Dev (source) and Prod (installed asar).
  */
 function resolveBackendPath() {
-    const rootPath = path.join(__dirname, '..', '..'); // Root of source in Dev
-    
-    // Check if we are running from a packaged installation
-    if (app.isPackaged) {
-        return {
-            // Priority 1: User's absolute dev path (for convenience on this machine)
-            devRoot: 'c:/Users/Gannoju Pavan/OneDrive/Desktop/Major project',
-            // Priority 2: Installed resources folder
-            prodRoot: process.resourcesPath
-        };
-    }
-    return { devRoot: rootPath, prodRoot: rootPath };
+    return resolveBackendPaths({
+        isPackaged: app.isPackaged,
+        resourcesPath: process.resourcesPath,
+        sourceRoot: path.join(__dirname, '..', '..'),
+    });
 }
 
 async function ensureServices(window) {

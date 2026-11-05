@@ -1,11 +1,13 @@
-# docs/ layout
+# Documentation
 
-The public documentation surface is intentionally small:
+- [Project overview and setup](../README.md)
+- [Thesis and downloads](../thesis/Thesis.md)
+- [Evaluation methodology and reproduction](EVALUATION.md)
+- [Development and CI](../CONTRIBUTING.md)
+- [Security boundaries](../SECURITY.md)
+- [September 19 design checkpoint](DECISIONS.md)
+- [Historical containment audit](../CONTAINMENT_ARCHITECTURE.md)
+- [Desktop interface](../sentinal-ui/README.md)
+- [Historical thesis record](../historical-record/README.md)
 
-- `README.md` at the repo root is the recruiter-facing overview.
-- `ROADMAP.md` and `CONTAINMENT_ARCHITECTURE.md` are the canonical design docs.
-- `docs/DECISIONS.md` records current project state and evidence boundaries.
-
-Generated reports, thesis drafts, handoff notes, and large evidence artifacts are not
-published in this public tree. Regenerate measurement outputs with the scripts in
-`eval/` and `scripts/`; they write to gitignored local output directories.
+Dated design documents describe their original checkpoint. Generated evaluation reports and trained model artifacts are not included in the public tree. The thesis includes an evidence inventory distinguishing published source from local measurements.

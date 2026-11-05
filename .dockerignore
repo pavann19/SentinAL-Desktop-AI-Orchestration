@@ -1,6 +1,3 @@
-# The eval image only needs eval/, router.py, and the committed model/split
-# (see Dockerfile). Everything below is either irrelevant to reproduction or
-# large — excluded to keep the build context small and fast.
 venv/
 .venv/
 node_modules/
@@ -26,3 +23,12 @@ __pycache__/
 # Cached embeddings are regenerated inside the container from the datasets;
 # no need to ship the .npy files.
 _evidence/finetuning/*.npy
+
+historical-record/
+output/
+tmp/
+data/
+
+build/
+dist/
+*.egg-info/
