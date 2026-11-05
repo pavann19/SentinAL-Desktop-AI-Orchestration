@@ -15,6 +15,6 @@ refer to earlier project states; they do not describe the current release.
 The archived files are unchanged from commit
 [`511d0dc`](https://github.com/pavann19/SentinAL-Desktop-AI-Orchestration/commit/511d0dccc0de3c5cf8dc602954069ee59fe189dc).
 
-The [thesis document](../thesis/Thesis.md) is reserved for the next revision and is
-currently empty. Current implementation details and limitations are documented in the
+The [revised thesis](../thesis/Thesis.md) includes the updated technical account and
+PDF and Word versions. Current implementation details and limitations are documented in the
 [project README](../README.md) and [decision log](../docs/DECISIONS.md).

@@ -1,0 +1,122 @@
+{
+  "prepared_date": "2026-11-05",
+  "public_commit": "2d83e2bac49fd45e6918c2cfbf3473bd897f2a5a",
+  "local_base_commit": "bd79ee3bc4011ce8cae307f27d32b3a89500f625",
+  "method": "Read-only record inspection and arithmetic checks; no fresh model, OS-action, field-speech or soak run.",
+  "files": [
+    {
+      "id": "E02",
+      "path": "_evidence/intent_accuracy/finetune_report_classifier_v2_realdata_live_verify_20260817.json",
+      "bytes": 1085,
+      "sha256": "9c6ed312f2305cb7bf3ac3c3c55e44b2448e3ea6d343b78ed04e12fa814f7541"
+    },
+    {
+      "id": "E03",
+      "path": "_evidence/intent_accuracy/finetune_report_v1.json",
+      "bytes": 9818,
+      "sha256": "86c7531f2cd5c83149c7e53f74a1e221ba62eb6654d2ac225484eee1a363f234"
+    },
+    {
+      "id": "E04",
+      "path": "_evidence/intent_accuracy/fastpath_rate_phaseA_v2_by_split.json",
+      "bytes": 1400,
+      "sha256": "cfa7f383e9b33fbc4fc3947b3f3a3461ae57a3e644c5b26e809d6f2cf5abbdda"
+    },
+    {
+      "id": "E05",
+      "path": "_evidence/P1-5/report_post-keyrotation-full.json",
+      "bytes": 15331,
+      "sha256": "811758d34ced53cfda14e29715d37ad3f89a48053b178801619263e7ccfdd193"
+    },
+    {
+      "id": "E05",
+      "path": "_evidence/intent_accuracy/full-pipeline_v2-3003.json",
+      "bytes": 9237,
+      "sha256": "57a3b49956e25d94a48298159bc22eb127daba8d8cd56548808a8221fbd057d2"
+    },
+    {
+      "id": "E06",
+      "path": "_evidence/latency/latency_report.json",
+      "bytes": 15236,
+      "sha256": "8080e3a13891cbcde2339e5c6317d89746a298d398fe98b059bf127f8d3d10cb"
+    },
+    {
+      "id": "E07",
+      "path": "_evidence/ablation/ablation_smoke.json",
+      "bytes": 2786,
+      "sha256": "db59667d13099e5468f4e12464d0955c974f9d31490ade691fa8c5dd81664a2a"
+    },
+    {
+      "id": "E08",
+      "path": "benchmarks/results/benchmark_20260817T061127Z.json",
+      "bytes": 63370,
+      "sha256": "ecc47f709a33af3f4c2b68f2eab892585a08e3830a541e349860c2890f17f644"
+    },
+    {
+      "id": "E11",
+      "path": "docs/reports/PRODUCTION_READINESS_REVIEW_2026-11-04.md",
+      "bytes": 58213,
+      "sha256": "95240b21bc369826c5eb37b08a6afa2dcbf365d560a3dde27f6bc019d2c3c7bf"
+    },
+    {
+      "id": "E12",
+      "path": "docs/ai-continuation/STATE.json",
+      "bytes": 3432,
+      "sha256": "15cba663dc203918152e1e12e280b3bcc8163c813932b3ff59d9c0857d575226"
+    },
+    {
+      "id": "E12",
+      "path": "docs/ai-continuation/GOAL.md",
+      "bytes": 8483,
+      "sha256": "92250df8dbb32475bab1bf76bdede013454471bd0fa94d41c3cb87e499c0bc05"
+    },
+    {
+      "id": "E12",
+      "path": "docs/ai-continuation/BACKLOG.md",
+      "bytes": 3412,
+      "sha256": "7f856e1357b1962f5a3516ff0988c45c6d4b6c4ba3e1b9f7456c83c7ec18ce49"
+    },
+    {
+      "id": "E12",
+      "path": "docs/ai-continuation/ACCEPTANCE.md",
+      "bytes": 2400,
+      "sha256": "e83dc5d040124364575f4f91c5056aff7bb53df90ec87335e588fead6ac69769"
+    },
+    {
+      "id": "E12",
+      "path": "docs/ai-continuation/AGENT_SPEC.md",
+      "bytes": 2714,
+      "sha256": "da4c474a66ee8e9c7acc1aaf12e3ef330479a55dd301b78f465b376f72f70155"
+    },
+    {
+      "id": "E13",
+      "path": "docs/reports/VOICE_QUALITY_2026-10-20.md",
+      "bytes": 10631,
+      "sha256": "d6757ef0f61804128f9cf1586f64f08176534d28b6cc9d1534483582fca3a6c6"
+    },
+    {
+      "id": "E14",
+      "path": "docs/reports/CONTINUOUS_LEARNING_2026-10-20.md",
+      "bytes": 10194,
+      "sha256": "81a4ee4330fc9f8674feb9ae1262b4e30d1a36694d20eb0c42f107e922568a21"
+    },
+    {
+      "id": "E15",
+      "path": "benchmarks/results/s4_live_roundtrip_20260910T185434Z.json",
+      "bytes": 1491,
+      "sha256": "1e2029885b2dd7b8d4eeaabe0a3035ca6b548f7bed0011039911a30803059dd7"
+    },
+    {
+      "id": "E16",
+      "path": "benchmarks/results/windows_sandbox_20261020.json",
+      "bytes": 1444,
+      "sha256": "59fd37f07e1b912674476aba810ef7a40c28cb41346680e50fea106544809c4c"
+    },
+    {
+      "id": "E17",
+      "path": "_evidence/intent_accuracy/full-pipeline_voice-quality-external-20261020.json",
+      "bytes": 19581,
+      "sha256": "2dd39fa9579e089fc27d0828c45bd16624ba64361485a3b077fe3c86e6883216"
+    }
+  ]
+}

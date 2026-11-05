@@ -18,7 +18,7 @@ and learning features remain disabled by default.
 
 | Resource | Scope |
 |---|---|
-| [Thesis](thesis/Thesis.md) | Reserved document for the next revision; currently empty |
+| [Thesis](thesis/Thesis.md) | Revised technical thesis with PDF, Word, and evidence inventory |
 | [Historical record](historical-record/README.md) | Earlier thesis documents, submission, and supporting figures |
 | [Goals and decisions](docs/DECISIONS.md) | Implementation decisions, feature status, and open work |
 | [Containment architecture](CONTAINMENT_ARCHITECTURE.md) | Dated architectural audit and containment design |
@@ -151,7 +151,7 @@ eval/, benchmarks/  Reproducible accuracy + task-success evaluation
 scripts/            Standalone verification/reproduction/offline-mode entry points
 tests/              Automated unit, integration, stress, and security tests
 docs/               Compact public docs and current decision log
-thesis/             Reserved thesis document
+thesis/             Revised thesis and downloadable documents
 historical-record/  Earlier thesis documents and supporting figures
 ```
 
