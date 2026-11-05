@@ -59,10 +59,11 @@ jobs:
     runs-on: windows-latest
     needs: [repository, lint]
     timeout-minutes: 20
-    env:
-      SENTINAL_DATA_DIR: ${{ runner.temp }}/sentinal-ci
     steps:
       - uses: actions/checkout@v4
+      - name: Isolate runtime data
+        shell: pwsh
+        run: '"SENTINAL_DATA_DIR=$env:RUNNER_TEMP/sentinal-ci" >> $env:GITHUB_ENV'
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -92,10 +93,11 @@ jobs:
     runs-on: windows-latest
     needs: test
     timeout-minutes: 15
-    env:
-      SENTINAL_DATA_DIR: ${{ runner.temp }}/sentinal-ci
     steps:
       - uses: actions/checkout@v4
+      - name: Isolate runtime data
+        shell: pwsh
+        run: '"SENTINAL_DATA_DIR=$env:RUNNER_TEMP/sentinal-ci" >> $env:GITHUB_ENV'
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -112,10 +114,11 @@ jobs:
     runs-on: windows-latest
     needs: test
     timeout-minutes: 15
-    env:
-      SENTINAL_DATA_DIR: ${{ runner.temp }}/sentinal-ci
     steps:
       - uses: actions/checkout@v4
+      - name: Isolate runtime data
+        shell: pwsh
+        run: '"SENTINAL_DATA_DIR=$env:RUNNER_TEMP/sentinal-ci" >> $env:GITHUB_ENV'
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -132,10 +135,11 @@ jobs:
     runs-on: windows-latest
     needs: test
     timeout-minutes: 15
-    env:
-      SENTINAL_DATA_DIR: ${{ runner.temp }}/sentinal-ci
     steps:
       - uses: actions/checkout@v4
+      - name: Isolate runtime data
+        shell: pwsh
+        run: '"SENTINAL_DATA_DIR=$env:RUNNER_TEMP/sentinal-ci" >> $env:GITHUB_ENV'
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
