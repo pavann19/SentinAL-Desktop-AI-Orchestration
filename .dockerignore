@@ -4,7 +4,6 @@ node_modules/
 sentinal-ui/
 htmlcov/
 _backups/
-_context_packs/
 logs/
 telemetry/
 memory/

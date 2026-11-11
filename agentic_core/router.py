@@ -336,7 +336,7 @@ INTENT_CAPABILITIES = {
         # firewall/hotspot-toggle phrasings (legitimate SysUtility scope per
         # this intent's own definition, config/constants.py: "mic"). Generalized
         # anchors, not copied from the dataset.
-        # NOTE (also flagged in STATE.md, not fixed here): a separate subset of
+        # NOTE (known limitation): a separate subset of
         # this intent's real dataset failures are volume-related ("toggle
         # volume", "change volume") colliding with MediaControlIntent - that is
         # a genuine DATASET LABELING issue, not a router defect. MediaControlIntent
@@ -486,7 +486,7 @@ INTENT_CAPABILITIES = {
     # the fast, cheap embedding path. Verified against the 704-item labeled
     # eval/intent_dataset.json: these 3 intents alone accounted for 144 of the
     # 184 entries (78%) that were structurally unreachable by the router prior
-    # to this change. See STATE.md for the measured before/after accuracy delta.
+    # to this change. Historical measurements are retained in Git history.
     "ProcessManagementIntent": [
         "kill this process",
         "stop the running task",
@@ -745,7 +745,7 @@ class SemanticRouter:
 
         # Fix [tie-break]: margin between the top and runner-up intent, computed
         # BEFORE the 0.40 demotion below. Empirically calibrated against the
-        # 3003-item eval/intent_dataset.json (see STATE.md / git history for the
+        # 3003-item eval/intent_dataset.json (see git history for the
         # calibration run): misclassified-but-above-threshold calls had a median
         # margin of 0.040 vs. 0.144 for correct calls — real separation, not
         # noise. eps=0.05 catches ~43% of those wrong calls at the cost of

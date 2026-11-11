@@ -1,11 +1,8 @@
 """
 Reproducible intent-accuracy measurement tool for eval/intent_dataset.json.
 
-Formalizes the ad-hoc, throwaway verification scripts written during Session 9
-(each written, run once, then deleted) into a real, committed, versioned
-instrument — so every future accuracy claim in the thesis traces to a
-command that can be re-run by anyone, not a one-off script that no longer
-exists.
+Provides a versioned measurement command so intent-accuracy claims can be
+reproduced against the recorded dataset and configuration.
 
 Reproducibility guarantees:
   - The dataset file's SHA-256 hash is recorded in every report, so a report
