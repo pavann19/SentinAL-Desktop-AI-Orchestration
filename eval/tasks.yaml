@@ -68,8 +68,7 @@
 # original 12-task suite didn't exercise. Tasks touching real apps/windows/
 # screenshots/dictation are marked skip_in_ci to avoid disrupting whatever
 # machine runs this. Every prompt is deliberately harmless/non-destructive.
-# See MERGE_LOG.md / STATE.md for provenance; _backups/eval/tasks.yaml.orig
-# is the pristine 12-task original this was expanded from.
+# Git history preserves the original 12-task suite and its expansion.
 
 - id: web-google
   prompt: "go to google"
