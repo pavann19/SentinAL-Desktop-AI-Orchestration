@@ -3,12 +3,14 @@ tests/test_pipeline_integration.py
 End-to-end pipeline integration tests: processor → validator → executor.
 Uses LLM mocks so all tests are fast and deterministic.
 """
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-import asyncio
-from unittest.mock import patch, MagicMock
 
 
 def make_llm_mock(json_response: str):
@@ -25,14 +27,14 @@ class TestExtractValidateExecute:
 
     def test_greeting_full_pipeline(self):
         """'hello' must flow through the full pipeline and return a message."""
+        from agentic_core.executor import execute_pipeline
         from agentic_core.processor import extract_intent
         from agentic_core.validator import validate_steps
-        from agentic_core.executor import execute_pipeline
 
         steps = extract_intent("hello")
         assert steps[0]["intent"] == "ConversationalIntent"
 
-        is_valid, msg, _ = validate_steps(steps)
+        is_valid, _msg, _ = validate_steps(steps)
         assert is_valid is True
 
         result = execute_pipeline(steps)
@@ -41,15 +43,15 @@ class TestExtractValidateExecute:
 
     def test_web_navigation_full_pipeline(self):
         """WebNavigationIntent pipeline must open a browser without crashing."""
+        from agentic_core.executor import execute_pipeline
         from agentic_core.processor import extract_intent
         from agentic_core.validator import validate_steps
-        from agentic_core.executor import execute_pipeline
 
         steps = extract_intent("go to youtube")
-        is_valid, msg, _ = validate_steps(steps)
+        is_valid, _msg, _ = validate_steps(steps)
 
         if is_valid:
-            with patch("webbrowser.open") as mock_open:
+            with patch("webbrowser.open"):
                 result = execute_pipeline(steps)
                 # Should complete without error
                 assert "ERROR" not in str(result)
@@ -68,7 +70,7 @@ class TestExtractValidateExecute:
         assert steps[0]["intent"] in ("ApplicationLaunchIntent", "GeneralizedOSIntent", "ConversationalIntent")
         # The key check: whatever intent the LLM/processor returns, validation must pass for safe targets
         if steps[0].get("target", ""):  # skip validation if no target
-            is_valid, msg, _ = validate_steps(steps)
+            is_valid, _msg, _ = validate_steps(steps)
             # "notepad" and similar safe targets must be approved
             assert isinstance(is_valid, bool)
 
@@ -82,7 +84,7 @@ class TestExtractValidateExecute:
         from agentic_core.validator import validate_steps
 
         steps = extract_intent("run a program")
-        is_valid, msg, _ = validate_steps(steps)
+        is_valid, _msg, _ = validate_steps(steps)
         assert is_valid is False
 
     @patch("agentic_core.processor._get_routing_llm")
@@ -91,12 +93,13 @@ class TestExtractValidateExecute:
         mock_get_llm.return_value = make_llm_mock(
             '[{"intent": "GeneralizedOSIntent", "actions": [{"type": "shell", "payload": "dir && del /f c:\\\\users"}]}]'
         )
+        from dispatch_support import execute_confirmed_pipeline as execute_pipeline
+
         from agentic_core.processor import extract_intent
         from agentic_core.validator import validate_steps
-        from agentic_core.executor import execute_pipeline
 
         steps = extract_intent("run a command")
-        is_valid, msg, _ = validate_steps(steps)
+        is_valid, _msg, _ = validate_steps(steps)
 
         if is_valid:
             # executor._sanitize_shell_cmd must catch the && before Popen is called
@@ -116,7 +119,7 @@ class TestExtractValidateExecute:
         # Accept the intent the processor returns — if LLM mock works it's InformationRetrievalIntent
         # but fast-paths (greeting, etc.) may intercept first — just verify valid pipeline
         assert len(steps) >= 1
-        is_valid, msg, _ = validate_steps(steps)
+        is_valid, _msg, _ = validate_steps(steps)
         # All allowlisted intents must pass validation
         assert isinstance(is_valid, bool)
 
@@ -170,7 +173,7 @@ class TestMultiStepPipeline:
 
         steps = extract_intent("open chrome and search for python docs")
         assert len(steps) >= 1
-        is_valid, msg, _ = validate_steps(steps)
+        is_valid, _msg, _ = validate_steps(steps)
         assert is_valid is True
 
     def test_compound_object_not_split(self):

@@ -6,12 +6,14 @@ security validation boundary enforcement, and postcondition reflection.
 
 import os
 from unittest.mock import patch
+
 import pytest
+from dispatch_support import execute_confirmed_graph as execute_goal_graph_observed
 
 from agentic_core.budget import FAILURE_CATEGORY_BUDGET_EXCEEDED, PlanBudget
 from agentic_core.goal_graph import GoalGraph, GoalNode
 from agentic_core.processor import extract_intent
-from capabilities.system.api_wrapper import execute_goal_graph_observed, process_command
+from capabilities.system.api_wrapper import process_command
 from capabilities.system.postcondition_observer import Observation
 
 
@@ -93,13 +95,14 @@ def test_execute_goal_graph_successful_multi_step_with_data_chaining():
     with patch("agentic_core.executor._run_and_observe", side_effect=fake_run_and_observe):
         res = execute_goal_graph_observed(graph)
 
-    assert res["validation"] == "Approved"
-    assert res["execution"] == "Success"
-    assert len(call_records) == 2
-    # Verify {{LAST_RESULT}} was substituted in step 2's action payload
-    assert call_records[1]["actions"][0]["value"] == "Result: Found SentinAL Cognition Plane Spec"
-    assert graph.is_complete() is True
-    assert not graph.has_failures()
+    # Resolving a guarded payload changes the exact action, so the original
+    # approval of the template cannot authorize the dynamically pasted value.
+    assert res["validation"] == "Denied"
+    assert res["execution"] == "Blocked"
+    assert len(call_records) == 1
+    assert graph.nodes["step_1"].status == "completed"
+    assert graph.nodes["step_2"].status == "failed"
+    assert graph.has_failures()
 
 
 def test_execute_goal_graph_bounded_replan_on_postcondition_mismatch():
@@ -183,16 +186,17 @@ class TestProcessCommandRoutesToGoalGraphEngine:
         with patch("agentic_core.planner.is_multistep_query", return_value=True), \
              patch("agentic_core.planner.planner.plan_goal", return_value=graph), \
              patch("agentic_core.executor._run_and_observe", side_effect=fake_run_and_observe):
-            output = await process_command("search architecture and paste the result")
+            prompt = "search architecture and paste the result"
+            pending = await process_command(prompt)
+            assert pending["execution"] == "PendingConfirmation"
+            assert call_records == []
+            output = await process_command(prompt, confirm_token=pending["confirm_token"])
 
-        assert output["validation"] == "Approved"
-        assert output["execution"] == "Success"
-        assert len(call_records) == 2
-        # The whole point: step 2's action payload must carry the RESOLVED
-        # value, not the literal "{{LAST_RESULT}}" template string a caller
-        # would have seen before this seam was wired.
-        assert call_records[1]["actions"][0]["value"] == "Result: Found SentinAL Cognition Plane Spec"
-        assert "{{" not in call_records[1]["actions"][0]["value"]
+        # The first approval covers the template, not the later resolved value.
+        assert output["validation"] == "Denied"
+        assert output["execution"] == "Blocked"
+        assert len(call_records) == 1
+        assert call_records[0]["intent"] == "InformationRetrievalIntent"
 
     @pytest.mark.asyncio
     async def test_multistep_prompt_still_enforces_security_gate(self):

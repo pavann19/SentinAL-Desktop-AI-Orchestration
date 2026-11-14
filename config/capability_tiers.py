@@ -36,7 +36,7 @@ INTENT_TIERS: dict[str, str] = {
     "InformationRetrievalIntent": T0, # web search, read-only
 
     # T1 — low-harm, trivially reversible
-    "ApplicationLaunchIntent": T1,    # starts a process; undo = close it
+    "ApplicationLaunchIntent": T1,    # fixed application names; other launches are T3
     "WebNavigationIntent": T1,        # opens a browser tab; undo = close it
     "MediaStreamingIntent": T1,       # opens a media page; undo = close it
     "MediaControlIntent": T1,         # volume/playback virtual keys; transient
@@ -95,6 +95,17 @@ def tier_for(step: dict) -> str:
 
     intent = str(step.get("intent", "") or "").strip()
     base = INTENT_TIERS.get(intent, T3)
+    if intent == "SysUtilityIntent" and any(key in step for key in ("target", "prompt", "action")):
+        from capabilities.system.sys_utility import resolve_system_action
+        action = resolve_system_action(step.get("target", ""), step.get("prompt", ""))
+        return T3 if action in {"recycle_bin", "unknown"} else T2
+    if intent == "ApplicationLaunchIntent":
+        target = str(step.get("target", "") or "").strip().lower()
+        # Arbitrary executables, scripts and explicit paths are code execution.
+        # Only fixed application names retain the low-risk launch classification.
+        if target and target not in {"notepad", "notepad.exe", "calc", "calc.exe",
+                                     "calculator", "mspaint", "mspaint.exe"}:
+            return T3
 
     overrides = ACTION_TIER_OVERRIDES.get(intent)
     if overrides:

@@ -19,9 +19,8 @@ from unittest.mock import MagicMock, mock_open, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-import pytest
 
-from agentic_core.executor import execute_pipeline
+from dispatch_support import execute_confirmed_pipeline as execute_pipeline
 
 
 def _os_step(actions, speech_response=""):
@@ -123,8 +122,9 @@ class TestExplorerInterceptor:
     def test_missing_path_falls_back_to_memory_cache_hit(self, mock_exists, mock_startfile, mock_memory):
         mock_memory.get_cached_path.return_value = "C:\\Real\\Cached\\Path"
         result = execute_pipeline(_os_step([_shell_action("explorer C:\\guessed\\wrong\\path")]))
-        mock_startfile.assert_called_once_with("C:\\Real\\Cached\\Path")
-        assert not result.startswith("ERROR")
+        # A cached replacement was not the action the human approved.
+        mock_startfile.assert_not_called()
+        assert result.startswith("ERROR authorization")
 
     @patch("agentic_core.executor.memory")
     @patch("os.path.exists", return_value=False)
@@ -280,14 +280,12 @@ class TestStandardCliExecution:
 
         result = execute_pipeline(_os_step([_shell_action("mkdir badcmd")]))
 
-        assert mock_popen.call_count == 2
-        # _get_routing_llm is called twice from this single patched target: once
-        # to fix the failing command, once more afterward to summarize the
-        # (now successful) command's stdout for the spoken response.
-        assert fixer_llm.invoke.call_count == 2
+        # A repaired command needs a fresh approval before a second execution.
+        assert mock_popen.call_count == 1
+        assert fixer_llm.invoke.call_count == 1
         first_call_prompt = fixer_llm.invoke.call_args_list[0][0][0][0][1]
         assert "repair agent" in first_call_prompt
-        assert not result.startswith("ERROR")
+        assert result.startswith("ERROR authorization")
         assert "Task failed" not in result
 
     @patch("agentic_core.processor._get_routing_llm")
@@ -299,7 +297,8 @@ class TestStandardCliExecution:
         mock_popen.return_value = always_fails
 
         fixer_llm = MagicMock()
-        fixer_llm.invoke.return_value = MagicMock(content="still broken")
+        # Retrying the identical approved command still exercises exhaustion.
+        fixer_llm.invoke.return_value = MagicMock(content="permanently broken cmd")
         mock_get_llm.return_value = fixer_llm
 
         result = execute_pipeline(_os_step([_shell_action("permanently broken cmd")]))
