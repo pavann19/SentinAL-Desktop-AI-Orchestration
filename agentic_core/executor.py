@@ -128,7 +128,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
     Returns:
         str: Success message or the error that halted the pipeline.
     """
-    blackboard = []  # Fix 1.6: Stores textual results of each step for {{LAST_RESULT}} injection
+    blackboard: list[str] = []
     master_stdout_buffer = ""
 
     for index, step in enumerate(validated_steps):
@@ -154,6 +154,11 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                 return obj
 
             step = inject_vars(step)
+            from agentic_core.execution_authority import AuthorizationDenied, authorize_action
+            try:
+                step = authorize_action(step)
+            except AuthorizationDenied as exc:
+                return f"ERROR authorization: {exc}"
 
             intent = step.get("intent", "").strip()
             target = step.get("target", "")
@@ -223,14 +228,15 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                     max_launch_retries = 3
                     launched = False
                     for launch_attempt in range(max_launch_retries):
+                        authorize_action(step)
                         # Support Windows environment variables (e.g., %USERPROFILE%)
                         expanded_target = os.path.expandvars(target)
                         if os.path.exists(expanded_target):
                             os.startfile(expanded_target)
                         else:
                             subprocess.Popen(
-                                f'start "" "{expanded_target}"',
-                                shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                [expanded_target],
+                                shell=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                 start_new_session=True
                             )
                         # Wait for the window to appear before proceeding to next step
@@ -368,6 +374,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                     was_explorer = False
 
                     for action_idx, action in enumerate(actions):
+                        authorize_action(step)
                         action_type = action.get("type", "").lower()
                         payload = action.get("payload", "")
                         value = action.get("value", "")
@@ -422,8 +429,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                         found_path = memory.get_cached_path(folder_name)
 
                                         if found_path:
-                                            clean_path = found_path
-                                            _logger.info(f"Cache HIT: Located at {clean_path}")
+                                            return "ERROR authorization: cached replacement paths require a new request."
                                         else:
                                             _logger.info(f"Cache MISS for '{folder_name}'")
                                             return f"I checked my memory index, but I could not locate the {folder_name} folder."
@@ -575,6 +581,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                 success = False
 
                                 while attempt <= max_retries and not success:
+                                    authorize_action(step)
                                     try:
                                         process = subprocess.Popen(
                                             cmd, shell=True, cwd=current_cwd,
@@ -638,7 +645,10 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                                 )
                                                 try:
                                                     resp = llm.invoke([("system", prompt)])
-                                                    cmd = resp.content.strip().replace('```', '').strip()
+                                                    corrected = resp.content.strip().replace('```', '').strip()
+                                                    if corrected != cmd:
+                                                        return "ERROR authorization: corrected commands require a new request and confirmation."
+                                                    cmd = corrected
                                                     print(f"      [Healing] New Command: {cmd}")
                                                 except Exception as e:
                                                     print(f"      [Healing] LLM correction failed: {e}")
@@ -659,7 +669,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
 
                             # Phase 3 FIX: If action is 'click' but resolved_x/y is missing,
                             # use gui_resolver to locate the element first
-                            resolved_coords = (None, None)
+                            resolved_coords: tuple[int | None, int | None] = (None, None)
                             if action_label == "click" and not (step.get("resolved_x") and step.get("resolved_y")):
                                 label    = action.get("label", gui_target)
                                 app_name = action.get("app", "")
@@ -682,7 +692,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
                                 "resolved_x": resolved_coords[0] or step.get("resolved_x"),
                                 "resolved_y": resolved_coords[1] or step.get("resolved_y"),
                             }
-                            result = execute_gui_command(simulated_intent)
+                            result = execute_gui_command(simulated_intent, authorized_parent=step)
 
                             if result.startswith("ERROR"):
                                 return f"ERROR Step {index+1}.{action_idx+1}: {result}"
@@ -913,7 +923,7 @@ def execute_pipeline(validated_steps: list, cancel_event=None) -> str:
             break
 
         if not step_success:
-            return last_error
+            return last_error or f"ERROR Step {index+1}: Execution did not complete."
 
     if blackboard:
         return blackboard[-1]
@@ -935,26 +945,16 @@ _CANCELLATION_MESSAGE = "Mission interrupted by system."  # exact string execute
 
 
 def _classify_result(result: str, step_observations: list) -> str:
-    """
-    Failure taxonomy for a completed execute_pipeline() run.
-    Order matters: an ERROR/cancellation result always wins over a postcondition
-    mismatch, since those are execute_pipeline()'s own authoritative signals —
-    a postcondition check on a run that already failed outright is meaningless.
-
-    Fix P1-4.4 (from the continued Gate-2 review — same review task as
-    P1-4.2/P1-4.3): a malformed "expected_state" (e.g. a bare string or bool
-    instead of a dict) makes observe_postcondition() fall through to
-    tier_used="none", verified=False — correctly not a crash, but naively
-    counting THAT as a postcondition mismatch would waste a full bounded
-    replan on garbage input that was never actually checkable in the first
-    place. Only an observation where something concrete WAS checked
-    (tier_used in {"process", "window", "vlm"}) and came back unverified
-    counts as a genuine mismatch worth replanning over.
+    """Prioritize cancellation and execution errors over observation failures.
+    Unavailable observers do not trigger retries; supported mismatches may.
     """
     if result == _CANCELLATION_MESSAGE:
         return FAILURE_CATEGORY_CANCELLED
     if isinstance(result, str) and result.startswith("ERROR"):
         return FAILURE_CATEGORY_PIPELINE_ERROR
+    if any(not entry["observation"].verified and entry["observation"].tier_used == "observer_error"
+           for entry in step_observations):
+        return "observation_unavailable"
     if any(
         (not entry["observation"].verified and entry["observation"].tier_used != "none")
         for entry in step_observations
@@ -967,12 +967,16 @@ def _run_and_observe(validated_steps: list, cancel_event) -> tuple:
     """One full execute_pipeline() call + its before/after snapshot diff and
     per-step postcondition observations. Extracted so both the initial run
     and any bounded replan attempt share identical logic."""
+    from agentic_core.execution_authority import AuthorizationDenied, authorize_action, trusted_postconditions
     from capabilities.system.postcondition_observer import (
         capture_state_snapshot,
         diff_snapshots,
         observe_postcondition,
     )
-
+    try:
+        validated_steps = [trusted_postconditions(authorize_action(step)) for step in validated_steps]
+    except AuthorizationDenied as exc:
+        return f"ERROR authorization: {exc}", {}, []
     before = capture_state_snapshot()
     result = execute_pipeline(validated_steps, cancel_event=cancel_event)
 
@@ -991,7 +995,7 @@ def _run_and_observe(validated_steps: list, cancel_event) -> tuple:
         after = capture_state_snapshot()
         snapshot_diff = diff_snapshots(before, after)
     except Exception as exc:
-        _logger.warning(f"[P1-4] snapshot/diff computation raised unexpectedly: {exc}")
+        _logger.warning(f"[observation] snapshot/diff computation raised unexpectedly: {exc}")
         snapshot_diff = {"error": str(exc)}
 
     step_observations = []
@@ -1008,64 +1012,20 @@ def _run_and_observe(validated_steps: list, cancel_event) -> tuple:
             except Exception as exc:
                 from capabilities.system.postcondition_observer import Observation
                 observation = Observation(
-                    verified=False, tier_used="none", confidence=0.0,
+                    verified=False, tier_used="observer_error", confidence=0.0,
                     latency_ms=0.0, detail=f"observe_postcondition raised unexpectedly: {exc}",
                 )
-                _logger.warning(f"[P1-4] observe_postcondition raised for step {index}: {exc}")
+                _logger.warning(f"[observation] observe_postcondition raised for step {index}: {exc}")
             step_observations.append({"step_index": index, "observation": observation})
 
     return result, snapshot_diff, step_observations
 
 
 def execute_pipeline_observed(validated_steps: list, cancel_event=None) -> dict:
-    """
-    P1-1 (Agentic OS roadmap, Phase 1 — close the loop): observe-act wrapper
-    around execute_pipeline(), extended in P1-4 with a failure taxonomy and
-    one bounded whole-pipeline replan on postcondition mismatch.
+    """Execute and observe supported action postconditions, with bounded retries.
 
-    Design note: execute_pipeline() is deliberately left UNTOUCHED, in both
-    P1-1 and this P1-4 extension. It is 600+ lines of security-critical logic
-    (shell sanitization, its OWN 3-attempt per-step retry loop, LLM
-    self-healing, sandbox validation) with an established `str` return
-    contract that capabilities/system/api_wrapper.py and the existing test
-    suite depend on byte-for-byte. Rewriting it in place would be exactly the
-    kind of invasive, hard-to-verify change this project's verification
-    protocol (VERIFICATION_PROTOCOL.md) exists to prevent.
-
-    Why a WHOLE-PIPELINE replan, not per-step: execute_pipeline() already
-    retries individual steps up to 3 times on EXCEPTION internally. What it
-    cannot detect is a step that runs without raising, reports success, but
-    did not actually achieve the intended effect (e.g. "launch notepad"
-    returns "I have launched notepad." but no notepad.exe process exists).
-    That is a fundamentally different failure mode — a silent one — and can
-    only be caught by checking real system state AFTER the run, which is
-    exactly what postcondition_observer.py (P1-2) does. Re-running the whole
-    pipeline once is the safe, bounded response: single retry, capped by
-    MAX_REPLANS (env: EXECUTOR_MAX_REPLANS, default 1), never retried on
-    "cancelled" or "pipeline_error" categories (those are execute_pipeline's
-    own authoritative failure signals, already exhausted its own internal
-    retries, and blindly re-running a whole pipeline that errored partway
-    through risks duplicate side effects like a second file deletion).
-
-    IMPORTANT — currently a dormant, forward-compatible mechanism: no step
-    anywhere in the codebase sets "expected_state" today (that is Phase 2
-    processor/validator work), so step_observations is always [] and this
-    replan path never actually triggers in production yet. It activates the
-    moment Phase 2 wires expected_state onto steps. This mirrors P1-1's own
-    forward-compatible design — shipping the mechanism now, safely inert,
-    rather than coupling this change to unrelated Phase 2 work.
-
-    Returns:
-        {
-            "result": str,                    # execute_pipeline()'s FINAL return value
-                                                # (post-replan, if a replan happened)
-            "snapshot_diff": dict,             # from the run that produced "result"
-            "step_observations": list[dict],   # from the run that produced "result"
-            "failure_category": str,           # one of the FAILURE_CATEGORY_* constants
-            "attempts": int,                   # 1 = no replan happened, 2 = one replan happened
-            "replanned": bool,
-        }
-    """
+    Every attempt passes authorization again. Predicates are derived from the action;
+    planner hints cannot verify success. Retries are not an exactly-once guarantee."""
     result, snapshot_diff, step_observations = _run_and_observe(validated_steps, cancel_event)
     category = _classify_result(result, step_observations)
     attempts = 1
@@ -1073,7 +1033,7 @@ def execute_pipeline_observed(validated_steps: list, cancel_event=None) -> dict:
 
     while category == FAILURE_CATEGORY_POSTCONDITION_MISMATCH and attempts <= MAX_REPLANS:
         _logger.info(
-            f"[P1-4] Postcondition mismatch detected — bounded replan "
+            f"[observation] Postcondition mismatch detected — bounded replan "
             f"attempt {attempts}/{MAX_REPLANS}."
         )
         result, snapshot_diff, step_observations = _run_and_observe(validated_steps, cancel_event)
@@ -1091,8 +1051,15 @@ def execute_pipeline_observed(validated_steps: list, cancel_event=None) -> dict:
     }
 
 
-def execute_gui_command(intent: dict) -> str:
+def execute_gui_command(intent: dict, *, authorized_parent=None) -> str:
     """Handles physical screen interaction via PyAutoGUI (mouse/keyboard/scroll)."""
+    from agentic_core.execution_authority import AuthorizationDenied, authorize_action
+    try:
+        if authorized_parent is None:
+            raise AuthorizationDenied("GUI dispatch requires an authorized parent action.")
+        authorize_action(authorized_parent)
+    except AuthorizationDenied as exc:
+        return f"ERROR authorization: {exc}"
     action     = intent.get("action", "").lower()
     target     = intent.get("target", "")
     resolved_x = intent.get("resolved_x")

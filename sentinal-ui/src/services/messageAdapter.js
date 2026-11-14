@@ -110,7 +110,7 @@ export function adaptAgentMessage(payload) {
 
   // FIX 6: Handle requires_confirmation from backend (FileDeletionIntent)
   if (type === 'requires_confirmation') {
-    useSystemStore.getState().requestConfirmation(payload.command || message);
+    useSystemStore.getState().requestConfirmation(payload.prompt || payload.command || message, payload.confirm_token);
   }
 
   return {
@@ -171,9 +171,9 @@ export function adaptTelemetryMessage(payload) {
     temp,
     envFiles: env?.file_count ?? 0,
     envDirs: env?.directories ?? [],
-    sysUptime: sys?.uptime_percent ?? 0,
+    sysUptime: sys?.uptime_seconds ?? null,
     sysCoreStatus: sys?.ai_core_status ?? 'UNKNOWN',
-    sysThreat: sys?.threat_level ?? 'UNKNOWN',
+    sysThreat: sys?.resource_load ?? 'UNKNOWN',
     govClearance: gov?.clearance ?? 'UNKNOWN',
   };
 }

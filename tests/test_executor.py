@@ -4,13 +4,17 @@ Fix 4.3: OS execution layer unit tests.
 Uses unittest.mock.patch to intercept subprocess.Popen and webbrowser.open.
 Covers 6 critical test cases including shell injection guard.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
-from agentic_core.executor import execute_pipeline, _sanitize_shell_cmd
+from dispatch_support import execute_confirmed_pipeline as execute_pipeline
+
+from agentic_core.executor import _sanitize_shell_cmd
 
 
 class TestSanitizeShellCmd:
