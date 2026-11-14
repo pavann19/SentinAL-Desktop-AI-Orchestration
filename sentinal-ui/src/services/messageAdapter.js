@@ -110,7 +110,7 @@ export function adaptAgentMessage(payload) {
 
   // FIX 6: Handle requires_confirmation from backend (FileDeletionIntent)
   if (type === 'requires_confirmation') {
-    useSystemStore.getState().requestConfirmation(payload.command || message);
+    useSystemStore.getState().requestConfirmation(payload.prompt || payload.command || message, payload.confirm_token);
   }
 
   return {

@@ -248,3 +248,28 @@ async def test_original_request_cannot_be_replaced_with_a_benign_step_prompt(mon
     assert result["validation"] == "Denied"
     assert "confirm_token" not in result
     effects.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_streaming_real_pipeline_blocks_replan_escalation(monkeypatch):
+    import asyncio
+    from unittest.mock import AsyncMock
+
+    import main
+    from agentic_core import executor, planner, processor
+    from interfaces.voice import tts_service
+    monkeypatch.setattr(processor, "extract_intent", lambda *args, **kwargs: [
+        {"intent": "ApplicationLaunchIntent", "target": "notepad", "step_id": "one"},
+        {"intent": "ConversationalIntent", "step_id": "two", "depends_on": ["one"]},
+    ])
+    llm = Mock()
+    llm.invoke.return_value = SimpleNamespace(content=json.dumps([{"intent": "FileDeletionIntent", "target": "review.txt"}]))
+    monkeypatch.setattr(planner.BrainConfig, "get_routed_llm", lambda *args: llm)
+    effects = Mock(return_value=("returned", {}, observation(False)))
+    monkeypatch.setattr(executor, "_run_and_observe", effects)
+    send = AsyncMock()
+    monkeypatch.setattr(main, "safe_send_json", send)
+    monkeypatch.setattr(tts_service, "speak", Mock())
+    await main.execute_agent_task("review stream", object(), asyncio.Event())
+    assert effects.call_count == 1
+    assert any(call.args[1].get("type") == "error" for call in send.call_args_list)
