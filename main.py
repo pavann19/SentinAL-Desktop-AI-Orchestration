@@ -51,7 +51,7 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["OMP_NUM_THREADS"] = "1"
 
 SYSTEM_CONFIG = {
-    "clearance": "ADMIN",
+    "clearance": "LOCAL USER",
     "agent": "MEGHA",
     "active_skills": ["SYS_CONTROL", "FILE_OPS", "NET_SOCKET"]
 }
@@ -529,45 +529,9 @@ async def websocket_telemetry(websocket: WebSocket):
                 "file_count": total_files
             }
             
-            uptime_seconds = time.time() - SERVER_START_TIME
-            uptime_pct = min(99.99, 99.0 + (uptime_seconds / 86400)) 
-
-            # ── Dynamic System Assessment ──
-            cpu_val = hardware["cpu_percent"]
-            ram_val = hardware["ram_percent"]
-            
-            # 1. Threat Level Assessment
-            if cpu_val > 95 or ram_val > 98:
-                threat = "CRITICAL"
-            elif cpu_val > 90 or ram_val > 90:
-                threat = "HIGH"
-            elif cpu_val > 70:
-                threat = "ELEVATED"
-            else:
-                threat = "ZERO"
-
-            # 2. AI Core Status (based on TaskManager load & memory)
-            if task_manager.current_task_id:
-                core_status = "EXECUTING"
-            elif cpu_val > 85:
-                core_status = "STRAINED"
-            else:
-                core_status = "OPTIMAL"
-
-            # 3. Dynamic Clearance (derived from mode/state)
-            clearance = "ADMIN" if uptime_seconds > 60 else "GUEST"
-
-            system_stats = {
-                "uptime_percent": round(uptime_pct, 4),
-                "ai_core_status": core_status,
-                "threat_level": threat,
-                "build_version": "v10.1.5-STABLE"
-            }
-            
-            # Sync Config with Dynamic Clearance
+            system_stats = build_system_telemetry(hardware)
             dynamic_config = SYSTEM_CONFIG.copy()
-            dynamic_config["clearance"] = clearance
-            
+
             if websocket.client_state == WebSocketState.CONNECTED:
                 TELEMETRY_PINGS[websocket] = time.time()
                 await safe_send_json(websocket, {
@@ -588,6 +552,21 @@ async def websocket_telemetry(websocket: WebSocket):
     finally:
         TELEMETRY_PINGS.pop(websocket, None)
         active_telemetry_clients.discard(websocket)
+
+def build_system_telemetry(hardware: dict) -> dict:
+    """Measured process uptime and resource load; no availability or threat claim."""
+    cpu = hardware["cpu_percent"]
+    ram = hardware["ram_percent"]
+    load = "CRITICAL" if cpu > 95 or ram > 98 else "HIGH" if cpu > 90 or ram > 90 else "ELEVATED" if cpu > 70 else "NORMAL"
+    core = "EXECUTING" if task_manager.current_task_id else "STRAINED" if cpu > 85 else "IDLE"
+    return {
+        "uptime_seconds": max(0.0, time.time() - SERVER_START_TIME),
+        "ai_core_status": core,
+        "resource_load": load,
+        "build_version": "9.0.0-prototype",
+    }
+
+
 
 # ── Global Session Memory (Shared across tasks) ──
 SESSION_MEMORY = {
