@@ -37,7 +37,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "tailwindcss": "^4.2.2",
-    "vite": "^8.0.4",
+    "vite": "8.1.6",
     "wait-on": "^8.0.3"
   },
   "build": {
